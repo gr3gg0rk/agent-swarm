@@ -10,15 +10,15 @@
 |-------|----------------|--------|-----------|
 | 1. Communication & Discovery | 3/3 | ✓ Complete | 2026-02-21 |
 | 2. Shared State & Lifecycle | 1/3 | In progress | 2026-02-21 |
-| 3. Task Delegation | 2/3 | In progress | 2026-02-21 |
+| 3. Task Delegation | 3/3 | ✓ Complete | 2026-02-21 |
 | 4. Error Handling & Recovery | 0/2 | Not started | - |
 
 ## Phases
 
 - [x] **Phase 1: Communication & Discovery** ✓ (2026-02-21) - Message bus, MQTT implementation, agent registration
 - [ ] **Phase 2: Shared State & Lifecycle** - State persistence, heartbeat monitoring, agent supervision
-- [ ] **Phase 3: Task Delegation** - Task queue, orchestrator delegation, worker execution
-- [ ] **Phase 4: Error Handling & Recovery** - Retry logic, checkpointing, graceful degradation
+- [x] **Phase 3: Task Delegation** ✓ (2026-02-21) - Task queue, orchestrator delegation, worker execution, retry and guidance
+- [ ] **Phase 4: Error Handling & Recovery** - Checkpointing, graceful degradation, recovery from crashes
 
 ## Phase Details
 
@@ -84,7 +84,7 @@
 **Plans:**
 - [x] 03-01-PLAN.md ✓ — Task delegation types, role-based router with hierarchical fallback, DAG-based dependency scheduler, timeout monitor with exponential backoff (2026-02-21)
 - [x] 03-02-PLAN.md ✓ — TaskDelegator for Minerva task assignment, WorkerTaskExecutor for task execution with progress tracking, TaskCancellation for cooperative cancellation (2026-02-21)
-- [ ] 03-03-PLAN.md — RetryManager for automatic task retry with exponential backoff, GuidanceRequest for agent-to-Minerva communication, extended error handling
+- [x] 03-03-PLAN.md ✓ — RetryManager for automatic task retry with exponential backoff, GuidanceRequest for agent-to-Minerva communication, extended error handling (2026-02-21)
 
 ---
 

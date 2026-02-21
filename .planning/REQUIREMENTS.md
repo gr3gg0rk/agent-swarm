@@ -52,11 +52,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Error Handling
 
-- [ ] **ERRO-01**: Failed tasks are automatically retried with exponential backoff (max 3 retries)
-- [ ] **ERRO-02**: Errors are classified as retryable (network timeout) vs abort (invalid input)
+- [x] **ERRO-01**: Failed tasks are automatically retried with exponential backoff (max 3 retries)
+- [x] **ERRO-02**: Errors are classified as retryable (network timeout) vs abort (invalid input)
 - [x] **ERRO-03**: All errors are logged with full context (task ID, agent, timestamp, stack trace)
-- [ ] **ERRO-04**: Minerva is notified when a task fails after exhausting retries
-- [ ] **ERRO-05**: Agents can request guidance from Minerva when encountering ambiguous situations
+- [x] **ERRO-04**: Minerva is notified when a task fails after exhausting retries
+- [x] **ERRO-05**: Agents can request guidance from Minerva when encountering ambiguous situations
 
 ### Agent Lifecycle
 
@@ -155,11 +155,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-03 | Phase 2 | Complete |
 | STATE-04 | Phase 2 | Complete |
 | STATE-05 | Phase 2 | Complete |
-| ERRO-01 | Phase 3 | Pending |
-| ERRO-02 | Phase 3 | Pending |
+| ERRO-01 | Phase 3 | Complete |
+| ERRO-02 | Phase 3 | Complete |
 | ERRO-03 | Phase 1 | Complete |
-| ERRO-04 | Phase 3 | Pending |
-| ERRO-05 | Phase 3 | Pending |
+| ERRO-04 | Phase 3 | Complete |
+| ERRO-05 | Phase 3 | Complete |
 | LIFE-01 | Phase 2 | Complete |
 | LIFE-02 | Phase 2 | Complete |
 | LIFE-03 | Phase 2 | Complete |
