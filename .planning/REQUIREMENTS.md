@@ -168,14 +168,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HARD-01 | Phase 1 | Pending |
 | HARD-02 | Phase 1 | Pending |
 | HARD-03 | Phase 2 | Pending |
-| HARD-04 | All | Pending |
+| HARD-04 | Phase 1, 2, 3, 4 | Pending |
 | HARD-05 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 42 total
 - Mapped to phases: 42
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-21*
-*Last updated: 2026-02-21 after initial definition*
+*Last updated: 2026-02-21 after roadmap creation*
