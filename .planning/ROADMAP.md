@@ -9,8 +9,8 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Communication & Discovery | 3/3 | ✓ Complete | 2026-02-21 |
-| 2. Shared State & Lifecycle | 3/3 | Ready to execute | - |
-| 3. Task Delegation | 3/3 | Ready to execute | - |
+| 2. Shared State & Lifecycle | 1/3 | In progress | 2026-02-21 |
+| 3. Task Delegation | 2/3 | In progress | 2026-02-21 |
 | 4. Error Handling & Recovery | 0/2 | Not started | - |
 
 ## Phases
@@ -82,8 +82,8 @@
 5. Task with dependency waits for prerequisite task to complete first
 
 **Plans:**
-- [ ] 03-01-PLAN.md — Task delegation types, role-based router with hierarchical fallback, DAG-based dependency scheduler, timeout monitor with exponential backoff
-- [ ] 03-02-PLAN.md — TaskDelegator for Minerva task assignment, WorkerTaskExecutor for task execution with progress tracking, TaskCancellation for cooperative cancellation
+- [x] 03-01-PLAN.md ✓ — Task delegation types, role-based router with hierarchical fallback, DAG-based dependency scheduler, timeout monitor with exponential backoff (2026-02-21)
+- [x] 03-02-PLAN.md ✓ — TaskDelegator for Minerva task assignment, WorkerTaskExecutor for task execution with progress tracking, TaskCancellation for cooperative cancellation (2026-02-21)
 - [ ] 03-03-PLAN.md — RetryManager for automatic task retry with exponential backoff, GuidanceRequest for agent-to-Minerva communication, extended error handling
 
 ---

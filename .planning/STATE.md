@@ -6,18 +6,18 @@
 
 **Core Value:** Minerva can assign a task to any agent in the swarm and get a result back
 
-**Current Focus:** Phase 2 Plan 01 complete, continuing Phase 2
+**Current Focus:** Phase 3 Plan 02 complete, continuing Phase 3
 
 ## Current Position
 
-**Phase:** 2 - Shared State & Lifecycle
-**Plan:** 1 of 3 (COMPLETE)
-**Status:** Milestone complete
-**Progress:** [████████░░] 78%
+**Phase:** 3 - Task Delegation
+**Plan:** 2 of 3 (COMPLETE)
+**Status:** In progress
+**Progress:** [████████░░] 82%
 
-### Phase 2 Goal
+### Phase 3 Goal
 
-All agents share consistent view of system state and agent health
+Minerva can assign tasks to agents and receive results back with progress tracking and timeout handling
 
 ## Performance Metrics
 
@@ -25,8 +25,11 @@ All agents share consistent view of system state and agent health
 - **Phases planned:** 4 phases
 - **Phase 1 requirements:** 15 requirements (COMPLETE)
 - **Phase 2 requirements:** 14 requirements (8 COMPLETE - STATE-01 through STATE-05, HARD-03, STAT-04, STAT-05)
+- **Phase 3 requirements:** 10 requirements (8 COMPLETE - TASK-01 through TASK-06, STAT-02, STAT-03)
 - **Phase 1 completion:** 2026-02-21 (3 plans, ~320s execution time)
 - **Phase 2 Plan 01 completion:** 2026-02-21 (3 tasks, 201s execution time, 14 files created)
+- **Phase 3 Plan 01 completion:** 2026-02-21 (5 tasks, 192s execution time, 5 files created)
+- **Phase 3 Plan 02 completion:** 2026-02-21 (5 tasks, 234s execution time, 4 files created)
 - **Estimated completion:** TBD
 
 ## Accumulated Context
@@ -55,6 +58,20 @@ All agents share consistent view of system state and agent health
 - Structured JSON logging with ErrorContext interface (taskId, agentId, messageId, timestamp, stack)
 - 1KB threshold for MessagePack vs JSON selection
 - MqttClientMinimal interface renamed to avoid collision with MqttClient class
+
+**2026-02-21: Task Delegation Infrastructure (Plan 03-01)**
+- Role-based task router with hierarchical fallback (senior-builder can do builder tasks)
+- DAG-based dependency scheduler using Kahn's algorithm for O(V+E) cycle detection
+- Timeout monitor with exponential backoff (2^n * 1000ms + jitter, capped at 30s)
+- Error classification: transient vs permanent for retry decisions
+- Extended Task schema with 7 new fields: dependencies, timeoutMs, retryCount, maxRetries, lastProgressAt, resultPayload, errorType
+
+**2026-02-21: Task Delegation Execution (Plan 03-02)**
+- ProgressReporter with 10% threshold AND 30s interval (both conditions apply)
+- TaskDelegator with delegateToAgent(), delegateToRole(), cancelTask()
+- WorkerTaskExecutor with command handler, timeout monitoring, progress tracking
+- TaskCancellation with optimistic cancellation and 5-second acknowledgment timeout
+- QoS 0 for progress updates (fire-and-forget), QoS 1 for tasks/results/cancellation (at-least-once)
 
 **2026-02-21: Agent Discovery (Plan 01-02)**
 - Used Node.js built-in EventEmitter instead of eventemitter3 due to TypeScript typing issues
@@ -102,8 +119,8 @@ From research/SUMMARY.md:
 
 ### Session Handoff
 
-**Stopped at:** Phase 3 context gathered
-**Resume file:** .planning/phases/03-task-delegation/03-CONTEXT.md
+**Stopped at:** Phase 3 Plan 02 complete
+**Resume file:** .planning/phases/03-task-delegation/03-02-SUMMARY.md
 
 ### Blockers
 
