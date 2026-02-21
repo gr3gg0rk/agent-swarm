@@ -37,6 +37,9 @@ export const Topics = {
 
   /** Response topic for request-reply pattern */
   response: (agentId: string): string => `agent/${agentId}/response`,
+
+  /** Agent heartbeat topic (STAT-01) */
+  agentHeartbeat: (agentId: string): string => `agent/${agentId}/heartbeat`,
 } as const;
 
 /**

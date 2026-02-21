@@ -13,3 +13,6 @@ export * from './discovery/index.js';
 
 // Re-export all error handling types and functions
 export * from './errors/index.js';
+
+// Re-export all lifecycle types and functions
+export * from './lifecycle/index.js';
