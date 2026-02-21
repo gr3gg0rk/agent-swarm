@@ -13,6 +13,8 @@
  * - Receive progress updates from workers (STAT-02)
  * - Receive completion results from workers (STAT-03)
  * - Cancel in-progress tasks (TASK-05)
+ * - Retry failed tasks with exponential backoff (ERRO-01, ERRO-02, ERRO-04)
+ * - Request guidance from Minerva (ERRO-05)
  *
  * @see 03-RESEARCH.md for architecture patterns
  * @see 03-CONTEXT.md for implementation decisions
@@ -94,3 +96,19 @@ export {
   type TaskCancelPayload as CancellationPayload,
   createTaskCancellation,
 } from './cancellation.js';
+
+// Export retry manager
+export {
+  RetryManager,
+  type RetryManagerOptions,
+  createRetryManager,
+} from './retry.js';
+
+// Export guidance request
+export {
+  GuidanceRequest,
+  type GuidanceRequestOptions,
+  type GuidanceRequestPayload,
+  type GuidanceResponsePayload,
+  createGuidanceRequest,
+} from './guidance.js';
