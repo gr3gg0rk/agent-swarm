@@ -8,7 +8,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Communication & Discovery | 0/3 | Not started | - |
+| 1. Communication & Discovery | 3/3 | Ready to execute | - |
 | 2. Shared State & Lifecycle | 0/3 | Not started | - |
 | 3. Task Delegation | 0/3 | Not started | - |
 | 4. Error Handling & Recovery | 0/2 | Not started | - |
@@ -37,7 +37,10 @@
 4. Duplicate messages are detected and discarded using idempotency keys
 5. MQTT broker runs on Pi 2B with <10MB RAM footprint
 
-**Plans:** TBD
+**Plans:**
+- [ ] 01-01-PLAN.md — MQTT message bus with QoS levels and message envelope structure
+- [ ] 01-02-PLAN.md — Agent discovery using retained MQTT messages with duplicate rejection
+- [ ] 01-03-PLAN.md — Idempotency, error logging, and complete example agent
 
 ---
 
