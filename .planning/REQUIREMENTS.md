@@ -11,8 +11,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **COMM-01**: Agents can discover each other across machines using MQTT retained messages
 - [x] **COMM-02**: Agents can send messages to specific agents by ID using MQTT pub/sub
-- [ ] **COMM-03**: Agents can broadcast status updates to all interested parties via MQTT topics
-- [ ] **COMM-04**: All task-related messages use idempotency keys (UUIDs) to prevent duplicate processing
+- [x] **COMM-03**: Agents can broadcast status updates to all interested parties via MQTT topics
+- [x] **COMM-04**: All task-related messages use idempotency keys (UUIDs) to prevent duplicate processing
 - [x] **COMM-05**: Message broker (Mosquitto) runs with <10MB RAM footprint on constrained hardware
 - [x] **COMM-06**: MQTT QoS 1 is used for task assignments and results (at-least-once delivery)
 - [x] **COMM-07**: MQTT QoS 0 is used for heartbeats and non-critical status updates
@@ -54,7 +54,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **ERRO-01**: Failed tasks are automatically retried with exponential backoff (max 3 retries)
 - [ ] **ERRO-02**: Errors are classified as retryable (network timeout) vs abort (invalid input)
-- [ ] **ERRO-03**: All errors are logged with full context (task ID, agent, timestamp, stack trace)
+- [x] **ERRO-03**: All errors are logged with full context (task ID, agent, timestamp, stack trace)
 - [ ] **ERRO-04**: Minerva is notified when a task fails after exhausting retries
 - [ ] **ERRO-05**: Agents can request guidance from Minerva when encountering ambiguous situations
 
@@ -129,8 +129,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | COMM-01 | Phase 1 | Complete |
 | COMM-02 | Phase 1 | Complete |
-| COMM-03 | Phase 1 | Pending |
-| COMM-04 | Phase 1 | Pending |
+| COMM-03 | Phase 1 | Complete |
+| COMM-04 | Phase 1 | Complete |
 | COMM-05 | Phase 1 | Complete |
 | COMM-06 | Phase 1 | Complete |
 | COMM-07 | Phase 1 | Complete |
@@ -157,7 +157,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-05 | Phase 2 | Pending |
 | ERRO-01 | Phase 3 | Pending |
 | ERRO-02 | Phase 3 | Pending |
-| ERRO-03 | Phase 1 | Pending |
+| ERRO-03 | Phase 1 | Complete |
 | ERRO-04 | Phase 3 | Pending |
 | ERRO-05 | Phase 3 | Pending |
 | LIFE-01 | Phase 2 | Pending |

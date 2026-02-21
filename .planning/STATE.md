@@ -6,14 +6,14 @@
 
 **Core Value:** Minerva can assign a task to any agent in the swarm and get a result back
 
-**Current Focus:** Roadmap complete, ready to begin Phase 1 planning
+**Current Focus:** Phase 1 complete, ready to begin Phase 2 planning
 
 ## Current Position
 
 **Phase:** 1 - Communication & Discovery
-**Plan:** 01 - MQTT Message Bus Foundation
-**Status:** In Progress
-**Progress:** [███████░░░] 67%
+**Plan:** 03 - Idempotency, Logging, and Codec
+**Status:** Complete
+**Progress:** [█████████░] 100%
 
 ### Phase 1 Goal
 
@@ -24,13 +24,21 @@ Agents can discover each other and exchange messages reliably across machines
 - **Requirements defined:** 42 v1 requirements
 - **Phases planned:** 4 phases
 - **Current phase requirements:** 15 requirements
+- **Phase 1 completion:** 2026-02-21 (3 plans, ~320s execution time)
 - **Estimated completion:** TBD
 
 ## Accumulated Context
 
 ### Decisions Made
 
-**2026-02-21: MQTT Message Bus Foundation (Plan 01-01)**
+**2026-02-21: Idempotency, Logging, and Codec (Plan 01-03)**
+- 5-minute deduplication window for idempotency tracker
+- Emergency reset at 10000 entries prevents memory exhaustion
+- Structured JSON logging with ErrorContext interface (taskId, agentId, messageId, timestamp, stack)
+- 1KB threshold for MessagePack vs JSON selection
+- MqttClientMinimal interface renamed to avoid collision with MqttClient class
+
+**2026-02-21: Agent Discovery (Plan 01-02)**
 - Used Node.js built-in EventEmitter instead of eventemitter3 due to TypeScript typing issues
 - eventemitter3@5.0.4 used (6.0.0 doesn't exist)
 - MessagePack serialization for all messages (>1KB threshold implemented via @ts-ignore)
@@ -94,11 +102,15 @@ None identified
 - Requirements definition (42 v1 requirements)
 - Research phase completed (HIGH confidence)
 - Roadmap created (4 phases, 100% coverage)
+- Phase 1 complete: Communication & Discovery
+  - MQTT message bus foundation (01-01)
+  - Agent discovery with retained messages (01-02)
+  - Idempotency, logging, and codec (01-03)
 
 **Next Session:**
-- Run `/gsd:plan-phase 1` to begin Communication & Discovery phase
-- Implement MQTT message bus
-- Implement agent discovery and registration
+- Run `/gsd:plan-phase 2` to begin Shared State & Coordination phase
+- Implement SQLite-based shared state
+- Implement task queue with assignment and status tracking
 
 ### Context Handoff
 
