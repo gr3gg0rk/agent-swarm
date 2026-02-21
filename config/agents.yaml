@@ -1,0 +1,28 @@
+# Static agent configuration per DISC-05
+# Validates agent IDs on registration against known machines
+# Each entry represents a known agent in the swarm
+
+agents:
+  # Minerva - Orchestrator on griak-brain
+  - agentId: minerva
+    hostname: griak-brain
+    role: orchestrator
+    # capabilities: []  # To be defined based on Minerva's actual capabilities
+
+  # Vulcan - Builder/Executor on griak-server
+  - agentId: worker-1
+    hostname: griak-server
+    role: worker
+    # capabilities: []  # To be defined based on worker capabilities
+
+  # Flexible worker on griak-worker-1
+  - agentId: worker-2
+    hostname: griak-worker-1
+    role: worker
+    # capabilities: []
+
+  # Flexible worker on griak-worker-2
+  - agentId: worker-3
+    hostname: griak-worker-2
+    role: worker
+    # capabilities: []
