@@ -77,9 +77,14 @@ From research/SUMMARY.md:
 ### Todos
 
 **Immediate:**
-1. Run `/gsd:plan-phase 2` to create Phase 2 plans
+1. Run `/gsd:plan-phase 2` to create Phase 2 plans (context gathered)
 2. Implement SQLite-based shared state
 3. Implement heartbeat monitoring
+
+### Session Handoff
+
+**Stopped at:** Phase 2 context gathered
+**Resume file:** .planning/phases/02-shared-state-lifecycle/02-CONTEXT.md
 
 ### Blockers
 
