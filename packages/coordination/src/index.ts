@@ -22,3 +22,6 @@ export * from './state/index.js';
 
 // Re-export all REST API types and functions
 export * from './api/index.js';
+
+// Re-export all task delegation types and functions
+export * from './delegation/index.js';
