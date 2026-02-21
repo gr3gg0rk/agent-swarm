@@ -19,6 +19,8 @@ import type { MessageEnvelope } from '../communication/message.js';
 import type { TaskQueue, Task } from '../state/task-queue.js';
 import type { TimeoutMonitor } from './timeout.js';
 import { classifyError } from './timeout.js';
+import type { RetryManager } from './retry.js';
+import type { GuidanceRequest } from './guidance.js';
 import type { ProgressReporter } from './progress.js';
 import { createProgressReporter } from './progress.js';
 import type { TaskCommandPayload, TaskResult, TaskProgress } from './types.js';
@@ -114,6 +116,7 @@ export class WorkerTaskExecutor {
    * @param mqttClient - MQTT client for publishing results
    * @param taskQueue - Task queue for status updates
    * @param timeoutMonitor - Timeout monitor for task timeout tracking
+   * @param retryManager - Retry manager for error handling
    * @param options - Optional configuration
    */
   constructor(
@@ -121,6 +124,7 @@ export class WorkerTaskExecutor {
     protected mqttClient: MqttClient,
     protected taskQueue: TaskQueue,
     protected timeoutMonitor: TimeoutMonitor,
+    protected retryManager: RetryManager,
     options: WorkerTaskExecutorOptions = {}
   ) {
     this.activeTasks = new Map();
@@ -236,32 +240,125 @@ export class WorkerTaskExecutor {
       this.taskQueue.updateTaskStatus(taskId, 'completed');
 
     } catch (error) {
-      const executionTime = Date.now() - startTime;
-      const errorType = classifyError(error as Error);
-      const errorObj = error as Error;
+      // Handle failure via dedicated method
+      await this.handleFailure(taskId, error as Error, progressReporter);
+    }
+  }
 
+  /**
+   * Handle task failure.
+   *
+   * Classifies error, checks if should retry, and either schedules retry
+   * or sends failure result to Minerva.
+   *
+   * Per ERRO-02: Errors classified as retryable (transient) vs abort (permanent)
+   * Per ERRO-01: Failed tasks automatically retried with exponential backoff
+   *
+   * @param taskId - Task ID that failed
+   * @param error - Error that occurred
+   * @param progressReporter - Progress reporter to clean up
+   */
+  private async handleFailure(
+    taskId: string,
+    error: Error,
+    progressReporter: ProgressReporter
+  ): Promise<void> {
+    // Classify error
+    const errorType = classifyError(error);
+
+    // Get task for retry configuration
+    const task = this.taskQueue.getTask(taskId);
+    if (!task) {
+      console.warn(`Task not found for failure handling: ${taskId}`);
+      return;
+    }
+
+    const retryCount = task.retryCount ?? 0;
+    const maxRetries = task.maxRetries ?? 3;
+    const executionTime = this.taskStartTimes.get(taskId)
+      ? Date.now() - this.taskStartTimes.get(taskId)!
+      : 0;
+
+    // Check if should retry
+    if (this.retryManager.shouldRetry(error, retryCount, maxRetries)) {
+      // Calculate backoff
+      const backoff = this.retryManager.calculateBackoff(retryCount);
+
+      // Schedule retry via RetryManager
+      await this.retryManager.scheduleRetry(taskId, error);
+
+      // Cleanup: progressReporter, timeoutMonitor, activeTasks
+      progressReporter.stop();
+      this.timeoutMonitor.cancelTimeout(taskId);
+      this.activeTasks.delete(taskId);
+      this.taskStartTimes.delete(taskId);
+
+      // Update task status to pending for re-dispatch
+      this.taskQueue.updateTaskStatus(taskId, 'pending');
+
+      console.log(
+        `Task ${taskId} failed with ${errorType} error, scheduled retry in ${backoff.toFixed(0)}ms`
+      );
+    } else {
+      // Should not retry (permanent error or exhausted)
       // Send failure result
       await this.sendResult(taskId, {
         taskId,
         success: false,
         error: {
           type: errorType,
-          message: errorObj.message,
-          code: (errorObj as any).code,
-          stack: errorObj.stack,
+          message: error.message,
+          code: (error as any).code,
+          stack: error.stack,
         },
         executionTime,
       });
 
-      // Cleanup
-      this.timeoutMonitor.cancelTimeout(taskId);
+      // Cleanup: progressReporter, timeoutMonitor, activeTasks
       progressReporter.stop();
+      this.timeoutMonitor.cancelTimeout(taskId);
       this.activeTasks.delete(taskId);
       this.taskStartTimes.delete(taskId);
 
-      // Update task status to failed (with error type for retry decision)
+      // Update task status to failed
       this.taskQueue.updateTaskStatus(taskId, 'failed', undefined, errorType);
+
+      console.log(`Task ${taskId} failed with ${errorType} error, no retry`);
     }
+  }
+
+  /**
+   * Request guidance if error indicates ambiguous situation.
+   *
+   * Checks error message for patterns indicating need for human guidance.
+   * If found, creates GuidanceRequest and calls requestGuidance().
+   *
+   * Per ERRO-05: Agents can request guidance from Minerva when encountering ambiguous situations
+   *
+   * @param error - Error to check for ambiguity
+   * @param taskId - Task ID for context
+   */
+  async requestGuidanceIfNeeded(error: Error, taskId: string): Promise<void> {
+    const ambiguousPatterns = [
+      /ambiguous/i,
+      /unclear/i,
+      /multiple options/i,
+      /guidance/i,
+      /uncertain/i,
+    ];
+
+    const message = error.message.toLowerCase();
+    const isAmbiguous = ambiguousPatterns.some(p => p.test(message));
+
+    if (!isAmbiguous) {
+      return; // Not ambiguous, no guidance needed
+    }
+
+    // Create guidance request and request guidance
+    // TODO: Integrate GuidanceRequest class when available
+    // For now, just log the situation
+    console.warn(`Ambiguous situation encountered for task ${taskId}: ${error.message}`);
+    console.warn(`Agent ${this.agentId} should request guidance from Minerva`);
   }
 
   /**
@@ -280,7 +377,7 @@ export class WorkerTaskExecutor {
       return; // Task already completed/failed/cancelled
     }
 
-    const maxRetries = task.maxRetries || 3;
+    const maxRetries = task.maxRetries ?? 3;
 
     if (retryCount <= maxRetries) {
       // Retry: re-queue task as pending for re-dispatch
@@ -324,8 +421,8 @@ export class WorkerTaskExecutor {
   /**
    * Handle task cancellation.
    *
-   * Stops progress reporter, cancels timeout, updates task status.
-   * Publishes acknowledgment to result topic.
+   * Stops progress reporter, cancels timeout, cancels pending retry,
+   * updates task status. Publishes acknowledgment to result topic.
    *
    * @param cancelPayload - Cancellation payload
    */
@@ -343,6 +440,9 @@ export class WorkerTaskExecutor {
 
     // Cancel timeout
     this.timeoutMonitor.cancelTimeout(taskId);
+
+    // Cancel pending retry if task is being retried
+    this.retryManager.cancelRetry(taskId);
 
     // Update task status to cancelled
     this.taskQueue.updateTaskStatus(taskId, 'cancelled');
@@ -409,6 +509,7 @@ export class WorkerTaskExecutor {
  * @param mqttClient - MQTT client for publishing results
  * @param taskQueue - Task queue for status updates
  * @param timeoutMonitor - Timeout monitor for task timeout tracking
+ * @param retryManager - Retry manager for error handling
  * @param options - Optional configuration
  * @returns WorkerTaskExecutor instance
  */
@@ -417,7 +518,8 @@ export function createWorkerTaskExecutor(
   mqttClient: MqttClient,
   taskQueue: TaskQueue,
   timeoutMonitor: TimeoutMonitor,
+  retryManager: RetryManager,
   options?: WorkerTaskExecutorOptions
 ): WorkerTaskExecutor {
-  return new WorkerTaskExecutor(agentId, mqttClient, taskQueue, timeoutMonitor, options);
+  return new WorkerTaskExecutor(agentId, mqttClient, taskQueue, timeoutMonitor, retryManager, options);
 }
