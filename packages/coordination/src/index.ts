@@ -16,3 +16,6 @@ export * from './errors/index.js';
 
 // Re-export all lifecycle types and functions
 export * from './lifecycle/index.js';
+
+// Re-export all state management types and functions
+export * from './state/index.js';
