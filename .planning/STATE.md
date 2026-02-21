@@ -11,9 +11,9 @@
 ## Current Position
 
 **Phase:** 2 - Shared State & Lifecycle
-**Plan:** None (needs planning)
-**Status:** Ready to plan Phase 2
-**Progress:** [████░░░░░░] 25% (1/4 phases)
+**Plan:** 2 of 3
+**Status:** Plan 02-02 complete, ready for Plan 02-03
+**Progress:** [█████░░░░] 30% (1.2/4 phases)
 
 ### Phase 2 Goal
 
@@ -31,6 +31,13 @@ All agents share consistent view of system state and agent health
 ## Accumulated Context
 
 ### Decisions Made
+
+**2026-02-21: Heartbeat Monitoring and Agent Supervision (Plan 02-02)**
+- HeartbeatPublisher with 30-second interval (STAT-01) using QoS 0 per COMM-07
+- HeartbeatTracker with 4-miss threshold for offline detection (DISC-04)
+- systemd service template with exponential backoff (1s->2s->4s->8s->16s->30s max)
+- GracefulShutdown with SIGTERM/SIGINT handlers and 30-second task completion timeout
+- Used local Database interface instead of better-sqlite3 types for WSL compatibility
 
 **2026-02-21: Idempotency, Logging, and Codec (Plan 01-03)**
 - 5-minute deduplication window for idempotency tracker
@@ -83,8 +90,8 @@ From research/SUMMARY.md:
 
 ### Session Handoff
 
-**Stopped at:** Phase 2 context gathered
-**Resume file:** .planning/phases/02-shared-state-lifecycle/02-CONTEXT.md
+**Stopped at:** Completed Phase 2 Plan 02-02 (Heartbeat Monitoring and Agent Supervision)
+**Resume file:** .planning/phases/02-shared-state-lifecycle/02-02-SUMMARY.md
 
 ### Blockers
 

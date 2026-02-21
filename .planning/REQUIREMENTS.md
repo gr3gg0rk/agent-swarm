@@ -22,7 +22,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **DISC-01**: Agents register themselves on startup with their ID, role, and capabilities
 - [x] **DISC-02**: Minerva can query which agents are currently available and their capabilities
 - [x] **DISC-03**: Agent registration is persisted in retained MQTT messages for crash recovery
-- [ ] **DISC-04**: Agents are marked offline after missing 4 consecutive heartbeats (2-minute timeout at 30s intervals)
+- [x] **DISC-04**: Agents are marked offline after missing 4 consecutive heartbeats (2-minute timeout at 30s intervals)
 - [x] **DISC-05**: Static configuration file defines the 4 known machines (griak-brain, griak-server, griak-worker-1, griak-worker-2)
 
 ### Task Delegation
@@ -36,7 +36,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Status Reporting
 
-- [ ] **STAT-01**: Agents publish heartbeat messages every 30 seconds with status (idle/busy/error)
+- [x] **STAT-01**: Agents publish heartbeat messages every 30 seconds with status (idle/busy/error)
 - [ ] **STAT-02**: Agents publish progress updates when working on long-running tasks
 - [ ] **STAT-03**: Agents publish completion results when tasks finish (success or failure)
 - [ ] **STAT-04**: Minerva maintains real-time view of all agent statuses
@@ -60,9 +60,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Agent Lifecycle
 
-- [ ] **LIFE-01**: Agents start automatically on machine boot via supervisor script
-- [ ] **LIFE-02**: Agents that crash are automatically restarted by supervisor
-- [ ] **LIFE-03**: Agents gracefully shutdown on SIGTERM, completing current task if possible
+- [x] **LIFE-01**: Agents start automatically on machine boot via supervisor script
+- [x] **LIFE-02**: Agents that crash are automatically restarted by supervisor
+- [x] **LIFE-03**: Agents gracefully shutdown on SIGTERM, completing current task if possible
 - [ ] **LIFE-04**: Agent restart preserves in-progress task state via checkpointing
 - [ ] **LIFE-05**: Health check endpoint verifies agent is responsive (not just running)
 
@@ -137,7 +137,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-01 | Phase 1 | Complete |
 | DISC-02 | Phase 1 | Complete |
 | DISC-03 | Phase 1 | Complete |
-| DISC-04 | Phase 2 | Pending |
+| DISC-04 | Phase 2 | Complete |
 | DISC-05 | Phase 1 | Complete |
 | TASK-01 | Phase 3 | Pending |
 | TASK-02 | Phase 3 | Pending |
@@ -145,7 +145,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TASK-04 | Phase 3 | Pending |
 | TASK-05 | Phase 3 | Pending |
 | TASK-06 | Phase 3 | Pending |
-| STAT-01 | Phase 2 | Pending |
+| STAT-01 | Phase 2 | Complete |
 | STAT-02 | Phase 3 | Pending |
 | STAT-03 | Phase 3 | Pending |
 | STAT-04 | Phase 2 | Pending |
@@ -160,9 +160,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERRO-03 | Phase 1 | Complete |
 | ERRO-04 | Phase 3 | Pending |
 | ERRO-05 | Phase 3 | Pending |
-| LIFE-01 | Phase 2 | Pending |
-| LIFE-02 | Phase 2 | Pending |
-| LIFE-03 | Phase 2 | Pending |
+| LIFE-01 | Phase 2 | Complete |
+| LIFE-02 | Phase 2 | Complete |
+| LIFE-03 | Phase 2 | Complete |
 | LIFE-04 | Phase 4 | Pending |
 | LIFE-05 | Phase 2 | Pending |
 | HARD-01 | Phase 1 | Complete |
