@@ -96,8 +96,11 @@ function validateAgentId(agentId: string): void {
 /**
  * MQTT Client interface (minimal for registry operations).
  * This matches the MQTT.js Client interface used in plan 01-01.
+ *
+ * Note: Renamed from MqttClient to avoid collision with communication/mqtt.ts MqttClient class.
+ * This interface defines the subset of MQTT client methods used by the discovery layer.
  */
-export interface MqttClient {
+export interface MqttClientMinimal {
   /**
    * Publish a message to a topic.
    * @param topic - MQTT topic
@@ -138,9 +141,9 @@ export interface MqttClient {
  * - Duplicate detection: Checks if topic already has retained message
  */
 export class AgentDiscovery {
-  private mqtt: MqttClient;
+  private mqtt: MqttClientMinimal;
 
-  constructor(mqttClient: MqttClient) {
+  constructor(mqttClient: MqttClientMinimal) {
     this.mqtt = mqttClient;
   }
 
@@ -208,7 +211,7 @@ export class AgentDiscovery {
  * Loads config and initializes registry.
  */
 export async function createAgentDiscovery(
-  mqttClient: MqttClient,
+  mqttClient: MqttClientMinimal,
   configPath: string = '/home/gr3gg0rk/openclaw-swarm/config/agents.yaml'
 ): Promise<AgentDiscovery> {
   await loadAgentConfig(configPath);

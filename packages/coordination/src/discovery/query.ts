@@ -9,7 +9,8 @@
 
 import type { AgentRegistration, AgentRole } from './types.js';
 import { Topics } from '../communication/topics.js';
-import type { MessageEnvelope, MqttClient } from './registry.js';
+import type { MessageEnvelope } from '../communication/message.js';
+import type { MqttClientMinimal } from './registry.js';
 
 /**
  * Query all available agents from retained messages.
@@ -21,7 +22,7 @@ import type { MessageEnvelope, MqttClient } from './registry.js';
  * @returns Array of agent registrations
  */
 export async function queryAvailableAgents(
-  mqttClient: MqttClient
+  mqttClient: MqttClientMinimal
 ): Promise<AgentRegistration[]> {
   if (!mqttClient.getRetainedMessages) {
     throw new Error('MQTT client does not support retained message queries');
@@ -60,7 +61,7 @@ export async function queryAvailableAgents(
  * @returns Agent registration or null if not found
  */
 export async function getAgentById(
-  mqttClient: MqttClient,
+  mqttClient: MqttClientMinimal,
   agentId: string
 ): Promise<AgentRegistration | null> {
   if (!mqttClient.getRetainedMessages) {
@@ -96,7 +97,7 @@ export async function getAgentById(
  * @returns Array of agent registrations with matching role
  */
 export async function getAgentsByRole(
-  mqttClient: MqttClient,
+  mqttClient: MqttClientMinimal,
   role: AgentRole
 ): Promise<AgentRegistration[]> {
   const allAgents = await queryAvailableAgents(mqttClient);

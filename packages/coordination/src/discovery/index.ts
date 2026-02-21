@@ -11,7 +11,7 @@ export {
   AgentDiscovery,
   loadAgentConfig,
   createAgentDiscovery,
-  type MqttClient,
+  type MqttClientMinimal,
 } from './registry.js';
 
 // Query
