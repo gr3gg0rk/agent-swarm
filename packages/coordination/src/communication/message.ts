@@ -8,7 +8,13 @@
 /**
  * Message type determines routing and processing behavior.
  */
-export type MessageType = 'task' | 'result' | 'heartbeat' | 'error' | 'discovery' | 'status';
+export type MessageType = 'task' | 'result' | 'heartbeat' | 'error' | 'discovery' | 'status' | 'progress' | 'cancel';
+
+/**
+ * Task delegation message types for task execution flow.
+ * These are subtypes of MessageType for task-related messages.
+ */
+export type TaskMessageType = 'task' | 'result' | 'progress' | 'cancel';
 
 /**
  * Standard message envelope for all inter-agent communication.
