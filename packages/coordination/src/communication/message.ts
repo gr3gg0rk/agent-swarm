@@ -8,7 +8,17 @@
 /**
  * Message type determines routing and processing behavior.
  */
-export type MessageType = 'task' | 'result' | 'heartbeat' | 'error' | 'discovery' | 'status' | 'progress' | 'cancel';
+export type MessageType =
+  | 'task'
+  | 'result'
+  | 'heartbeat'
+  | 'error'
+  | 'discovery'
+  | 'status'
+  | 'progress'
+  | 'cancel'
+  | 'guidance_request'
+  | 'guidance_response';
 
 /**
  * Task delegation message types for task execution flow.

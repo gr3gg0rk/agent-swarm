@@ -52,6 +52,12 @@ export const Topics = {
 
   /** Task cancellation to agent (subscribe: worker) - TASK-05 */
   taskCancel: (agentId: string): string => `agent/${agentId}/cancel`,
+
+  /** Guidance request to Minerva (subscribe: orchestrator) - ERRO-05 */
+  guidanceRequest: (): string => 'swarm/guidance/request',
+
+  /** Guidance response from Minerva (subscribe: requesting agent) - ERRO-05 */
+  guidanceResponse: (agentId: string): string => `agent/${agentId}/guidance`,
 } as const;
 
 /**
