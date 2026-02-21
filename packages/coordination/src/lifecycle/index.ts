@@ -12,3 +12,12 @@ export {
   type HeartbeatConfig,
   type AgentHeartbeat,
 } from './heartbeat.js';
+
+// Supervisor
+export {
+  generateSystemdService,
+  installSystemdService,
+  INSTALL_INSTRUCTIONS,
+  SYSTEMD_TEMPLATE,
+  type SupervisorConfig,
+} from './supervisor.js';
