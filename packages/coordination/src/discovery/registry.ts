@@ -124,6 +124,12 @@ export interface MqttClientMinimal {
   ): Promise<void>;
 
   /**
+   * Gracefully disconnect from the broker.
+   * @returns Promise that resolves when disconnected
+   */
+  end(): Promise<void>;
+
+  /**
    * Query retained messages for a topic pattern.
    * Returns array of retained message payloads.
    * Note: This is a simplified interface - actual implementation

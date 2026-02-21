@@ -21,3 +21,10 @@ export {
   SYSTEMD_TEMPLATE,
   type SupervisorConfig,
 } from './supervisor.js';
+
+// Shutdown
+export {
+  GracefulShutdown,
+  createGracefulShutdown,
+  type ShutdownConfig,
+} from './shutdown.js';
