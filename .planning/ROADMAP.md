@@ -9,7 +9,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Communication & Discovery | 3/3 | ✓ Complete | 2026-02-21 |
-| 2. Shared State & Lifecycle | 0/3 | Not started | - |
+| 2. Shared State & Lifecycle | 3/3 | Ready to execute | - |
 | 3. Task Delegation | 0/3 | Not started | - |
 | 4. Error Handling & Recovery | 0/2 | Not started | - |
 
@@ -59,7 +59,10 @@
 4. Agent missing 4 consecutive heartbeats is marked offline
 5. State persists across agent restarts without data loss
 
-**Plans:** TBD
+**Plans:**
+- [ ] 02-01-PLAN.md — SQLite database with WAL mode, REST API for task queue and context storage
+- [ ] 02-02-PLAN.md — Heartbeat monitoring with 4-miss offline detection, systemd service templates, graceful shutdown
+- [ ] 02-03-PLAN.md — Per-agent HTTP health check endpoint with database and MQTT connectivity verification
 
 ---
 
