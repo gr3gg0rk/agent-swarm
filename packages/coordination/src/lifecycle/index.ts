@@ -28,3 +28,11 @@ export {
   createGracefulShutdown,
   type ShutdownConfig,
 } from './shutdown.js';
+
+// Health Check
+export {
+  HealthCheckServer,
+  createHealthCheckServer,
+  type HealthCheckConfig,
+  type HealthStatus,
+} from './health-server.js';
