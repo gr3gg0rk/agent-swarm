@@ -8,14 +8,14 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Communication & Discovery | 3/3 | Ready to execute | - |
+| 1. Communication & Discovery | 3/3 | ✓ Complete | 2026-02-21 |
 | 2. Shared State & Lifecycle | 0/3 | Not started | - |
 | 3. Task Delegation | 0/3 | Not started | - |
 | 4. Error Handling & Recovery | 0/2 | Not started | - |
 
 ## Phases
 
-- [ ] **Phase 1: Communication & Discovery** - Message bus, MQTT implementation, agent registration
+- [x] **Phase 1: Communication & Discovery** ✓ (2026-02-21) - Message bus, MQTT implementation, agent registration
 - [ ] **Phase 2: Shared State & Lifecycle** - State persistence, heartbeat monitoring, agent supervision
 - [ ] **Phase 3: Task Delegation** - Task queue, orchestrator delegation, worker execution
 - [ ] **Phase 4: Error Handling & Recovery** - Retry logic, checkpointing, graceful degradation
@@ -38,9 +38,9 @@
 5. MQTT broker runs on Pi 2B with <10MB RAM footprint
 
 **Plans:**
-- [ ] 01-01-PLAN.md — MQTT message bus with QoS levels and message envelope structure
-- [ ] 01-02-PLAN.md — Agent discovery using retained MQTT messages with duplicate rejection
-- [ ] 01-03-PLAN.md — Idempotency, error logging, and complete example agent
+- [x] 01-01-PLAN.md ✓ — MQTT message bus with QoS levels and message envelope structure
+- [x] 01-02-PLAN.md ✓ — Agent discovery using retained MQTT messages with duplicate rejection
+- [x] 01-03-PLAN.md ✓ — Idempotency, error logging, and complete example agent
 
 ---
 
