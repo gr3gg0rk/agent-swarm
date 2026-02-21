@@ -7,12 +7,10 @@
 export { MqttClient, connectToBroker } from './mqtt.js';
 export type {
   BrokerConfig,
-  MessageEnvelope,
-  MessageType,
   MqttClientEvents,
 } from './mqtt.js';
 
-// Message types
+// Message types (export from message.ts, not mqtt.ts to avoid duplicates)
 export type { MessageType, MessageEnvelope } from './message.js';
 
 // Topic hierarchy and subscriptions

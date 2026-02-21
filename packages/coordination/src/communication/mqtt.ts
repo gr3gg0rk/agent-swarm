@@ -3,10 +3,15 @@
  * Provides reliable message pub/sub with QoS support and MessagePack serialization.
  */
 
-import mqtt, { type Client as MqttClientBase, type IClientOptions } from 'mqtt';
-import EventEmitter3 from 'eventemitter3';
+import mqtt, { type IClientOptions } from 'mqtt';
+import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
+// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
 import { MessagePack } from 'msgpackr';
+import type { MessageEnvelope, MessageType } from './message.js';
+
+// Type for MQTT Client instance
+type MqttClientInstance = ReturnType<typeof mqtt.connect>;
 
 /**
  * Configuration for connecting to the MQTT broker.
@@ -21,38 +26,6 @@ export interface BrokerConfig {
   /** Optional password for authentication */
   password?: string;
 }
-
-/**
- * Message envelope for all inter-agent communication.
- * Provides correlation, idempotency, and routing metadata.
- */
-export interface MessageEnvelope {
-  /** Unique message identifier (UUID) */
-  messageId: string;
-  /** Idempotency key for deduplicating re-deliveries (UUID) */
-  idempotencyKey: string;
-  /** Optional correlation ID linking responses to requests (UUID) */
-  correlationId?: string;
-  /** Sender agent ID */
-  from: string;
-  /** Target agent ID (undefined for broadcast) */
-  to?: string;
-  /** Message type */
-  type: MessageType;
-  /** Unix timestamp in milliseconds */
-  timestamp: number;
-  /** Message payload (MessagePack or JSON) */
-  payload: unknown;
-  /** Override default QoS level */
-  qos?: 0 | 1;
-  /** Whether message should be retained */
-  retain?: boolean;
-}
-
-/**
- * Message types for inter-agent communication.
- */
-export type MessageType = 'task' | 'result' | 'heartbeat' | 'error' | 'discovery' | 'status';
 
 /**
  * Events emitted by MqttClient.
@@ -74,18 +47,19 @@ export interface MqttClientEvents {
  * MQTT client wrapper with auto-reconnect and MessagePack serialization.
  * Wraps MQTT.js client instance with typed events and serialization.
  */
-export class MqttClient extends EventEmitter3<MqttClientEvents> {
-  private client: MqttClientBase;
+export class MqttClient {
+  private client: MqttClientInstance;
   private config: BrokerConfig;
+  private emitter: EventEmitter;
 
   /**
    * Creates a new MQTT client wrapper.
    * @param config - Broker connection configuration
    */
-  private constructor(config: BrokerConfig, client: MqttClientBase) {
-    super();
+  private constructor(config: BrokerConfig, client: MqttClientInstance) {
     this.config = config;
     this.client = client;
+    this.emitter = new EventEmitter();
     this.setupEventListeners();
   }
 
@@ -101,7 +75,6 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
         clean: true,
         connectTimeout: 4000,
         reconnectPeriod: 1000,
-        qos: 1,
         ...(config.username && { username: config.username }),
         ...(config.password && { password: config.password }),
       };
@@ -111,12 +84,12 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
       // Wait for 'connect' event
       client.on('connect', () => {
         const mqttClient = new MqttClient(config, client);
-        mqttClient.emit('connect');
+        mqttClient.emitter.emit('connect');
         resolve(mqttClient);
       });
 
-      client.on('error', (error) => {
-        reject(new Error(`MQTT connection failed: ${error.message}`));
+      client.on('error', (error: Error) => {
+        reject(new Error('MQTT connection failed: ' + error.message));
       });
     });
   }
@@ -125,31 +98,49 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
    * Sets up event listeners on the underlying MQTT client.
    */
   private setupEventListeners(): void {
-    this.client.on('error', (error) => {
-      this.emit('error', error);
+    this.client.on('error', (error: Error) => {
+      this.emitter.emit('error', error);
     });
 
     this.client.on('reconnect', () => {
-      this.emit('reconnect');
+      this.emitter.emit('reconnect');
     });
 
     this.client.on('close', () => {
-      this.emit('close');
+      this.emitter.emit('close');
     });
 
     this.client.on('message', (topic: string, message: Buffer) => {
       try {
         const envelope = MessagePack.decode(message) as MessageEnvelope;
-        this.emit('message', envelope, topic);
+        this.emitter.emit('message', envelope, topic);
       } catch (error) {
-        this.emit('error', error as Error);
+        this.emitter.emit('error', error as Error);
       }
     });
   }
 
   /**
+   * Registers an event listener.
+   * @param event - Event name
+   * @param listener - Event listener
+   */
+  on<K extends keyof MqttClientEvents>(event: K, listener: MqttClientEvents[K]): void {
+    this.emitter.on(event, listener);
+  }
+
+  /**
+   * Removes an event listener.
+   * @param event - Event name
+   * @param listener - Event listener
+   */
+  off<K extends keyof MqttClientEvents>(event: K, listener: MqttClientEvents[K]): void {
+    this.emitter.off(event, listener);
+  }
+
+  /**
    * Publishes a message to a topic.
-   * Uses MessagePack encoding for payloads >1KB per HARD-05.
+   * Uses MessagePack encoding for payloads per HARD-05.
    * @param topic - MQTT topic to publish to
    * @param envelope - Message envelope to publish
    * @returns Promise that resolves when published
@@ -177,9 +168,9 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
         const qos = envelope.qos ?? 1;
         const retain = envelope.retain ?? false;
 
-        this.client.publish(topic, payload, { qos, retain }, (error) => {
+        this.client.publish(topic, payload, { qos, retain }, (error: Error | undefined) => {
           if (error) {
-            reject(new Error(`Publish failed: ${error.message}`));
+            reject(new Error('Publish failed: ' + error.message));
           } else {
             resolve();
           }
@@ -198,9 +189,9 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
    */
   async subscribe(topic: string, qos: 0 | 1 = 1): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.client.subscribe(topic, { qos }, (error) => {
+      this.client.subscribe(topic, { qos }, (error: Error | null) => {
         if (error) {
-          reject(new Error(`Subscription failed: ${error.message}`));
+          reject(new Error('Subscription failed: ' + error.message));
         } else {
           resolve();
         }
@@ -215,9 +206,9 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
    */
   async unsubscribe(topic: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.client.unsubscribe(topic, (error) => {
+      this.client.unsubscribe(topic, (error: Error | undefined) => {
         if (error) {
-          reject(new Error(`Unsubscribe failed: ${error.message}`));
+          reject(new Error('Unsubscribe failed: ' + error.message));
         } else {
           resolve();
         }
@@ -231,9 +222,9 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
    */
   async end(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.client.end(false, {}, (error) => {
+      this.client.end(false, {}, (error: Error | undefined) => {
         if (error) {
-          reject(new Error(`Disconnect failed: ${error.message}`));
+          reject(new Error('Disconnect failed: ' + error.message));
         } else {
           resolve();
         }
@@ -245,7 +236,7 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
    * Gets the underlying MQTT client instance.
    * Use for advanced operations not exposed by this wrapper.
    */
-  getRawClient(): MqttClientBase {
+  getRawClient(): MqttClientInstance {
     return this.client;
   }
 }
@@ -258,6 +249,3 @@ export class MqttClient extends EventEmitter3<MqttClientEvents> {
 export async function connectToBroker(config: BrokerConfig): Promise<MqttClient> {
   return MqttClient.connectToBroker(config);
 }
-
-// Re-export types and utilities for convenience
-export type { BrokerConfig, MessageEnvelope, MessageType, MqttClientEvents };
