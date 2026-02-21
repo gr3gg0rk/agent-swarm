@@ -19,3 +19,6 @@ export * from './lifecycle/index.js';
 
 // Re-export all state management types and functions
 export * from './state/index.js';
+
+// Re-export all REST API types and functions
+export * from './api/index.js';

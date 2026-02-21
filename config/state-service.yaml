@@ -1,0 +1,49 @@
+# OpenClaw Swarm State Service Configuration
+#
+# REST API configuration for the shared state service on griak-brain.
+# Provides HTTP endpoints for task queue, agent status, and project context.
+
+# HTTP server configuration
+server:
+  # Port for the state API (default: 3000)
+  port: 3000
+
+  # Host to bind to (0.0.0.0 for all interfaces)
+  host: "0.0.0.0"
+
+# Database configuration
+database:
+  # Path to the SQLite database file
+  # Stored in /var/lib for persistence across reboots
+  path: /var/lib/openclaw-swarm/state.db
+
+  # WAL mode is enabled for concurrent access
+  walMode: true
+
+  # Cache size in KB (default: 32000 = 32MB)
+  cacheSize: 32000
+
+  # Autocheckpoint threshold in WAL frames
+  walAutocheckpoint: 1000
+
+# CORS configuration for local network access
+cors:
+  enabled: true
+  # Allow local network access (adjust for your network)
+  origins:
+    - "http://localhost:*"
+    - "http://127.0.0.1:*"
+
+# Archive configuration
+archive:
+  # Age threshold for task archiving (days)
+  taskArchiveDays: 7
+
+  # Age threshold for status archiving (days)
+  statusArchiveDays: 30
+
+  # Cron schedule for archive job (daily at 2 AM UTC)
+  cronSchedule: "0 2 * * *"
+
+  # Database size warning threshold (MB)
+  sizeWarningThreshold: 40
