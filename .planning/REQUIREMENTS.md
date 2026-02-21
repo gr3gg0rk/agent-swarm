@@ -64,7 +64,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LIFE-02**: Agents that crash are automatically restarted by supervisor
 - [x] **LIFE-03**: Agents gracefully shutdown on SIGTERM, completing current task if possible
 - [ ] **LIFE-04**: Agent restart preserves in-progress task state via checkpointing
-- [ ] **LIFE-05**: Health check endpoint verifies agent is responsive (not just running)
+- [x] **LIFE-05**: Health check endpoint verifies agent is responsive (not just running)
 
 ### Hardware Constraints
 
@@ -164,7 +164,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIFE-02 | Phase 2 | Complete |
 | LIFE-03 | Phase 2 | Complete |
 | LIFE-04 | Phase 4 | Pending |
-| LIFE-05 | Phase 2 | Pending |
+| LIFE-05 | Phase 2 | Complete |
 | HARD-01 | Phase 1 | Complete |
 | HARD-02 | Phase 1 | Complete |
 | HARD-03 | Phase 2 | Complete |
