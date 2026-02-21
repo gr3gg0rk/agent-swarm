@@ -19,6 +19,7 @@ import type { MessageEnvelope } from '../communication/message.js';
 import type { TaskQueue, Task, TaskCreate } from '../state/task-queue.js';
 import type { TaskRouter, AgentWithCapacity } from './router.js';
 import type { DependencyScheduler } from './dependencies.js';
+import type { RetryManager } from './retry.js';
 import type { AgentRegistration } from '../discovery/types.js';
 
 /**
@@ -80,6 +81,7 @@ export class TaskDelegator {
    * @param taskQueue - Task queue for task status tracking
    * @param router - Task router for role-based agent selection
    * @param dependencyScheduler - Dependency scheduler for validation
+   * @param retryManager - Retry manager for timeout handling
    * @param options - Optional configuration
    */
   constructor(
@@ -87,6 +89,7 @@ export class TaskDelegator {
     private taskQueue: TaskQueue,
     private router: TaskRouter,
     private dependencyScheduler: DependencyScheduler,
+    private retryManager: RetryManager,
     options: TaskDelegatorOptions = {}
   ) {
     this.agents = options.agents ?? [];
@@ -211,6 +214,104 @@ export class TaskDelegator {
   }
 
   /**
+   * Handle task timeout.
+   *
+   * Called by TimeoutMonitor when task times out.
+   * Checks retry count and either schedules retry or notifies Minerva.
+   *
+   * Per CONTEXT.md: Minerva notified after max retries exhausted
+   * Per CONTEXT.md: Default + override (2-minute default timeout)
+   *
+   * @param taskId - Task ID that timed out
+   * @param retryCount - Current retry attempt
+   */
+  async handleTimeout(taskId: string, retryCount: number): Promise<void> {
+    // Get task from queue
+    const task = this.taskQueue.getTask(taskId);
+
+    if (!task) {
+      console.warn(`Task not found for timeout handling: ${taskId}`);
+      return;
+    }
+
+    // Return early if task is no longer in progress
+    if (task.status !== 'in_progress') {
+      console.log(`Task ${taskId} no longer in progress (status: ${task.status}), skipping timeout handling`);
+      return;
+    }
+
+    const maxRetries = task.maxRetries ?? 3;
+
+    // Check if retries remaining
+    if (retryCount <= maxRetries) {
+      // Retries remaining: schedule retry via RetryManager
+      const timeoutError = new Error(`Task timed out after ${task.timeoutMs ?? 120000}ms`);
+      await this.retryManager.scheduleRetry(taskId, timeoutError);
+      console.log(`Task ${taskId} timed out, scheduled retry (${retryCount}/${maxRetries})`);
+    } else {
+      // Retries exhausted: notify Minerva
+      await this.notifyMinerva(taskId, 'timeout', `Task timed out after ${retryCount} retries`);
+    }
+  }
+
+  /**
+   * Notify Minerva of task failure.
+   *
+   * Creates TaskResult with failure details and publishes notification.
+   * Called when task fails after exhausting retries or encounters permanent error.
+   *
+   * Per ERRO-04: Minerva notified when task fails after exhausting retries
+   *
+   * @param taskId - Task ID that failed
+   * @param reason - Failure reason (e.g., 'timeout', 'permanent_error')
+   * @param details - Detailed error message
+   */
+  async notifyMinerva(taskId: string, reason: string, details: string): Promise<void> {
+    // Get task for context
+    const task = this.taskQueue.getTask(taskId);
+
+    // Create failure result
+    const failureResult = {
+      taskId,
+      success: false,
+      error: {
+        type: 'permanent' as const,
+        message: details,
+        reason,
+      },
+      timestamp: Date.now(),
+    };
+
+    // Create notification envelope
+    const envelope: MessageEnvelope = {
+      messageId: uuidv4(),
+      idempotencyKey: uuidv4(),
+      from: 'orchestrator',
+      to: 'minerva',
+      type: 'task_failed',
+      timestamp: Date.now(),
+      payload: {
+        taskId,
+        reason,
+        details,
+        timestamp: Date.now(),
+      },
+      qos: 1,
+      retain: false,
+    };
+
+    // Publish to task result topic or dedicated failure topic
+    // Using task result topic for now - Minerva subscribes to agent/+/result
+    const topic = task?.assignedAgent
+      ? Topics.taskResult(task.assignedAgent)
+      : 'swarm/tasks/failed';
+
+    await this.mqttClient.publish(topic, envelope);
+
+    console.error(`Notified Minerva of task failure: ${taskId} - ${reason}: ${details}`);
+  }
+
+  /**
    * Publish task command to agent via MQTT.
    *
    * Creates MessageEnvelope with task details and publishes to
@@ -282,6 +383,7 @@ export class TaskDelegator {
  * @param taskQueue - Task queue for task status tracking
  * @param router - Task router for role-based agent selection
  * @param dependencyScheduler - Dependency scheduler for validation
+ * @param retryManager - Retry manager for timeout handling
  * @param options - Optional configuration
  * @returns TaskDelegator instance
  */
@@ -290,7 +392,8 @@ export function createTaskDelegator(
   taskQueue: TaskQueue,
   router: TaskRouter,
   dependencyScheduler: DependencyScheduler,
+  retryManager: RetryManager,
   options?: TaskDelegatorOptions
 ): TaskDelegator {
-  return new TaskDelegator(mqttClient, taskQueue, router, dependencyScheduler, options);
+  return new TaskDelegator(mqttClient, taskQueue, router, dependencyScheduler, retryManager, options);
 }
