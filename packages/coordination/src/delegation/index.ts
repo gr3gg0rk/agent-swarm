@@ -2,13 +2,17 @@
  * Task Delegation Module
  *
  * Core infrastructure for task delegation in the OpenClaw Swarm.
- * Provides types, routing, dependency scheduling, and timeout monitoring.
+ * Provides types, routing, dependency scheduling, timeout monitoring,
+ * progress reporting, and task execution.
  *
  * This module enables Minerva to:
  * - Delegate tasks to agents by ID or role (TASK-01, TASK-02)
  * - Track task dependencies using DAG-based scheduling (TASK-06)
  * - Monitor task timeouts with exponential backoff retry (TASK-04, ERRO-01)
  * - Classify errors for retry decisions (ERRO-02)
+ * - Receive progress updates from workers (STAT-02)
+ * - Receive completion results from workers (STAT-03)
+ * - Cancel in-progress tasks (TASK-05)
  *
  * @see 03-RESEARCH.md for architecture patterns
  * @see 03-CONTEXT.md for implementation decisions
@@ -58,3 +62,35 @@ export {
   type ErrorType,
   createTimeoutMonitor,
 } from './timeout.js';
+
+// Export progress reporter
+export {
+  ProgressReporter,
+  type ProgressReporterOptions,
+  createProgressReporter,
+} from './progress.js';
+
+// Export task delegator
+export {
+  TaskDelegator,
+  type TaskDelegatorOptions,
+  type TaskCommandEnvelope,
+  createTaskDelegator,
+} from './delegator.js';
+
+// Export worker task executor
+export {
+  WorkerTaskExecutor,
+  type WorkerTaskExecutorOptions,
+  type TaskResultPayload,
+  type TaskCancelPayload,
+  type ProgressCallback,
+  createWorkerTaskExecutor,
+} from './worker.js';
+
+// Export task cancellation
+export {
+  TaskCancellation,
+  type TaskCancelPayload as CancellationPayload,
+  createTaskCancellation,
+} from './cancellation.js';
