@@ -27,12 +27,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Task Delegation
 
-- [ ] **TASK-01**: Minerva can delegate a task to a specific agent by agent ID
-- [ ] **TASK-02**: Minerva can delegate a task to any agent with a specific role (e.g., "builder", "debugger")
+- [x] **TASK-01**: Minerva can delegate a task to a specific agent by agent ID
+- [x] **TASK-02**: Minerva can delegate a task to any agent with a specific role (e.g., "builder", "debugger")
 - [ ] **TASK-03**: Tasks include unique IDs, capability requirements, priority, and context
 - [ ] **TASK-04**: Tasks have explicit timeout values (default 2 minutes) that trigger escalation
 - [ ] **TASK-05**: Minerva can cancel in-progress tasks and workers acknowledge cancellation
-- [ ] **TASK-06**: Task dependencies are tracked (Task B depends on Task A completing first)
+- [x] **TASK-06**: Task dependencies are tracked (Task B depends on Task A completing first)
 
 ### Status Reporting
 
@@ -139,12 +139,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-03 | Phase 1 | Complete |
 | DISC-04 | Phase 2 | Complete |
 | DISC-05 | Phase 1 | Complete |
-| TASK-01 | Phase 3 | Pending |
-| TASK-02 | Phase 3 | Pending |
+| TASK-01 | Phase 3 | Complete |
+| TASK-02 | Phase 3 | Complete |
 | TASK-03 | Phase 3 | Pending |
 | TASK-04 | Phase 3 | Pending |
 | TASK-05 | Phase 3 | Pending |
-| TASK-06 | Phase 3 | Pending |
+| TASK-06 | Phase 3 | Complete |
 | STAT-01 | Phase 2 | Complete |
 | STAT-02 | Phase 3 | Pending |
 | STAT-03 | Phase 3 | Pending |
