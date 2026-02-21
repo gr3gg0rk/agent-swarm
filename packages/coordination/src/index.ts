@@ -7,3 +7,9 @@
 
 // Re-export all communication layer types and functions
 export * from './communication/index.js';
+
+// Re-export all discovery layer types and functions
+export * from './discovery/index.js';
+
+// Re-export all error handling types and functions
+export * from './errors/index.js';

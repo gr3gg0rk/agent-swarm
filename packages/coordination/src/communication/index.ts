@@ -15,3 +15,11 @@ export type { MessageType, MessageEnvelope } from './message.js';
 
 // Topic hierarchy and subscriptions
 export { Topics, Subscriptions } from './topics.js';
+
+// Message codec
+export {
+  shouldUseMessagePack,
+  encodeMessage,
+  decodeMessage,
+  getMessageSize,
+} from './codec.js';

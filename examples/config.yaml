@@ -1,0 +1,19 @@
+# Example Agent Configuration
+# Demonstrates Phase 1 features: discovery, messaging, idempotency, error logging
+
+# Agent identification
+agentId: minerva
+role: orchestrator
+
+# MQTT broker connection
+brokerUrl: mqtt://griak-brain:1883
+
+# Agent capabilities (for task routing)
+capabilities:
+  - code
+  - test
+  - debug
+  - plan
+
+# Heartbeat settings
+heartbeatInterval: 30000  # 30 seconds per COMM-07
