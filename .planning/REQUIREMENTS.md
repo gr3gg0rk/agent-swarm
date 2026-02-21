@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Communication
 
-- [ ] **COMM-01**: Agents can discover each other across machines using MQTT retained messages
+- [x] **COMM-01**: Agents can discover each other across machines using MQTT retained messages
 - [x] **COMM-02**: Agents can send messages to specific agents by ID using MQTT pub/sub
 - [ ] **COMM-03**: Agents can broadcast status updates to all interested parties via MQTT topics
 - [ ] **COMM-04**: All task-related messages use idempotency keys (UUIDs) to prevent duplicate processing
@@ -19,11 +19,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Agent Discovery
 
-- [ ] **DISC-01**: Agents register themselves on startup with their ID, role, and capabilities
-- [ ] **DISC-02**: Minerva can query which agents are currently available and their capabilities
-- [ ] **DISC-03**: Agent registration is persisted in retained MQTT messages for crash recovery
+- [x] **DISC-01**: Agents register themselves on startup with their ID, role, and capabilities
+- [x] **DISC-02**: Minerva can query which agents are currently available and their capabilities
+- [x] **DISC-03**: Agent registration is persisted in retained MQTT messages for crash recovery
 - [ ] **DISC-04**: Agents are marked offline after missing 4 consecutive heartbeats (2-minute timeout at 30s intervals)
-- [ ] **DISC-05**: Static configuration file defines the 4 known machines (griak-brain, griak-server, griak-worker-1, griak-worker-2)
+- [x] **DISC-05**: Static configuration file defines the 4 known machines (griak-brain, griak-server, griak-worker-1, griak-worker-2)
 
 ### Task Delegation
 
@@ -127,18 +127,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COMM-01 | Phase 1 | Pending |
+| COMM-01 | Phase 1 | Complete |
 | COMM-02 | Phase 1 | Complete |
 | COMM-03 | Phase 1 | Pending |
 | COMM-04 | Phase 1 | Pending |
 | COMM-05 | Phase 1 | Complete |
 | COMM-06 | Phase 1 | Complete |
 | COMM-07 | Phase 1 | Complete |
-| DISC-01 | Phase 1 | Pending |
-| DISC-02 | Phase 1 | Pending |
-| DISC-03 | Phase 1 | Pending |
+| DISC-01 | Phase 1 | Complete |
+| DISC-02 | Phase 1 | Complete |
+| DISC-03 | Phase 1 | Complete |
 | DISC-04 | Phase 2 | Pending |
-| DISC-05 | Phase 1 | Pending |
+| DISC-05 | Phase 1 | Complete |
 | TASK-01 | Phase 3 | Pending |
 | TASK-02 | Phase 3 | Pending |
 | TASK-03 | Phase 3 | Pending |
