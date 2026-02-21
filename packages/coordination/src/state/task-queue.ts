@@ -5,42 +5,30 @@
  * Supports concurrent access from multiple agents via WAL mode.
  *
  * Per RESEARCH.md Pattern 2 (Heartbeat) and STATE-02 (task queue).
+ * Extended with delegation fields per Phase 3: Task Delegation.
  */
 
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
+import type { Task as DelegationTask, TaskCreate as DelegationTaskCreate, TaskProgress } from '../delegation/types.js';
 
 /**
  * Task status enumeration.
  */
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
 
 /**
  * Task record from database.
+ *
+ * Re-exports Task from delegation/types.ts for extended fields:
+ * - dependencies, timeoutMs, retryCount, maxRetries, lastProgressAt, resultPayload, errorType
  */
-export interface Task {
-  /** Unique task ID (UUID) */
-  id: string;
-  /** Current task status */
-  status: TaskStatus;
-  /** Task priority (higher = more important) */
-  priority: number;
-  /** Agent ID assigned to this task (if any) */
-  assignedAgent?: string;
-  /** Creation timestamp (Unix seconds) */
-  createdAt: number;
-  /** Last update timestamp (Unix seconds) */
-  updatedAt: number;
-  /** Completion timestamp (if completed) */
-  completedAt?: number;
-  /** Optional task payload (JSON string) */
-  payload?: string;
-}
+export type Task = DelegationTask;
 
 /**
  * Task creation parameters (without auto-generated fields).
  */
-export type TaskCreate = Omit<Task, 'id' | 'createdAt' | 'updatedAt'>;
+export type TaskCreate = DelegationTaskCreate;
 
 /**
  * Task filter for query operations.
@@ -67,17 +55,25 @@ export class TaskQueue {
   private updateStatusStmt: Database.Statement;
   private assignStmt: Database.Statement;
   private deleteStmt: Database.Statement;
+  private updateRetryStmt: Database.Statement;
+  private updateProgressStmt: Database.Statement;
 
   constructor(db: Database.Database) {
     // Prepare all statements once for reuse
     this.insertStmt = db.prepare(`
-      INSERT INTO tasks (id, status, priority, assigned_agent, created_at, updated_at, completed_at, payload)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO tasks (
+        id, status, priority, assigned_agent, created_at, updated_at, completed_at, payload,
+        dependencies, timeout_ms, retry_count, max_retries, last_progress_at, result_payload, error_type
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     this.selectStmt = db.prepare(`
-      SELECT id, status, priority, assigned_agent as assignedAgent, created_at as createdAt,
-             updated_at as updatedAt, completed_at as completedAt, payload
+      SELECT id, status, priority, assigned_agent as assignedAgent,
+             created_at as createdAt, updated_at as updatedAt, completed_at as completedAt,
+             payload, dependencies, timeout_ms as timeoutMs, retry_count as retryCount,
+             max_retries as maxRetries, last_progress_at as lastProgressAt,
+             result_payload as resultPayload, error_type as errorType
       FROM tasks
       WHERE 1=1
         AND (?1 IS NULL OR status = ?1)
@@ -87,8 +83,11 @@ export class TaskQueue {
     `);
 
     this.selectByIdStmt = db.prepare(`
-      SELECT id, status, priority, assigned_agent as assignedAgent, created_at as createdAt,
-             updated_at as updatedAt, completed_at as completedAt, payload
+      SELECT id, status, priority, assigned_agent as assignedAgent,
+             created_at as createdAt, updated_at as updatedAt, completed_at as completedAt,
+             payload, dependencies, timeout_ms as timeoutMs, retry_count as retryCount,
+             max_retries as maxRetries, last_progress_at as lastProgressAt,
+             result_payload as resultPayload, error_type as errorType
       FROM tasks
       WHERE id = ?
     `);
@@ -96,7 +95,8 @@ export class TaskQueue {
     this.updateStatusStmt = db.prepare(`
       UPDATE tasks
       SET status = ?, updated_at = ?, completed_at = ?,
-          assigned_agent = COALESCE(?, assigned_agent)
+          assigned_agent = COALESCE(?, assigned_agent),
+          error_type = COALESCE(?, error_type)
       WHERE id = ?
     `);
 
@@ -110,10 +110,24 @@ export class TaskQueue {
       DELETE FROM tasks
       WHERE id = ?
     `);
+
+    this.updateRetryStmt = db.prepare(`
+      UPDATE tasks
+      SET retry_count = ?, updated_at = ?
+      WHERE id = ?
+    `);
+
+    this.updateProgressStmt = db.prepare(`
+      UPDATE tasks
+      SET last_progress_at = ?, updated_at = ?
+      WHERE id = ?
+    `);
   }
 
   /**
    * Create a new task in the queue.
+   *
+   * Supports extended task fields for delegation: dependencies, timeoutMs, maxRetries.
    *
    * @param task - Task data (without id, createdAt, updatedAt)
    * @returns Created task with generated ID
@@ -121,6 +135,9 @@ export class TaskQueue {
   createTask(task: TaskCreate): Task {
     const id = uuidv4();
     const now = Math.floor(Date.now() / 1000);
+
+    // Serialize dependencies array to JSON
+    const dependenciesJson = task.dependencies ? JSON.stringify(task.dependencies) : null;
 
     const result = this.insertStmt.run(
       id,
@@ -130,7 +147,14 @@ export class TaskQueue {
       now,
       now,
       task.completedAt || null,
-      task.payload || null
+      task.payload || null,
+      dependenciesJson,
+      task.timeoutMs || null,
+      task.retryCount || 0,
+      task.maxRetries || 3,
+      task.lastProgressAt || null,
+      task.resultPayload || null,
+      task.errorType || null
     );
 
     if (result.changes === 0) {
@@ -148,6 +172,19 @@ export class TaskQueue {
    */
   getTask(taskId: string): Task | null {
     const result = this.selectByIdStmt.get(taskId) as Task | undefined;
+    if (!result) {
+      return null;
+    }
+
+    // Parse dependencies from JSON
+    if (result.dependencies && typeof result.dependencies === 'string') {
+      try {
+        (result as any).dependencies = JSON.parse(result.dependencies);
+      } catch {
+        // If parsing fails, leave as string
+      }
+    }
+
     return result || null;
   }
 
@@ -166,23 +203,47 @@ export class TaskQueue {
       filter.agentId || null,
       limit
     ) as Task[];
-    return result;
+
+    // Parse dependencies from JSON for each task
+    return result.map(task => {
+      if (task.dependencies && typeof task.dependencies === 'string') {
+        try {
+          (task as any).dependencies = JSON.parse(task.dependencies);
+        } catch {
+          // If parsing fails, leave as string
+        }
+      }
+      return task;
+    });
   }
 
   /**
    * Update task status.
    *
-   * Optionally also updates the assigned agent.
+   * Optionally also updates the assigned agent and error type.
    *
    * @param taskId - Task ID
    * @param status - New status
    * @param assignedAgent - Optional new assigned agent
+   * @param errorType - Optional error type classification
    */
-  updateTaskStatus(taskId: string, status: TaskStatus, assignedAgent?: string): void {
+  updateTaskStatus(
+    taskId: string,
+    status: TaskStatus,
+    assignedAgent?: string,
+    errorType?: 'transient' | 'permanent'
+  ): void {
     const now = Math.floor(Date.now() / 1000);
-    const completedAt = status === 'completed' || status === 'failed' ? now : null;
+    const completedAt = status === 'completed' || status === 'failed' || status === 'cancelled' ? now : null;
 
-    const result = this.updateStatusStmt.run(status, now, completedAt, assignedAgent || null, taskId);
+    const result = this.updateStatusStmt.run(
+      status,
+      now,
+      completedAt,
+      assignedAgent || null,
+      errorType || null,
+      taskId
+    );
     if (result.changes === 0) {
       throw new Error(`Task not found: ${taskId}`);
     }
@@ -235,6 +296,38 @@ export class TaskQueue {
   getTaskCount(status?: TaskStatus): number {
     const tasks = this.getTasks({ status, limit: 100000 });
     return tasks.length;
+  }
+
+  /**
+   * Update task retry count.
+   *
+   * Used by timeout monitor to track retry attempts.
+   *
+   * @param taskId - Task ID
+   * @param retryCount - New retry count
+   */
+  updateTaskRetry(taskId: string, retryCount: number): void {
+    const now = Math.floor(Date.now() / 1000);
+    const result = this.updateRetryStmt.run(retryCount, now, taskId);
+    if (result.changes === 0) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+  }
+
+  /**
+   * Update task progress timestamp.
+   *
+   * Called by workers to indicate activity on long-running tasks.
+   *
+   * @param taskId - Task ID
+   * @param progressData - Progress update data
+   */
+  updateTaskProgress(taskId: string, progressData: TaskProgress): void {
+    const now = Math.floor(Date.now() / 1000);
+    const result = this.updateProgressStmt.run(progressData.timestamp, now, taskId);
+    if (result.changes === 0) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
   }
 }
 

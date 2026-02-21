@@ -40,6 +40,18 @@ export const Topics = {
 
   /** Agent heartbeat topic (STAT-01) */
   agentHeartbeat: (agentId: string): string => `agent/${agentId}/heartbeat`,
+
+  /** Task command to agent (subscribe: worker) - TASK-01 */
+  taskCommand: (agentId: string): string => `agent/${agentId}/command`,
+
+  /** Task result from agent (subscribe: orchestrator) - TASK-03 */
+  taskResult: (agentId: string): string => `agent/${agentId}/result`,
+
+  /** Task progress from agent (subscribe: orchestrator) - STAT-02 */
+  taskProgress: (agentId: string): string => `agent/${agentId}/progress`,
+
+  /** Task cancellation to agent (subscribe: worker) - TASK-05 */
+  taskCancel: (agentId: string): string => `agent/${agentId}/cancel`,
 } as const;
 
 /**
@@ -49,6 +61,12 @@ export const Subscriptions = {
   /** All worker results (orchestrator subscribes here) */
   allWorkersResults: 'agent/+/result',
 
+  /** All worker progress (orchestrator subscribes here) */
+  allWorkersProgress: 'agent/+/progress',
+
+  /** All worker commands (for debugging/testing) */
+  allWorkerCommands: 'agent/+/command',
+
   /** Worker's own command channel */
   workerCommands: (agentId: string): string => `agent/${agentId}/command`,
 
@@ -57,4 +75,22 @@ export const Subscriptions = {
 
   /** All agent registrations (retained messages) */
   agentStates: 'swarm/agents/#',
+} as const;
+
+/**
+ * Task delegation subscription patterns for wildcard topic matching.
+ * Used for subscribing to task-related messages from all agents.
+ */
+export const TaskDelegationPatterns = {
+  /** All task commands (for monitoring) */
+  allCommands: 'agent/+/command',
+
+  /** All task results (orchestrator subscribes here) */
+  allResults: 'agent/+/result',
+
+  /** All task progress (orchestrator subscribes here) */
+  allProgress: 'agent/+/progress',
+
+  /** All task cancellations (for monitoring) */
+  allCancels: 'agent/+/cancel',
 } as const;

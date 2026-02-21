@@ -62,6 +62,49 @@ export function initializeSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at)
   `);
 
+  // Add new columns for task delegation (Phase 3)
+  // Using ALTER TABLE for backward compatibility with existing databases
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN dependencies TEXT`);
+  } catch {
+    // Column already exists, ignore error
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN timeout_ms INTEGER`);
+  } catch {
+    // Column already exists, ignore error
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN retry_count INTEGER DEFAULT 0`);
+  } catch {
+    // Column already exists, ignore error
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN max_retries INTEGER DEFAULT 3`);
+  } catch {
+    // Column already exists, ignore error
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN last_progress_at INTEGER`);
+  } catch {
+    // Column already exists, ignore error
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN result_payload TEXT`);
+  } catch {
+    // Column already exists, ignore error
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN error_type TEXT CHECK(error_type IN ('transient', 'permanent'))`);
+  } catch {
+    // Column already exists, ignore error
+  }
+
+  // Add index for last_progress_at (for progress tracking queries)
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_tasks_progress ON tasks(last_progress_at)
+  `);
+
   // Create agent_status table
   db.exec(`
     CREATE TABLE IF NOT EXISTS agent_status (
