@@ -4,7 +4,7 @@
  */
 
 import mqtt, { type Client as MqttClientBase, type IClientOptions } from 'mqtt';
-import { EventEmitter3 } from 'eventemitter3';
+import EventEmitter3 from 'eventemitter3';
 import { v4 as uuidv4 } from 'uuid';
 import { MessagePack } from 'msgpackr';
 

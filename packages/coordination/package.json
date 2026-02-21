@@ -2,6 +2,7 @@
   "name": "@openclaw-swarm/coordination",
   "version": "0.1.0",
   "type": "module",
+  "description": "Lightweight agent coordination layer for OpenClaw Swarm",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -10,18 +11,34 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "dependencies": {
-    "mqtt": "^5.0.0",
-    "uuid": "^11.0.0",
-    "msgpackr": "^0.6.0",
-    "eventemitter3": "^6.0.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^22.19.11"
-  },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
-  }
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mqtt",
+    "swarm",
+    "agent",
+    "coordination",
+    "discovery"
+  ],
+  "dependencies": {
+    "eventemitter3": "^5.0.4",
+    "mqtt": "^5.0.0",
+    "msgpackr": "^0.6.0",
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.11",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ]
 }
