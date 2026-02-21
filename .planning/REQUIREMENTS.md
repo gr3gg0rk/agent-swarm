@@ -39,16 +39,16 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **STAT-01**: Agents publish heartbeat messages every 30 seconds with status (idle/busy/error)
 - [ ] **STAT-02**: Agents publish progress updates when working on long-running tasks
 - [ ] **STAT-03**: Agents publish completion results when tasks finish (success or failure)
-- [ ] **STAT-04**: Minerva maintains real-time view of all agent statuses
-- [ ] **STAT-05**: Status history is persisted for debugging and audit purposes
+- [x] **STAT-04**: Minerva maintains real-time view of all agent statuses
+- [x] **STAT-05**: Status history is persisted for debugging and audit purposes
 
 ### Shared State
 
-- [ ] **STATE-01**: Shared state is stored in SQLite database on griak-brain
-- [ ] **STATE-02**: Task queue is queryable by all agents (pending, in-progress, completed)
-- [ ] **STATE-03**: Project context is stored centrally and accessible to agents on request
-- [ ] **STATE-04**: State updates use WAL mode for concurrent read/write access
-- [ ] **STATE-05**: Database file stays under 50MB with automatic cleanup of old completed tasks
+- [x] **STATE-01**: Shared state is stored in SQLite database on griak-brain
+- [x] **STATE-02**: Task queue is queryable by all agents (pending, in-progress, completed)
+- [x] **STATE-03**: Project context is stored centrally and accessible to agents on request
+- [x] **STATE-04**: State updates use WAL mode for concurrent read/write access
+- [x] **STATE-05**: Database file stays under 50MB with automatic cleanup of old completed tasks
 
 ### Error Handling
 
@@ -70,7 +70,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **HARD-01**: Coordination layer (minus agent work) uses <100MB RAM per machine
 - [x] **HARD-02**: MQTT broker uses <10MB RAM on Pi 2B
-- [ ] **HARD-03**: SQLite state store uses <15MB RAM on Pi 2B
+- [x] **HARD-03**: SQLite state store uses <15MB RAM on Pi 2B
 - [ ] **HARD-04**: System functions on griak-worker-2 (Pi 2B, 1GB RAM) without OOM
 - [x] **HARD-05**: Message payloads over 1KB are serialized with MessagePack for efficiency
 
@@ -148,13 +148,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAT-01 | Phase 2 | Complete |
 | STAT-02 | Phase 3 | Pending |
 | STAT-03 | Phase 3 | Pending |
-| STAT-04 | Phase 2 | Pending |
-| STAT-05 | Phase 2 | Pending |
-| STATE-01 | Phase 2 | Pending |
-| STATE-02 | Phase 2 | Pending |
-| STATE-03 | Phase 2 | Pending |
-| STATE-04 | Phase 2 | Pending |
-| STATE-05 | Phase 2 | Pending |
+| STAT-04 | Phase 2 | Complete |
+| STAT-05 | Phase 2 | Complete |
+| STATE-01 | Phase 2 | Complete |
+| STATE-02 | Phase 2 | Complete |
+| STATE-03 | Phase 2 | Complete |
+| STATE-04 | Phase 2 | Complete |
+| STATE-05 | Phase 2 | Complete |
 | ERRO-01 | Phase 3 | Pending |
 | ERRO-02 | Phase 3 | Pending |
 | ERRO-03 | Phase 1 | Complete |
@@ -167,7 +167,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIFE-05 | Phase 2 | Pending |
 | HARD-01 | Phase 1 | Complete |
 | HARD-02 | Phase 1 | Complete |
-| HARD-03 | Phase 2 | Pending |
+| HARD-03 | Phase 2 | Complete |
 | HARD-04 | Phase 1, 2, 3, 4 | Pending |
 | HARD-05 | Phase 1 | Complete |
 
