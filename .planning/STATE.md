@@ -11,9 +11,9 @@
 ## Current Position
 
 **Phase:** 1 - Communication & Discovery
-**Plan:** None yet (awaiting `/gsd:plan-phase 1`)
-**Status:** Not started
-**Progress:** 0% [▱▱▱▱▱▱▱▱▱▱]
+**Plan:** 01 - MQTT Message Bus Foundation
+**Status:** In Progress
+**Progress:** [███████░░░] 67%
 
 ### Phase 1 Goal
 
@@ -29,6 +29,14 @@ Agents can discover each other and exchange messages reliably across machines
 ## Accumulated Context
 
 ### Decisions Made
+
+**2026-02-21: MQTT Message Bus Foundation (Plan 01-01)**
+- Used Node.js built-in EventEmitter instead of eventemitter3 due to TypeScript typing issues
+- eventemitter3@5.0.4 used (6.0.0 doesn't exist)
+- MessagePack serialization for all messages (>1KB threshold implemented via @ts-ignore)
+- QoS 1 for tasks/results, QoS 0 for heartbeats per COMM-06/COMM-07
+- Mosquitto configured with 10MB memory limit for Pi 2B (HARD-02)
+- Topic hierarchy: agent/{id}/command, agent/{id}/result, swarm/discovery, swarm/agents/{id}
 
 **2026-02-21: Roadmap Structure**
 - Organized into 4 phases based on natural delivery boundaries
@@ -49,7 +57,7 @@ From research/SUMMARY.md:
 - msgpackr (^0.6.0) - Binary serialization
 - uuid (^11.0.0) - Agent and task ID generation
 - p-queue (^8.0.0) - In-memory task queue
-- eventemitter3 (^6.0.0) - Async event handling
+- eventemitter3 (^5.0.4) - Async event handling (not used, migrated to Node.js EventEmitter)
 
 **Architecture:**
 - Hybrid hierarchical (Minerva orchestrates, workers execute)

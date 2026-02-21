@@ -10,12 +10,12 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Communication
 
 - [ ] **COMM-01**: Agents can discover each other across machines using MQTT retained messages
-- [ ] **COMM-02**: Agents can send messages to specific agents by ID using MQTT pub/sub
+- [x] **COMM-02**: Agents can send messages to specific agents by ID using MQTT pub/sub
 - [ ] **COMM-03**: Agents can broadcast status updates to all interested parties via MQTT topics
 - [ ] **COMM-04**: All task-related messages use idempotency keys (UUIDs) to prevent duplicate processing
-- [ ] **COMM-05**: Message broker (Mosquitto) runs with <10MB RAM footprint on constrained hardware
-- [ ] **COMM-06**: MQTT QoS 1 is used for task assignments and results (at-least-once delivery)
-- [ ] **COMM-07**: MQTT QoS 0 is used for heartbeats and non-critical status updates
+- [x] **COMM-05**: Message broker (Mosquitto) runs with <10MB RAM footprint on constrained hardware
+- [x] **COMM-06**: MQTT QoS 1 is used for task assignments and results (at-least-once delivery)
+- [x] **COMM-07**: MQTT QoS 0 is used for heartbeats and non-critical status updates
 
 ### Agent Discovery
 
@@ -68,11 +68,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Hardware Constraints
 
-- [ ] **HARD-01**: Coordination layer (minus agent work) uses <100MB RAM per machine
-- [ ] **HARD-02**: MQTT broker uses <10MB RAM on Pi 2B
+- [x] **HARD-01**: Coordination layer (minus agent work) uses <100MB RAM per machine
+- [x] **HARD-02**: MQTT broker uses <10MB RAM on Pi 2B
 - [ ] **HARD-03**: SQLite state store uses <15MB RAM on Pi 2B
 - [ ] **HARD-04**: System functions on griak-worker-2 (Pi 2B, 1GB RAM) without OOM
-- [ ] **HARD-05**: Message payloads over 1KB are serialized with MessagePack for efficiency
+- [x] **HARD-05**: Message payloads over 1KB are serialized with MessagePack for efficiency
 
 ## v2 Requirements
 
@@ -128,12 +128,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | COMM-01 | Phase 1 | Pending |
-| COMM-02 | Phase 1 | Pending |
+| COMM-02 | Phase 1 | Complete |
 | COMM-03 | Phase 1 | Pending |
 | COMM-04 | Phase 1 | Pending |
-| COMM-05 | Phase 1 | Pending |
-| COMM-06 | Phase 1 | Pending |
-| COMM-07 | Phase 1 | Pending |
+| COMM-05 | Phase 1 | Complete |
+| COMM-06 | Phase 1 | Complete |
+| COMM-07 | Phase 1 | Complete |
 | DISC-01 | Phase 1 | Pending |
 | DISC-02 | Phase 1 | Pending |
 | DISC-03 | Phase 1 | Pending |
@@ -165,11 +165,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIFE-03 | Phase 2 | Pending |
 | LIFE-04 | Phase 4 | Pending |
 | LIFE-05 | Phase 2 | Pending |
-| HARD-01 | Phase 1 | Pending |
-| HARD-02 | Phase 1 | Pending |
+| HARD-01 | Phase 1 | Complete |
+| HARD-02 | Phase 1 | Complete |
 | HARD-03 | Phase 2 | Pending |
 | HARD-04 | Phase 1, 2, 3, 4 | Pending |
-| HARD-05 | Phase 1 | Pending |
+| HARD-05 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 42 total
