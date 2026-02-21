@@ -1,0 +1,181 @@
+# Requirements: OpenClaw Swarm
+
+**Defined:** 2026-02-21
+**Core Value:** Minerva can assign a task to any agent in the swarm and get a result back
+
+## v1 Requirements
+
+Requirements for initial release. Each maps to roadmap phases.
+
+### Communication
+
+- [ ] **COMM-01**: Agents can discover each other across machines using MQTT retained messages
+- [ ] **COMM-02**: Agents can send messages to specific agents by ID using MQTT pub/sub
+- [ ] **COMM-03**: Agents can broadcast status updates to all interested parties via MQTT topics
+- [ ] **COMM-04**: All task-related messages use idempotency keys (UUIDs) to prevent duplicate processing
+- [ ] **COMM-05**: Message broker (Mosquitto) runs with <10MB RAM footprint on constrained hardware
+- [ ] **COMM-06**: MQTT QoS 1 is used for task assignments and results (at-least-once delivery)
+- [ ] **COMM-07**: MQTT QoS 0 is used for heartbeats and non-critical status updates
+
+### Agent Discovery
+
+- [ ] **DISC-01**: Agents register themselves on startup with their ID, role, and capabilities
+- [ ] **DISC-02**: Minerva can query which agents are currently available and their capabilities
+- [ ] **DISC-03**: Agent registration is persisted in retained MQTT messages for crash recovery
+- [ ] **DISC-04**: Agents are marked offline after missing 4 consecutive heartbeats (2-minute timeout at 30s intervals)
+- [ ] **DISC-05**: Static configuration file defines the 4 known machines (griak-brain, griak-server, griak-worker-1, griak-worker-2)
+
+### Task Delegation
+
+- [ ] **TASK-01**: Minerva can delegate a task to a specific agent by agent ID
+- [ ] **TASK-02**: Minerva can delegate a task to any agent with a specific role (e.g., "builder", "debugger")
+- [ ] **TASK-03**: Tasks include unique IDs, capability requirements, priority, and context
+- [ ] **TASK-04**: Tasks have explicit timeout values (default 2 minutes) that trigger escalation
+- [ ] **TASK-05**: Minerva can cancel in-progress tasks and workers acknowledge cancellation
+- [ ] **TASK-06**: Task dependencies are tracked (Task B depends on Task A completing first)
+
+### Status Reporting
+
+- [ ] **STAT-01**: Agents publish heartbeat messages every 30 seconds with status (idle/busy/error)
+- [ ] **STAT-02**: Agents publish progress updates when working on long-running tasks
+- [ ] **STAT-03**: Agents publish completion results when tasks finish (success or failure)
+- [ ] **STAT-04**: Minerva maintains real-time view of all agent statuses
+- [ ] **STAT-05**: Status history is persisted for debugging and audit purposes
+
+### Shared State
+
+- [ ] **STATE-01**: Shared state is stored in SQLite database on griak-brain
+- [ ] **STATE-02**: Task queue is queryable by all agents (pending, in-progress, completed)
+- [ ] **STATE-03**: Project context is stored centrally and accessible to agents on request
+- [ ] **STATE-04**: State updates use WAL mode for concurrent read/write access
+- [ ] **STATE-05**: Database file stays under 50MB with automatic cleanup of old completed tasks
+
+### Error Handling
+
+- [ ] **ERRO-01**: Failed tasks are automatically retried with exponential backoff (max 3 retries)
+- [ ] **ERRO-02**: Errors are classified as retryable (network timeout) vs abort (invalid input)
+- [ ] **ERRO-03**: All errors are logged with full context (task ID, agent, timestamp, stack trace)
+- [ ] **ERRO-04**: Minerva is notified when a task fails after exhausting retries
+- [ ] **ERRO-05**: Agents can request guidance from Minerva when encountering ambiguous situations
+
+### Agent Lifecycle
+
+- [ ] **LIFE-01**: Agents start automatically on machine boot via supervisor script
+- [ ] **LIFE-02**: Agents that crash are automatically restarted by supervisor
+- [ ] **LIFE-03**: Agents gracefully shutdown on SIGTERM, completing current task if possible
+- [ ] **LIFE-04**: Agent restart preserves in-progress task state via checkpointing
+- [ ] **LIFE-05**: Health check endpoint verifies agent is responsive (not just running)
+
+### Hardware Constraints
+
+- [ ] **HARD-01**: Coordination layer (minus agent work) uses <100MB RAM per machine
+- [ ] **HARD-02**: MQTT broker uses <10MB RAM on Pi 2B
+- [ ] **HARD-03**: SQLite state store uses <15MB RAM on Pi 2B
+- [ ] **HARD-04**: System functions on griak-worker-2 (Pi 2B, 1GB RAM) without OOM
+- [ ] **HARD-05**: Message payloads over 1KB are serialized with MessagePack for efficiency
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Advanced Routing
+
+- **ROUT-01**: Agents dynamically declare capabilities at runtime (not just config file)
+- **ROUT-02**: Minerva routes tasks based on agent load (not just availability)
+- **ROUT-03**: Tasks can specify multiple required capabilities (AND logic)
+- **ROUT-04**: Workers can reject tasks if overloaded, triggering reassignment
+
+### Checkpointing
+
+- **CHKP-01**: Agents checkpoint task progress every 60 seconds
+- **CHKP-02**: Checkpoints are stored in shared state for cross-machine recovery
+- **CHKP-03**: Interrupted tasks resume from last checkpoint after agent restart
+- **CHKP-04**: Checkpoint data includes partial results and working context
+
+### Optimization
+
+- **OPTI-01**: Context is shared by reference (IDs) rather than full content
+- **OPTI-02**: Message batching reduces network overhead for high-frequency updates
+- **OPTI-03**: Connection pooling for SQLite reduces concurrent access overhead
+- **OPTI-04**: Memory usage stays under 50MB for coordination layer alone (without agent work)
+
+### Visualization
+
+- **VIS-01**: Web dashboard shows real-time agent status and task queue
+- **VIS-02**: Task progress bars with percentage completion
+- **VIS-03**: Historical task execution timeline
+- **VIS-04**: Agent capability matrix visualization
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Real-time chat between agents | Not core to coordination; adds complexity |
+| Kubernetes orchestration | 512MB RAM minimum; too heavy for Pi 2B |
+| Distributed consensus (Raft/Paxos) | Overkill for 4-machine swarm; single source of truth sufficient |
+| Service mesh (Istio, Linkerd) | Hundreds of MB RAM; YAGNI for 4 agents |
+| Auto-scaling agents | Fixed 4-machine inventory; no dynamic provisioning needed |
+| Cloud-based message broker | Must be fully self-hosted on local machines |
+| gRPC for communication | Heavier than MQTT; protobuf schemas add complexity |
+| Redis for state | 50-100MB+ RAM; SQLite sufficient for v1 scale |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| COMM-01 | Phase 1 | Pending |
+| COMM-02 | Phase 1 | Pending |
+| COMM-03 | Phase 1 | Pending |
+| COMM-04 | Phase 1 | Pending |
+| COMM-05 | Phase 1 | Pending |
+| COMM-06 | Phase 1 | Pending |
+| COMM-07 | Phase 1 | Pending |
+| DISC-01 | Phase 1 | Pending |
+| DISC-02 | Phase 1 | Pending |
+| DISC-03 | Phase 1 | Pending |
+| DISC-04 | Phase 2 | Pending |
+| DISC-05 | Phase 1 | Pending |
+| TASK-01 | Phase 3 | Pending |
+| TASK-02 | Phase 3 | Pending |
+| TASK-03 | Phase 3 | Pending |
+| TASK-04 | Phase 3 | Pending |
+| TASK-05 | Phase 3 | Pending |
+| TASK-06 | Phase 3 | Pending |
+| STAT-01 | Phase 2 | Pending |
+| STAT-02 | Phase 3 | Pending |
+| STAT-03 | Phase 3 | Pending |
+| STAT-04 | Phase 2 | Pending |
+| STAT-05 | Phase 2 | Pending |
+| STATE-01 | Phase 2 | Pending |
+| STATE-02 | Phase 2 | Pending |
+| STATE-03 | Phase 2 | Pending |
+| STATE-04 | Phase 2 | Pending |
+| STATE-05 | Phase 2 | Pending |
+| ERRO-01 | Phase 3 | Pending |
+| ERRO-02 | Phase 3 | Pending |
+| ERRO-03 | Phase 1 | Pending |
+| ERRO-04 | Phase 3 | Pending |
+| ERRO-05 | Phase 3 | Pending |
+| LIFE-01 | Phase 2 | Pending |
+| LIFE-02 | Phase 2 | Pending |
+| LIFE-03 | Phase 2 | Pending |
+| LIFE-04 | Phase 4 | Pending |
+| LIFE-05 | Phase 2 | Pending |
+| HARD-01 | Phase 1 | Pending |
+| HARD-02 | Phase 1 | Pending |
+| HARD-03 | Phase 2 | Pending |
+| HARD-04 | All | Pending |
+| HARD-05 | Phase 1 | Pending |
+
+**Coverage:**
+- v1 requirements: 42 total
+- Mapped to phases: 42
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-02-21*
+*Last updated: 2026-02-21 after initial definition*
