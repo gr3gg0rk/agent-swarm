@@ -13,7 +13,7 @@
 **Phase:** 4 - Error Handling & Recovery (GAP CLOSURE)
 **Plan:** 3 of 3 (IN PROGRESS)
 **Status:** Gap closure - CheckpointManager TaskQueue integration
-**Progress:** [████████░░] 90%
+**Progress:** [██████████] 100%
 
 ### Phase 4 Goal
 
@@ -119,6 +119,9 @@ System handles failures gracefully and recovers from crashes. Agents resume from
 - Error handling fourth (robustness)
 - [Phase 02-shared-state-lifecycle]: Per-agent HTTP health check server with /health endpoint returning 200/503 status codes for monitoring integration
 - [Phase 03]: Task delegation infrastructure with role-based routing, DAG dependencies, exponential backoff timeout
+- [Phase 04-error-handling-recovery]: TaskQueue made optional in CheckpointManagerOptions for backward compatibility
+- [Phase 04-error-handling-recovery]: TaskStatus.paused mapped to CheckpointTaskStatus.idle for checkpointing decisions
+- [Phase 04-error-handling-recovery]: MemoryMonitor.start() moved from constructor to start() method for clear lifecycle
 
 ### Key Technical Decisions
 
@@ -149,7 +152,7 @@ From research/SUMMARY.md:
 
 ### Session Handoff
 
-**Stopped at:** Created Phase 4 Plan 03 - CheckpointManager TaskQueue Integration (gap closure from verification)
+**Stopped at:** Completed 04-03-PLAN.md - Phase 4 complete
 **Resume file:** None
 
 ### Blockers
