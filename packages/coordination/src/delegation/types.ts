@@ -190,3 +190,70 @@ export interface LoadMetrics {
  * Default retry limit (ERRO-01).
  */
 export const DEFAULT_MAX_RETRIES = 3;
+
+/**
+ * Performance record for historical task execution tracking.
+ *
+ * Per ROUT-03: Router uses 30% historical performance in weighted scoring.
+ */
+export interface PerformanceRecord {
+  /** Task ID */
+  taskId: string;
+  /** Agent ID that executed task */
+  agentId: string;
+  /** Whether task succeeded */
+  success: boolean;
+  /** Execution time in milliseconds */
+  executionTime: number;
+  /** Unix timestamp in milliseconds */
+  timestamp: number;
+}
+
+/**
+ * Agent with load metrics for routing decisions.
+ *
+ * Extends AgentWithCapacity with real-time load metrics from retained MQTT messages.
+ */
+export interface AgentWithLoadMetrics extends AgentWithCapacity {
+  /** Current CPU usage percentage (0-100) */
+  cpuPercent: number;
+  /** Current memory usage percentage (0-100) */
+  memoryPercent: number;
+  /** Timestamp of last load metrics update */
+  loadTimestamp: number;
+}
+
+/**
+ * Scoring weights for load-based routing.
+ *
+ * Per ROUT-03: 70% load score + 30% historical performance.
+ */
+export interface ScoringWeights {
+  /** Weight for load score (0-1, default 0.7) */
+  load: number;
+  /** Weight for performance score (0-1, default 0.3) */
+  performance: number;
+  /** CPU weight within load score (0-1, default 0.4) */
+  cpu: number;
+  /** Memory weight within load score (0-1, default 0.4) */
+  memory: number;
+  /** Task ratio weight within load score (0-1, default 0.2) */
+  taskRatio: number;
+  /** Success rate weight within performance score (0-1, default 0.7) */
+  successRate: number;
+  /** Execution time weight within performance score (0-1, default 0.3) */
+  executionTime: number;
+}
+
+/**
+ * Default scoring weights per ROUT-03.
+ */
+export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
+  load: 0.7,
+  performance: 0.3,
+  cpu: 0.4,
+  memory: 0.4,
+  taskRatio: 0.2,
+  successRate: 0.7,
+  executionTime: 0.3,
+};
