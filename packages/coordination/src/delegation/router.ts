@@ -15,8 +15,9 @@
 
 import type { AgentRegistration } from '../discovery/types.js';
 import type { LoadMetrics } from './types.js';
-import type { AgentWithLoadMetrics, ScoringWeights } from './types.js';
+import type { AgentWithLoadMetrics, ScoringWeights, CircuitBreakerState as CircuitBreakerStateType } from './types.js';
 import type { PerformanceStore } from './performance-store.js';
+import type { CircuitBreakerRegistry } from './circuit-breaker.js';
 import { DEFAULT_ROLE_HIERARCHY, DEFAULT_SCORING_WEIGHTS, type RoleHierarchy } from './types.js';
 
 /**
@@ -36,12 +37,8 @@ export interface AgentWithCapacity extends AgentRegistration {
  * Will be implemented in 06-03 (Circuit Breaker).
  * For now, optional in router options.
  */
-export interface CircuitBreakerState {
+export interface CircuitBreakerStateFilter {
   canAcceptTask(): boolean;
-}
-
-export interface CircuitBreakerRegistry {
-  get(agentId: string): CircuitBreakerState | undefined;
 }
 
 /**
@@ -53,7 +50,9 @@ export interface RouterOptions {
   /** Performance store for historical data (optional, for ROUT-03) */
   performanceStore?: PerformanceStore;
   /** Circuit breaker registry (optional, for 06-03) */
-  circuitBreakers?: CircuitBreakerRegistry;
+  circuitBreakers?: {
+    get(agentId: string): CircuitBreakerStateFilter | undefined;
+  };
   /** Custom scoring weights (defaults to DEFAULT_SCORING_WEIGHTS) */
   scoringWeights?: Partial<ScoringWeights>;
 }
@@ -80,7 +79,9 @@ export interface RouterOptions {
 export class TaskRouter {
   private roleHierarchy: RoleHierarchy;
   private performanceStore?: PerformanceStore;
-  private circuitBreakers?: CircuitBreakerRegistry;
+  private circuitBreakers?: {
+    get(agentId: string): CircuitBreakerStateFilter | undefined;
+  };
   private scoringWeights: ScoringWeights;
 
   constructor(options: RouterOptions = {}) {

@@ -14,13 +14,16 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import type { MqttClient } from '../communication/mqtt.js';
-import { Topics } from '../communication/topics.js';
+import { Topics, TaskDelegationPatterns } from '../communication/topics.js';
 import type { MessageEnvelope } from '../communication/message.js';
 import type { TaskQueue, Task, TaskCreate } from '../state/task-queue.js';
 import type { TaskRouter, AgentWithCapacity } from './router.js';
 import type { DependencyScheduler } from './dependencies.js';
 import type { RetryManager } from './retry.js';
 import type { AgentRegistration } from '../discovery/types.js';
+import type { TaskRejectedPayload } from './types.js';
+import type { CircuitBreakerRegistry } from './circuit-breaker.js';
+import type { PerformanceStore } from './performance-store.js';
 
 /**
  * Task delegation options.
@@ -28,6 +31,10 @@ import type { AgentRegistration } from '../discovery/types.js';
 export interface TaskDelegatorOptions {
   /** Available agents for role-based delegation */
   agents?: AgentWithCapacity[];
+  /** Circuit breaker registry for rejection tracking */
+  circuitBreakers?: CircuitBreakerRegistry;
+  /** Performance store for historical task results */
+  performanceStore?: PerformanceStore;
 }
 
 /**
@@ -73,6 +80,8 @@ export interface TaskCommandEnvelope {
  */
 export class TaskDelegator {
   private agents: AgentWithCapacity[];
+  private circuitBreakers?: CircuitBreakerRegistry;
+  private performanceStore?: PerformanceStore;
 
   /**
    * Creates a new task delegator.
@@ -93,6 +102,11 @@ export class TaskDelegator {
     options: TaskDelegatorOptions = {}
   ) {
     this.agents = options.agents ?? [];
+    this.circuitBreakers = options.circuitBreakers;
+    this.performanceStore = options.performanceStore;
+
+    // Set up rejection handler for task_rejected messages
+    this.setupRejectionHandler();
   }
 
   /**
@@ -373,6 +387,212 @@ export class TaskDelegator {
     const topic = Topics.taskCancel(agentId);
 
     await this.mqttClient.publish(topic, envelope);
+  }
+
+  /**
+   * Calculate exponential backoff delay.
+   *
+   * Per ROUT-05: 2^n × 100ms, max 5s.
+   * Adds jitter to prevent thundering herd.
+   *
+   * @param attempt - Retry attempt number (0-indexed)
+   * @returns Delay in milliseconds
+   */
+  private calculateBackoff(attempt: number): number {
+    const baseDelay = 100; // 100ms per ROUT-05
+    const maxDelay = 5000; // 5s cap per ROUT-05
+    const exponentialDelay = baseDelay * Math.pow(2, attempt);
+    const jitter = Math.random() * 100; // 0-100ms jitter
+
+    return Math.min(exponentialDelay + jitter, maxDelay);
+  }
+
+  /**
+   * Sleep for specified milliseconds.
+   *
+   * @param ms - Milliseconds to sleep
+   * @returns Promise that resolves after delay
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Handle task rejection with exponential backoff retry.
+   *
+   * Per ROUT-04: Worker can reject task when overloaded.
+   * Per ROUT-05: Router retries with exponential backoff.
+   * Per ROUT-06: Circuit breaker tracks consecutive rejections.
+   *
+   * @param taskId - Rejected task ID
+   * @param agentId - Agent that rejected the task
+   * @param payload - Rejection payload with CPU/memory metrics
+   * @param attempt - Current retry attempt
+   */
+  private async handleTaskRejection(
+    taskId: string,
+    agentId: string,
+    payload: TaskRejectedPayload,
+    attempt: number
+  ): Promise<void> {
+    console.warn(
+      `Task ${taskId} rejected by ${agentId}: ${payload.reason} ` +
+      `(attempt ${attempt}, CPU: ${payload.cpuPercent}%, Memory: ${payload.memoryPercent}%)`
+    );
+
+    // Record rejection in circuit breaker
+    if (this.circuitBreakers) {
+      this.circuitBreakers.get(agentId).recordRejection();
+    }
+
+    // Check max retry attempts
+    const maxAttempts = 5; // Allow up to 5 retries
+    if (attempt >= maxAttempts) {
+      // Max retries exhausted - notify Minerva
+      await this.notifyMinervaTaskFailed(taskId, agentId, `Max retries exhausted after ${maxAttempts} rejections`);
+      return;
+    }
+
+    // Calculate backoff delay per ROUT-05
+    const delay = this.calculateBackoff(attempt);
+
+    console.log(`Retrying task ${taskId} after ${delay.toFixed(0)}ms delay (attempt ${attempt + 1}/${maxAttempts})`);
+
+    // Wait for backoff delay
+    await this.sleep(delay);
+
+    // Re-select agent and retry
+    await this.retryTask(taskId, attempt + 1);
+  }
+
+  /**
+   * Notify Minerva of task failure.
+   *
+   * @param taskId - Task ID that failed
+   * @param agentId - Agent that failed (optional)
+   * @param details - Failure details
+   */
+  private async notifyMinervaTaskFailed(taskId: string, agentId: string, details: string): Promise<void> {
+    // Get task for context
+    const task = this.taskQueue.getTask(taskId);
+
+    // Create notification envelope
+    const envelope: MessageEnvelope = {
+      messageId: uuidv4(),
+      idempotencyKey: uuidv4(),
+      from: 'orchestrator',
+      to: 'minerva',
+      type: 'task_failed',
+      timestamp: Date.now(),
+      payload: {
+        taskId,
+        agentId,
+        reason: 'retry_exhausted',
+        details,
+        timestamp: Date.now(),
+      },
+      qos: 1,
+      retain: false,
+    };
+
+    // Publish to task result topic or dedicated failure topic
+    const topic = task?.assignedAgent
+      ? Topics.taskResult(task.assignedAgent)
+      : 'swarm/tasks/failed';
+
+    await this.mqttClient.publish(topic, envelope);
+
+    console.error(`Notified Minerva of task failure: ${taskId} - ${details}`);
+  }
+
+  /**
+   * Retry task delegation with new agent selection.
+   *
+   * @param taskId - Task ID to retry
+   * @param attempt - Retry attempt number
+   */
+  private async retryTask(taskId: string, attempt: number): Promise<void> {
+    // Get task from queue
+    const task = this.taskQueue.getTask(taskId);
+    if (!task) {
+      console.warn(`Task ${taskId} not found for retry`);
+      return;
+    }
+
+    // Filter available agents with capacity
+    const availableAgents = this.agents.filter(agent => agent.currentTasks < agent.maxCapacity);
+
+    if (availableAgents.length === 0) {
+      console.error(`No available agents for task ${taskId} retry ${attempt}`);
+      await this.notifyMinervaTaskFailed(taskId, 'none', `No available agents for retry`);
+      return;
+    }
+
+    // Find new agent using router (filters out Open circuit breakers)
+    const targetAgent = this.router.findAgentForTask(
+      availableAgents,
+      task.assignedAgent || 'worker',  // Use required role
+      undefined  // No specific capability required for retry
+    );
+
+    if (!targetAgent) {
+      console.error(`No available agents for task ${taskId} retry ${attempt}`);
+      await this.notifyMinervaTaskFailed(taskId, 'none', `No available agents for retry`);
+      return;
+    }
+
+    // Delegate to new agent
+    await this.publishTaskCommand(targetAgent.agentId, task);
+    console.log(`Task ${taskId} reassigned to ${targetAgent.agentId} for retry ${attempt}`);
+  }
+
+  /**
+   * Subscribe to task rejection and result messages.
+   *
+   * Sets up MQTT listener for task_rejected and result message types.
+   */
+  private setupRejectionHandler(): void {
+    const topicPattern = TaskDelegationPatterns.allResults;  // 'agent/+/result'
+
+    this.mqttClient.on('message', (envelope: MessageEnvelope, receivedTopic: string) => {
+      if (envelope.type === 'task_rejected') {
+        const payload = envelope.payload as TaskRejectedPayload;
+        const agentId = envelope.from;
+
+        // Find retry attempt count from task
+        const task = this.taskQueue.getTask(payload.taskId);
+        const attempt = task?.retryCount ?? 0;
+
+        this.handleTaskRejection(payload.taskId, agentId, payload, attempt).catch(error => {
+          console.error('Error handling task rejection:', error);
+        });
+      } else if (envelope.type === 'result') {
+        // Record success in circuit breaker and performance store
+        const result = envelope.payload as { taskId: string; success: boolean; executionTime?: number };
+        const agentId = envelope.from;
+
+        if (result.success) {
+          // Record success in circuit breaker
+          if (this.circuitBreakers) {
+            const breaker = this.circuitBreakers.get(agentId);
+            if (breaker) {
+              breaker.recordSuccess();
+            }
+          }
+
+          // Record success in performance store
+          if (this.performanceStore && result.executionTime) {
+            this.performanceStore.recordTaskResult({
+              taskId: result.taskId,
+              agentId: agentId,
+              success: true,
+              executionTime: result.executionTime,
+              timestamp: Date.now(),
+            });
+          }
+        }
+      }
+    });
   }
 }
 
