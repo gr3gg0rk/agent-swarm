@@ -191,6 +191,28 @@ export function initializeSchema(db: Database.Database): void {
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_status_archive_status ON status_archive(status)
   `);
+
+  // Create checkpoints table for crash recovery (Phase 4)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS checkpoints (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      data TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create index for task_id for fast latest checkpoint lookup
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_checkpoints_task ON checkpoints(task_id)
+  `);
+
+  // Create index for created_at for checkpoint ordering
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_checkpoints_created ON checkpoints(created_at)
+  `);
 }
 
 /**
@@ -206,6 +228,7 @@ export function validateSchema(db: Database.Database): boolean {
     'project_context',
     'tasks_archive',
     'status_archive',
+    'checkpoints',
   ];
 
   const result = db
@@ -231,6 +254,7 @@ export function getTableCounts(db: Database.Database): {
   project_context: number;
   tasks_archive: number;
   status_archive: number;
+  checkpoints: number;
 } {
   const count = (table: string): number => {
     const result = db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as {
@@ -245,6 +269,7 @@ export function getTableCounts(db: Database.Database): {
     project_context: count('project_context'),
     tasks_archive: count('tasks_archive'),
     status_archive: count('status_archive'),
+    checkpoints: count('checkpoints'),
   };
 }
 
@@ -258,6 +283,7 @@ export function getTableCounts(db: Database.Database): {
 export function dropAllTables(db: Database.Database): void {
   db.exec('DROP TABLE IF EXISTS tasks_archive');
   db.exec('DROP TABLE IF EXISTS status_archive');
+  db.exec('DROP TABLE IF EXISTS checkpoints');
   db.exec('DROP TABLE IF EXISTS tasks');
   db.exec('DROP TABLE IF EXISTS agent_status');
   db.exec('DROP TABLE IF EXISTS project_context');
