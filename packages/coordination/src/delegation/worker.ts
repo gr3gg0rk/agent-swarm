@@ -148,12 +148,6 @@ export class WorkerTaskExecutor {
     this.resumeLogic = options.resumeLogic;
     this.memoryMonitor = options.memoryMonitor;
 
-    // Start memory monitor if provided
-    if (this.memoryMonitor) {
-      this.memoryMonitor.start();
-      console.info(`Memory monitor started for agent ${this.agentId}`);
-    }
-
     // Set up command handler (subscribe to task topic)
     this.setupCommandHandler();
   }
