@@ -25,8 +25,9 @@ export interface CheckpointManagerOptions {
 
 /**
  * Task status for checkpoint filtering decisions.
+ * Renamed to CheckpointTaskStatus to avoid conflict with state module's TaskStatus.
  */
-export type TaskStatus = 'pending' | 'in_progress' | 'blocked' | 'waiting' | 'idle' | 'completed' | 'failed' | 'cancelled';
+export type CheckpointTaskStatus = 'pending' | 'in_progress' | 'blocked' | 'waiting' | 'idle' | 'completed' | 'failed' | 'cancelled';
 
 /**
  * Task reference for checkpoint eligibility checking.
@@ -35,7 +36,7 @@ export interface TaskRef {
   /** Task identifier */
   id: string;
   /** Task status */
-  status: TaskStatus;
+  status: CheckpointTaskStatus;
   /** Time invested in milliseconds */
   timeInvestedMs: number;
   /** Whether task is explicitly marked checkpoint-worthy */
@@ -335,7 +336,7 @@ export class CheckpointManager {
    * @param status - Task status
    * @returns True if task is inactive
    */
-  private isTaskInactive(status: TaskStatus): boolean {
+  private isTaskInactive(status: CheckpointTaskStatus): boolean {
     return ['blocked', 'waiting', 'idle', 'completed', 'failed', 'cancelled'].includes(status);
   }
 

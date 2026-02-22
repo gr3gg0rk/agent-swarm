@@ -25,3 +25,6 @@ export * from './api/index.js';
 
 // Re-export all task delegation types and functions
 export * from './delegation/index.js';
+
+// Re-export all checkpoint types and functions
+export * from './checkpoint/index.js';

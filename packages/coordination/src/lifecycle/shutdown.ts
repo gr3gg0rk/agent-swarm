@@ -10,7 +10,8 @@
 import type { MqttClientMinimal } from '../discovery/registry.js';
 import type { AgentDiscovery } from '../discovery/registry.js';
 import type { HeartbeatPublisher } from './heartbeat.js';
-import { getLogger } from '../errors/logger.js';
+import type { CheckpointManager } from '../checkpoint/manager.js';
+import { getLogger, createErrorContext } from '../errors/logger.js';
 
 // Get logger instance for shutdown messages
 const logger = getLogger('shutdown-handler');
@@ -25,6 +26,8 @@ export interface ShutdownConfig {
   agentDiscovery?: AgentDiscovery;
   /** Optional heartbeat publisher to stop on shutdown */
   heartbeatPublisher?: HeartbeatPublisher;
+  /** Optional checkpoint manager to sync before shutdown */
+  checkpointManager?: CheckpointManager;
   /** Graceful shutdown timeout in milliseconds (30 seconds per systemd) */
   gracefulShutdownTimeout: number;
 }
@@ -98,6 +101,22 @@ export class GracefulShutdown {
         }
         logger.info('Waiting for tasks to complete', { pending_tasks: this.pendingTasks.size });
         await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Sync checkpoints before stopping services (Per CONTEXT.md: graceful or crash)
+      if (this.config.checkpointManager) {
+        try {
+          await this.config.checkpointManager.syncBeforeShutdown();
+          logger.info('Checkpoints synced before shutdown');
+        } catch (error) {
+          const errorContext = createErrorContext(
+            error,
+            'shutdown-handler',
+            'shutdown-sync-fail'
+          );
+          logger.error('Failed to sync checkpoints before shutdown', errorContext);
+          // Continue with shutdown despite checkpoint sync failure
+        }
       }
 
       // Stop heartbeat publisher
