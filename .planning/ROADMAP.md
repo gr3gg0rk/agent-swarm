@@ -11,7 +11,7 @@
 | 1. Communication & Discovery | 3/3 | ✓ Complete | 2026-02-21 |
 | 2. Shared State & Lifecycle | 1/3 | In progress | 2026-02-21 |
 | 3. Task Delegation | 3/3 | ✓ Complete | 2026-02-21 |
-| 4. Error Handling & Recovery | 0/2 | Not started | - |
+| 4. Error Handling & Recovery | 2/2 | Ready for execution | 2026-02-21 |
 
 ## Phases
 
@@ -100,7 +100,9 @@
 1. Agent that crashes during task execution resumes from last checkpoint after restart
 2. System runs on griak-worker-2 (Pi 2B, 1GB RAM) without OOM errors
 
-**Plans:** TBD
+**Plans:**
+- [ ] 04-01-PLAN.md — Incremental checkpointing with hybrid local+SQLite storage, 60-second interval, 5-minute sync
+- [ ] 04-02-PLAN.md — Resume validation with corruption detection, memory monitoring at 85% threshold, graceful task pausing
 
 ---
 
