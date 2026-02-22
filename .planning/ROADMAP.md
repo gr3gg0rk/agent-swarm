@@ -101,8 +101,9 @@
 2. System runs on griak-worker-2 (Pi 2B, 1GB RAM) without OOM errors
 
 **Plans:**
-- [ ] 04-01-PLAN.md — Incremental checkpointing with hybrid local+SQLite storage, 60-second interval, 5-minute sync
-- [ ] 04-02-PLAN.md — Resume validation with corruption detection, memory monitoring at 85% threshold, graceful task pausing
+- [x] 04-01-PLAN.md — Incremental checkpointing with hybrid local+SQLite storage, 60-second interval, 5-minute sync
+- [x] 04-02-PLAN.md — Resume validation with corruption detection, memory monitoring at 85% threshold, graceful task pausing
+- [ ] 04-03-PLAN.md — CheckpointManager TaskQueue integration and MemoryMonitor initialization cleanup
 
 ---
 
