@@ -20,7 +20,8 @@ export type MessageType =
   | 'guidance_request'
   | 'guidance_response'
   | 'task_failed'
-  | 'load_metrics';
+  | 'load_metrics'
+  | 'task_rejected';
 
 /**
  * Task delegation message types for task execution flow.

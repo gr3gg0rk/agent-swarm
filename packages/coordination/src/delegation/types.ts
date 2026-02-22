@@ -257,3 +257,39 @@ export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
   successRate: 0.7,
   executionTime: 0.3,
 };
+
+/**
+ * Circuit breaker state per agent.
+ *
+ * Per ROUT-06: Router stops routing to agent after 3 consecutive rejections.
+ */
+export interface CircuitBreakerState {
+  /** Agent ID */
+  agentId: string;
+  /** Current state */
+  state: 'closed' | 'open' | 'half-open';
+  /** Number of consecutive rejections */
+  consecutiveRejections: number;
+  /** Unix timestamp of last state change (ms) */
+  lastStateChange: number;
+  /** When to transition from Open to Half-Open (ms) */
+  nextRetryTime?: number;
+}
+
+/**
+ * Task rejection payload.
+ *
+ * Per ROUT-04: Agents can reject tasks when overloaded.
+ */
+export interface TaskRejectedPayload {
+  /** Task ID being rejected */
+  taskId: string;
+  /** Rejection reason */
+  reason: 'overloaded' | 'no_capacity';
+  /** CPU percentage at rejection time */
+  cpuPercent: number;
+  /** Memory percentage at rejection time */
+  memoryPercent: number;
+  /** Unix timestamp in milliseconds */
+  timestamp: number;
+}
