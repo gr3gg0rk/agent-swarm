@@ -24,7 +24,11 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 
 ### Active
 
-(None — all v1 requirements validated)
+**Milestone v1.1 Goals:**
+- Advanced routing (dynamic capabilities, load-based routing, multi-capability matching)
+- Optimization (context references, message batching, connection pooling, <50MB coordination)
+- Checkpointing gaps (complete any missing features from Phase 4)
+- Visualization (web dashboard, progress bars, timeline, capability matrix)
 
 ### Out of Scope
 
@@ -102,4 +106,4 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 | Fixed roles on brain/server, flexible on workers | Specialization where valuable | ✓ Good — Minerva/Vulcan + flexible workers |
 
 ---
-*Last updated: 2026-02-22 after v1.0 milestone*
+*Last updated: 2026-02-22 after v1.1 milestone started*
