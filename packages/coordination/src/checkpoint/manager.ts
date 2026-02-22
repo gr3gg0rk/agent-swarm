@@ -50,6 +50,7 @@ export class CheckpointManager {
   private readonly sqliteSync: SQLiteSync;
   private readonly syncIntervalMs: number;
   private readonly minTimeInvestedMs: number;
+  private readonly taskQueue?: TaskQueue;
 
   private readonly lastCheckpointTime: Map<string, number>;
   private readonly lastCheckpointState: Map<string, string>;
@@ -66,6 +67,7 @@ export class CheckpointManager {
     this.sqliteSync = options.sqliteSync;
     this.syncIntervalMs = options.syncIntervalMs || 300000; // 5 minutes default
     this.minTimeInvestedMs = 120000; // 2 minutes minimum
+    this.taskQueue = options.taskQueue;
 
     this.lastCheckpointTime = new Map();
     this.lastCheckpointState = new Map();
@@ -332,21 +334,49 @@ export class CheckpointManager {
   /**
    * Gets task reference for eligibility checking.
    *
-   * This is a placeholder - in production, this would query the task queue
-   * or receive task status as a parameter. For now, we return null to indicate
-   * task not found.
+   * Queries TaskQueue for actual task status, enabling the 2-minute time filter
+   * and state-change detection to work correctly.
    *
-   * @param _taskId - Task identifier
-   * @returns Task reference or null
+   * Per 04-03-PLAN.md Task 2: Replaces hardcoded TODO stub with TaskQueue integration.
+   *
+   * @param taskId - Task identifier
+   * @returns Task reference or null if task not found or TaskQueue not provided
    */
-  private getTaskRef(_taskId: string): TaskRef | null {
-    // TODO: Integrate with task queue to get actual task status
-    // For now, assume task exists with default values
+  private getTaskRef(taskId: string): TaskRef | null {
+    // If taskQueue not provided, return null (task not found)
+    if (!this.taskQueue) {
+      console.warn(`TaskQueue not provided to CheckpointManager, cannot check task ${taskId}`);
+      return null;
+    }
+
+    // Query actual task status from TaskQueue
+    const task = this.taskQueue.getTask(taskId);
+    if (!task) {
+      return null;
+    }
+
+    // Calculate time invested from task timestamps
+    const now = Date.now();
+    const createdAt = task.createdAt ? task.createdAt * 1000 : now;
+    const timeInvestedMs = now - createdAt;
+
+    // Map TaskStatus to CheckpointTaskStatus
+    const statusMap: Record<string, CheckpointTaskStatus> = {
+      'pending': 'pending',
+      'in_progress': 'in_progress',
+      'paused': 'idle',  // Paused tasks treated as idle for checkpointing
+      'completed': 'completed',
+      'failed': 'failed',
+      'cancelled': 'cancelled',
+    };
+
+    const checkpointStatus = statusMap[task.status] || 'idle';
+
     return {
-      id: _taskId,
-      status: 'in_progress',
-      timeInvestedMs: 0,
-      checkpointWorthy: false,
+      id: task.id,
+      status: checkpointStatus,
+      timeInvestedMs,
+      checkpointWorthy: false,  // Could be added to Task schema in future
     };
   }
 
