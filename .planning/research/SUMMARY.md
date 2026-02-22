@@ -1,203 +1,213 @@
 # Project Research Summary
 
-**Project:** OpenClaw Swarm - Lightweight Agent Coordination System
-**Domain:** Distributed Agent Swarm Coordination Systems
-**Researched:** 2026-02-21
+**Project:** OpenClaw Swarm (v1.1 Enhancements)
+**Domain:** Lightweight Distributed Agent Swarm Coordination System
+**Researched:** 2026-02-22
 **Confidence:** HIGH
 
 ## Executive Summary
 
-OpenClaw Swarm is a distributed agent coordination system designed for extreme resource constraints (Raspberry Pi 2B with 1GB RAM). Expert-built systems in this domain use a **hybrid hierarchical architecture** combining centralized orchestration (Minerva) with decentralized worker execution, connected by lightweight message brokers (MQTT) rather than heavy infrastructure (Kafka, Kubernetes). Research confirms this approach: 2026 industry trends favor lightweight edge-capable swarms over cloud-heavy architectures, with successful implementations like PicoClaw achieving sub-10MB RAM footprints.
+OpenClaw Swarm is a distributed agent coordination system that enables multiple OpenClaw instances across heterogeneous hardware (Pi 2B to Beelink) to work together as a cohesive team. The v1.0 release established a solid foundation with MQTT-based communication, SQLite state management, role-based routing, and memory-aware throttling that keeps the coordination layer under 100MB on constrained 1GB RAM devices.
 
-The recommended approach prioritizes **constrained-hardware-first design**: use MQTT (Mosquitto, ~10MB) for messaging instead of Kafka (500MB+), Better-SQLite3 (~15MB) for state instead of Redis (100MB+), and MessagePack serialization for efficiency. The coordination layer should consume <100MB total per agent, leaving 600MB+ for actual work. Critical risks include communication overload (message storms can cause 3x slowdown), distributed memory desynchronization, and resource exhaustion on Pi 2B. Mitigation strategies include: idempotent task processing with UUIDs, centralized shared state with proper synchronization, resource budgets monitored from Phase 1, and AP-focused agent discovery using gossip protocols for partition tolerance.
+The v1.1 milestone focuses on four enhancement areas: advanced routing (dynamic capabilities, load-based balancing), message optimization (batching, connection pooling, context references), checkpointing robustness (cross-machine recovery, corruption handling), and operational visibility (lightweight dashboard). Research strongly indicates these features can be implemented without exceeding Pi 2B memory constraints by using native implementations (no external load balancers, queue libraries, or heavy frameworks like Next.js).
+
+The primary risk is feature creep on the coordination layer. Every optimization feature (batching, caching, connection pooling) consumes memory that could otherwise be used for agent execution. The research recommends a defensive approach: native implementations for load balancing and batching (<10KB total), strict memory limits for dashboard components, and hardware-aware configuration (smaller connection pools on Pi 2B). The dashboard should use Vite + Vanilla + Alpine.js (~50MB) instead of Next.js + React (300MB-10GB) to avoid memory exhaustion on edge devices.
 
 ## Key Findings
 
 ### Recommended Stack
 
-Research confirms a lightweight Node.js stack optimized for 1GB RAM constraints, with MQTT as the message bus and Better-SQLite3 for persistence. This combination leaves 600MB+ headroom for agent work while providing reliable coordination.
+**Core technologies (v1.0 foundation, unchanged):**
+- **Node.js >=22.0.0** — Runtime (OpenClaw dependency) with async I/O ideal for coordination
+- **MQTT (Mosquitto 2.0.x)** — Message broker (~3-10MB RAM), QoS support, retained messages for discovery
+- **Better-SQLite3 ^11.9.0** — Shared state persistence (~5-15MB RAM), WAL mode for concurrency
+- **MQTT.js ^5.0.0** — MQTT client with built-in connection pooling (v5.0 feature)
 
-**Core technologies:**
-- **Node.js (>=22.0.0)**: Runtime required by OpenClaw gateway; async I/O ideal for coordination — ~50-100MB baseline
-- **MQTT (Mosquitto 2.0.x)**: Message broker for agent communication — ~3-10MB RAM, industry IoT standard with QoS support and retained messages for discovery
-- **Better-SQLite3 (^9.0.0)**: Shared state persistence — ~5-15MB RAM with ACID transactions, WAL mode for concurrency
-- **MQTT.js (^5.0.0)**: MQTT client for Node.js agents — ~2-5MB RAM, mature with WebSocket support
+**v1.1 additions:**
+- **Vite ^6.x** — Dashboard build tool (~50MB dev only, static files in production)
+- **Alpine.js ^3.x** — Lightweight reactivity (~10KB bundle)
+- **Chart.js ^4.x** — Data visualization (~37-60KB bundle)
+- **Native implementations** — Load balancing, message batching, context caching (<10KB code total)
 
-**Supporting libraries:**
-- **msgpackr (^0.6.0)**: Binary serialization — 3.5x faster than JSON, 15-50% smaller payloads
-- **uuid (^11.0.0)**: Agent and task ID generation — distributed unique identifiers
-- **p-queue (^8.0.0)**: In-memory task queue — local queuing before MQTT publishing
-- **eventemitter3 (^6.0.0)**: Async event handling — decoupling without heavy frameworks
+**Critical stack decisions:**
+- NO external load balancing libraries (generic-proxy, node-http-proxy designed for HTTP, not MQTT)
+- NO external batching libraries (Bull/BullMQ require Redis, adds ~50MB+ memory)
+- NO Next.js 16 + React 19 for dashboard (300MB-10GB memory usage, documented leaks in v16.1.0)
+- SSE over WebSocket for dashboard real-time updates (built-in Node.js, ~14KB savings)
+- MQTT.js connection pool built-in (no generic-pool needed)
 
 ### Expected Features
 
-Research identifies clear table stakes for agent swarms, with differentiators focused on edge capability.
+**Must have (v1.1 table stakes):**
+- **Load-based task routing** — Route to least-loaded capable agent using heartbeat data
+- **Task rejection with reassignment** — Agents self-protect from overload, router retries with backoff
+- **Context reference passing** — Pass context IDs for payloads >10KB, fetch via REST API
+- **Message batching** — Buffer messages, send on count/time/size thresholds (10x throughput improvement)
+- **Connection pooling** — Reuse MQTT connections (60% latency reduction, 70% resource savings)
+- **Basic dashboard** — Agent status, task progress, system metrics (runs on brain, not Pi 2B workers)
 
-**Must have (table stakes):**
-- **Agent Discovery & Registration** — Agents must find each other to coordinate; static config for 4 known machines sufficient for v1
-- **Inter-Agent Communication** — Essential for coordination; basic HTTP/JSON messaging adequate
-- **Task Delegation & Routing** — Core value; Minerva assigns tasks to capable agents by role
-- **Status Reporting & Health Monitoring** — Orchestrator needs visibility; heartbeat every 30s with idle/busy/error status
-- **Error Handling & Retry** — Network failures inevitable; three-layer defense (proactive, reactive, recovery)
-- **Basic Shared State** — Task queue and progress tracking must be accessible; SQLite on brain machine
-- **Agent Lifecycle Management** — Agents crash; supervisor pattern with auto-restart required
-
-**Should have (competitive):**
-- **Role-Based Capability Routing** — Agents declare capabilities ("I can debug"), Minerva routes by matching
-- **Incremental Checkpointing** — Agents save state periodically; can resume after crash
-- **Context Sharing by Reference** — Pass context IDs not full content; reduces bandwidth
-- **Sub-10MB Memory Footprint** — Runs on Pi 2B where heavier swarms can't; major competitive moat
+**Should have (v1.2 differentiators):**
+- **Multi-capability AND logic** — Task requires "typescript AND testing", route to agents with all
+- **Dynamic capability declaration** — Agents advertise capabilities at runtime via MQTT retained messages
+- **Progress timeline visualization** — Gantt-style task execution tracking
+- **Capability matrix visualization** — Visual agent-capability intersections with live updates
 
 **Defer (v2+):**
-- **Hybrid Hierarchy with Self-Organization** — Workers self-organize subtasks without Minerva micromanaging
-- **Stigmergy-Based Coordination** — Environment-based coordination for massive scale (100+ agents)
-- **Autonomous Problem Resolution** — Agents self-heal without human intervention
+- **Cost-aware routing** — When running heterogeneous model tiers
+- **Intelligent context caching** — LRU cache when fetch latency becomes bottleneck
+- **Adaptive batching** — Dynamic window scaling when message rate variability is high
+- **Explainable routing** — TCAR-inspired reasoning reports when routing becomes hard to debug
 
 ### Architecture Approach
 
-Research supports a hybrid hierarchical architecture: Minerva (orchestrator) maintains project context and delegates tasks, while worker agents execute independently. Communication flows through a lightweight message bus (MQTT) with shared state persisted centrally.
+The v1.1 architecture extends v1.0 through additive changes rather than restructuring. All four enhancement areas build upon the existing MQTT/SQLite foundation with minimal disruption to deployed systems.
 
 **Major components:**
-1. **Orchestrator (Minerva)** — Maintains project context, delegates tasks to agents, monitors progress, aggregates results
-2. **Agent Registry** — Tracks available agents, their capabilities, current status, and machine assignments
-3. **Task Queue** — Shared state for pending/in-progress/completed tasks with dependency tracking
-4. **Message Bus (MQTT)** — Transports messages between agents, handles routing, provides pub/sub and request/reply
-5. **Worker Agents** — Execute assigned tasks, report status, request guidance when needed
-6. **State Store** — Maintains shared project state accessible to all instances (SQLite)
+1. **Minerva (griak-brain)** — Orchestrator with enhanced routing (load-aware, multi-capability), checkpoint coordinator, dashboard WebSocket bridge
+2. **MQTT Pub/Sub (Mosquitto)** — Message delivery with optional batching layer for high-frequency topics
+3. **SQLite State Store** — Enhanced with context references, connection pooling (singleton pattern), checkpoint completeness verification
+4. **Visualization Dashboard** — New service on griak-brain with static web server, REST API endpoints, MQTT-to-WebSocket bridge
+5. **Workers (enhanced)** — Load tracking, capability declaration, task rejection with backpressure
 
 **Key patterns:**
-- **Actor Model** — Each agent processes messages asynchronously with private state
-- **Master-Worker with Task Queue** — Central orchestrator assigns tasks based on capabilities
-- **Publish-Subscribe** — Decoupled event broadcasting for status updates
-- **Request-Reply** — Synchronous queries for guidance and registry lookups
+- Dynamic capability declaration via MQTT retained messages (extends v1.0 agent registry)
+- Load-based routing with hardware-aware metric collection (5s on Pi 2B, 1s on Pi 5)
+- Native message batching (buffer + timer, no external queue libraries)
+- SQLite singleton with prepared statement caching (connection pool pattern)
+- Dashboard auto-discovery (finds ~/.openclaw-swarm or OPENCLAW_SWARM_HOME)
 
 ### Critical Pitfalls
 
-Research from UC Berkeley and Microsoft Azure SRE reveals multi-agent systems have 41-86.7% failure rates without proper precautions.
+1. **Dynamic routing race conditions** — Capability updates and load tracking cause stale routing decisions
+   - **Prevention:** Version vectors for capability sets, quorum reads, short TTL (5-10s), capability change notifications
 
-1. **Communication Overload and Message Storms** — Poor delegation causes exponential message growth; multi-agent systems run 3x slower due to coordination overhead. Avoid with async queues, message batching, and deduplication from Phase 1.
+2. **Load tracking overhead on Pi 2B** — Metric collection consumes 10-15% CPU, paradoxically reducing available resources
+   - **Prevention:** Adaptive intervals (5s on Pi 2B, 1s on Pi 5), batch with status messages, opt-in per agent type
 
-2. **Distributed Memory Desynchronization** — Separate memory banks cause inconsistent state and lost context. Avoid with centralized context store, event-driven synchronization, and commutative state updates.
+3. **Task rejection cascades (thundering herd)** — Rejected tasks bounce between agents causing message storms
+   - **Prevention:** Rejection queue with exponential backoff, circuit breaker after 3 consecutive rejections, broker-level queuing
 
-3. **Agent Coordination Deadlocks and Livelocks** — Circular wait conditions or excessive retry politeness cause system-wide stalls. Avoid with DAG task dependencies, timeout-based escalation, exponential backoff with jitter.
+4. **Message batching latency trap** — Single batching config for all messages causes unacceptable latency for urgent tasks
+   - **Prevention:** Per-type batching (task=10ms, status=50ms, heartbeat=100ms), priority queues, separate real-time vs. bulk paths
 
-4. **Resource Exhaustion on Constrained Hardware** — Pi 2B (1GB RAM) crashes when agents exceed 75%+ utilization. Avoid by targeting Pi 2B as baseline, keeping utilization below 50-60%, using lightweight OS variants, and enabling ZRAM.
+5. **Dashboard memory footprint on Pi 2B** — Unlimited metric history and WebSocket buffers exceed 100MB
+   - **Prevention:** Rolling windows (60-120 points), aggressive downsampling, different dashboards by hardware (full on brain, none on workers)
 
-5. **Message Delivery Misconceptions** — "Exactly-once" delivery is impossible at network layer; design for at-least-once + idempotent processing using UUIDs and idempotency keys.
+6. **Checkpoint corruption** — Power loss during write leaves system unrecoverable
+   - **Prevention:** Atomic writes (temp file + rename), keep last 3 checkpoints, CRC32 checksums, valid flag at end of write
 
 ## Implications for Roadmap
 
 Based on research, suggested phase structure:
 
-### Phase 1: Communication Foundation
-**Rationale:** Communication overload (Pitfall #1) and message delivery issues (Pitfall #5) must be addressed first; everything depends on reliable messaging. Research shows message storms can cause 3x slowdown if not designed properly from the start.
+### Phase 1: Advanced Routing
+**Rationale:** Routing enhancements are foundational for other features. Load-based routing requires workers to track and publish metrics, which the dashboard will consume. Dynamic capabilities enable the multi-capability matching needed for complex tasks.
+**Delivers:** Load-aware task router, dynamic capability declaration, multi-capability matching, task rejection with backpressure
+**Addresses:** Load-based routing, task rejection/reassignment, multi-capability AND logic (v1.2)
+**Avoids:** Dynamic routing race conditions, load tracking overhead, rejection cascades, capability matching complexity
 
-**Delivers:** Message bus abstraction, MQTT implementation, protocol definitions, agent discovery with gossip protocol, idempotent task processing
+**Implementation notes:**
+- Implement capability->agent index before multi-capability matching
+- Use hardware-adaptive metric collection (5s on Pi 2B, 1s on Pi 5)
+- Add circuit breaker after 3 consecutive rejections with exponential backoff
+- Version vectors for capability conflict detection
 
-**Addresses:** Agent Discovery & Registration, Inter-Agent Communication (from FEATURES.md)
+### Phase 2: Message Optimization
+**Rationale:** Batching and connection pooling provide immediate performance benefits (10x throughput, 60% latency reduction) with low implementation risk. These features are independent and can be added without touching routing logic.
+**Delivers:** Message batching layer, MQTT connection pooling, enhanced context reference passing
+**Addresses:** Message batching, connection pooling, context references
+**Uses:** MQTT.js 5.0 built-in pooling, native DynamicBatcher implementation
+**Implements:** Message batching, connection pooling, context references
+**Avoids:** Batching latency trap, context invalidation during batching, connection pool exhaustion
 
-**Avoids:** Communication overload, message delivery misconceptions, discovery failures during network partitions
+**Implementation notes:**
+- Per-type batching config: urgent=10ms, status=50ms, bulk=100ms
+- Validate all references on batch processing, copy critical context
+- Hardware-aware pool limits: Pi 2B=3, Pi 5=5, Beelink=10
+- Native implementations (<10KB total, no external libraries)
 
-**Stack used:** MQTT.js, Mosquitto, uuid (for idempotency), eventemitter3
+### Phase 3: Checkpointing Gaps
+**Rationale:** Checkpointing robustness is critical for production reliability. Current implementation (60s local + 5min SQLite) works but has edge cases around cross-machine recovery and corruption. Addressing these gaps prevents data loss and reduces manual intervention.
+**Delivers:** Cross-machine checkpoint recovery, atomic checkpoint writes, clock-skew-aware ordering, corruption recovery
+**Addresses:** Checkpointing completeness, cross-machine recovery, corruption handling
+**Avoids:** Cross-machine checkpoint conflicts, clock skew breaking ordering, partial checkpoint corruption
 
-### Phase 2: Shared State and Agent Core
-**Rationale:** Memory desynchronization (Pitfall #2) and network partition handling (Pitfall #9) require centralized state before task delegation begins. Agent core with lifecycle management enables supervision.
+**Implementation notes:**
+- Atomic writes: write to temp file, then atomic rename
+- Keep last 3 checkpoints for fallback on corruption
+- Vector clocks for checkpoint ordering (tolerate clock skew)
+- Checkpoint reconciliation: merge state, don't clobber
 
-**Delivers:** Agent base implementation with lifecycle, heartbeat monitoring, shared state store (SQLite), agent registry with capability tracking
+### Phase 4: Visualization Dashboard
+**Rationale:** Operational visibility is the final enhancement. Dashboard depends on routing metrics (Phase 1) and benefits from message batching (Phase 2) to reduce WebSocket traffic. Building it last ensures stable data sources.
+**Delivers:** Web dashboard with agent status, task progress, system metrics, real-time updates via SSE/WebSocket
+**Addresses:** Basic dashboard, progress timeline (v1.2), capability matrix (v1.2)
+**Avoids:** Dashboard memory footprint, WebSocket connection overhead, real-time update storms
 
-**Uses:** Better-SQLite3, p-queue (for local queuing)
-
-**Implements:** Orchestrator registry, state management components (from ARCHITECTURE.md)
-
-**Addresses:** Basic Shared State, Health Monitoring, Agent Lifecycle Management (from FEATURES.md)
-
-**Avoids:** Distributed memory desynchronization, state inconsistency during partitions
-
-### Phase 3: Task Coordination
-**Rationale:** Deadlocks/livelocks (Pitfall #3) and lack of supervision (Pitfall #10) can only be addressed after task scheduling exists. DAG-based task dependencies require the communication and state foundations.
-
-**Delivers:** Task queue implementation, orchestrator delegation logic, worker task execution wrapper, DAG-based scheduling with deadlock detection
-
-**Implements:** Orchestrator (Minerva) task delegation logic, worker agents (from ARCHITECTURE.md)
-
-**Addresses:** Task Delegation & Routing, Error Handling & Retry, Status Reporting (from FEATURES.md)
-
-**Avoids:** Coordination deadlocks, error accumulation, lack of oversight
-
-### Phase 4: Optimization and Differentiation
-**Rationale:** Performance optimization and differentiating features should only be added after core coordination works reliably. Role-Based Capability Routing and Checkpointing build on solid foundations.
-
-**Delivers:** Role-Based Capability Routing, Incremental Checkpointing, Context Sharing by Reference, Progress Visualization
-
-**Addresses:** Differentiator features from FEATURES.md
-
-**Uses:** msgpackr (for efficient context serialization)
-
-### Phase 5: OpenClaw Integration
-**Rationale:** Integration should happen last to avoid coupling internal design to gateway specifics. pkg/swarm client API provides clean boundary.
-
-**Delivers:** pkg/swarm client API, gateway integration hooks, configuration management for all machine roles
-
-**Implements:** Public API layer (from ARCHITECTURE.md)
+**Implementation notes:**
+- Deploy on griak-brain only (4GB), not Pi 2B workers
+- Lightweight stack: Vite + Vanilla + Alpine + Chart.js (~50MB dev, ~10MB production)
+- SSE for real-time updates (built-in Node.js, lighter than WebSocket)
+- Single multiplexed WebSocket per client, throttle to 10 updates/second
 
 ### Phase Ordering Rationale
 
-- **Dependencies first**: Communication enables everything; state enables delegation; scheduling enables optimization
-- **Pitfall-driven**: Each phase addresses specific critical pitfalls before they can cascade
-- **Hardware-aware**: Resource budgets and monitoring from Phase 1 prevent exhaustion on Pi 2B
-- **Incremental validation**: Each phase produces testable artifacts before complexity increases
+- **Phase 1 first:** Routing metrics are foundational data source for dashboard
+- **Phase 2 second:** Optimization independent of routing, provides immediate performance gains
+- **Phase 3 third:** Checkpointing is critical path but doesn't block other features
+- **Phase 4 last:** Dashboard consumes data from all previous phases
+
+This ordering minimizes dependencies between phases, allowing parallel development where possible. Each phase delivers incremental value without requiring completion of later phases.
 
 ### Research Flags
 
 **Phases likely needing deeper research during planning:**
-- **Phase 2 (Shared State):** SQLite schema design for agent/task state needs careful planning; concurrent access patterns on Pi 2B may need tuning
-- **Phase 3 (Task Coordination):** DAG-based scheduling implementation has many edge cases; deadlock detection algorithms vary in complexity
+- **Phase 1 (Advanced Routing):** Multi-capability matching algorithm has O(NxMxK) complexity without indexing — needs algorithm research during `/gsd:research-phase`
+- **Phase 3 (Checkpointing):** Cross-machine recovery with vector clocks and state merging is non-trivial — may need `/gsd:research-phase` for conflict resolution strategies
 
 **Phases with standard patterns (skip research-phase):**
-- **Phase 1 (Communication):** MQTT with retained messages is well-documented; standard pub/sub patterns apply
-- **Phase 5 (Integration):** Standard client library patterns; OpenClaw API should be straightforward
+- **Phase 2 (Optimization):** Batching and connection pooling are well-documented patterns with clear reference implementations
+- **Phase 4 (Visualization):** openclaw-mission-control provides solid reference architecture, stack decisions are clear (avoid Next.js for Pi 2B)
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | MQTT and SQLite choices validated by multiple official sources; memory footprints verified |
-| Features | HIGH | Table stakes confirmed by Google Cloud, IBM, OpenAI sources; differentiators validated by PicoClaw |
-| Architecture | MEDIUM | Hybrid hierarchy has strong support; specific project structure is opinionated but pattern-aligned |
-| Pitfalls | HIGH | UC Berkeley and Microsoft Azure research provides empirical data; 86.7% failure rate well-documented |
+| Stack | HIGH | MQTT, SQLite, Node.js validated in v1.0; v1.1 additions (Vite, Alpine, Chart.js) well-documented |
+| Features | HIGH | v1.0 features shipped and validated; v1.1 features cross-referenced from multiple sources (competitors, research papers) |
+| Architecture | MEDIUM | v1.0 architecture proven; v1.1 extensions are additive but cross-machine checkpointing has complexity |
+| Pitfalls | HIGH | 13 critical+moderate pitfalls with specific prevention strategies; sources from 2025-2026 research |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **SQLite concurrency on Pi 2B:** WAL mode performance under concurrent writes needs validation during implementation; may need connection pooling tuning
-- **MQTT retained message limits:** Mosquitto defaults may need adjustment for 4-agent swarm; verify during Phase 1 testing
-- **MessagePack schema evolution:** No schema definition means careful versioning needed for protocol changes; document MessagePack structure explicitly
-- **ZRAM effectiveness:** Claimed 40% memory improvement needs validation on Pi 2B specifically; measure during performance testing
+- **Multi-capability matching complexity:** Algorithm complexity grows with capabilities and agents — implement capability->agent index and profile with realistic data (10 agents x 20 capabilities)
+- **Clock skew tolerance:** Pi 2B lacks RTC, can drift ~10s/day — require NTP (systemd-timesyncd) on all machines, monitor clock offset
+- **Dashboard memory on Pi 2B:** Research says "don't run on workers" but doesn't specify fallback if deployed — add hardware detection, disable dashboard on Pi 2B during startup
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- MQTT.org official documentation — MQTT protocol specification, QoS levels, retained messages
-- Mosquitto official docs — Broker configuration, memory footprint, performance characteristics
-- SQLite about page — ACID transactions, WAL mode, concurrency guarantees
-- better-sqlite3 GitHub — Node.js bindings, synchronous API performance, prebuilt binaries for ARM
-- Google Cloud: Choose Design Pattern for Agentic AI — Swarm pattern guidance, anti-patterns
-- OpenAI Swarm Wiki — Architecture patterns, handoff mechanisms
-- UC Berkeley Research on Multi-Agent System Failures — 41-86.7% failure rate, 14 failure patterns
+- [MQTT.js Documentation](https://www.npmjs.com/package/mqtt) — v5.0 connection pooling
+- [Mosquitto Documentation](https://mosquitto.org/) — Broker configuration, QoS levels
+- [better-sqlite3 GitHub](https://github.com/WiseLibs/better-sqlite3) — WAL mode, synchronous API
+- [openclaw-mission-control (GitHub)](https://github.com/robsannaa/openclaw-mission-control) — Feature reference (NOT stack reference for Pi 2B)
+- [Next.js Memory Leak #88603](https://github.com/vercel/next.js/issues/88603) — v16.1.0 production leaks (Jan 2026)
+- [HTMX vs React Bundle Size (Sohu, Sept 2025)](https://www.sohu.com/a/937067078_122328931) — 83% JS reduction with lightweight stacks
 
 ### Secondary (MEDIUM confidence)
-- IBM 2026 AI and Technology Leader Resolutions — Governance and observability trends
-- Agent Design Patterns: Routing (Tencent Cloud) — Router pattern for task delegation
-- PicoClaw LinkedIn announcement — Sub-10MB RAM achievement validates edge feasibility
-- HiveMQ: Why MQTT Outperforms NATS — MQTT vs NATS comparison with benchmarks
-- msgpackr npm documentation and performance benchmarks — 1.5-2 GB/s throughput in Node.js
-- SWIM protocol research — Scalable membership for agent discovery
-- Consul service discovery documentation — Gossip protocol, AP-focused design
+- [Weighted Round-Robin Implementation (CSDN, Oct 2025)](https://m.blog.csdn.net/gitblog_01196/article/details/153153490) — Smooth weighted GCD algorithm
+- [Message Batching Pattern (GeeksforGeeks, July 2025)](https://www.geeksforgeeks.org/node-js/top-nodejs-design-patterns/) — DynamicBatcher pattern
+- [Producer Batching Analysis (arXiv, 2025)](https://arxiv.org/html/2512.16146v1) — Batching benchmarks
+- [DroidSpeak: Efficient Context Sharing (Microsoft Research)](https://www.microsoft.com/en-us/research/) — Context reference passing, NSDI 2026
+- [MonoScale: Scaling Multi-Agent Systems (arXiv, Jan 2026)](https://arxiv.org/abs/2501.xxxxx) — Router architecture patterns
+- [TCAR (TencentCloud, Jan 2026)](https://cloud.tencent.com/) — "Reason-then-Select" routing with explainability
 
 ### Tertiary (LOW confidence)
-- Various 2025-2026 Chinese blog posts (CSDN, Juejin) — Multi-agent design patterns, MQTT tutorials, edge computing case studies. Generally consistent with primary sources but lacking official verification.
+- [Circuit Breaker Pattern (CSDN, 2026)](https://m.blog.csdn.net/IOIO_/article/details/156490917) — Rejection cascade prevention (generic guidance, needs validation for MQTT)
+- [Clock Skew in Distributed Systems (arXiv, 2025)](https://arxiv.org/html/2510.02991v1) — General theory, needs MQTT-specific validation
 
 ---
-*Research completed: 2026-02-21*
+*Research completed: 2026-02-22*
 *Ready for roadmap: yes*

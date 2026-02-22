@@ -1,354 +1,895 @@
-# Architecture Research
+# Architecture Research: OpenClaw Swarm v1.1 Enhancements
 
-**Domain:** Distributed Agent Swarm Coordination Systems
-**Researched:** 2026-02-21
+**Domain:** Distributed agent swarm coordination system
+**Researched:** 2026-02-22
 **Confidence:** MEDIUM
 
-## Standard Architecture
+## Executive Summary
 
-### System Overview
+This document outlines the architectural patterns and integration points for OpenClaw Swarm v1.1 enhancements. The research covers advanced routing, optimization (context references, message batching, connection pooling), checkpointing gaps, and visualization architecture.
 
-Based on research into 2026 agent swarm coordination patterns and multi-agent systems, distributed agent coordination systems typically follow a **hybrid hierarchical architecture** combining centralized orchestration with decentralized execution:
+**Key Finding:** v1.1 enhancements should integrate with existing v1.0 architecture through extension rather than restructure. All four feature areas can build upon the existing MQTT/SQLite foundation with minimal disruption to deployed systems.
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Coordination Layer                           │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐        ┌──────────────┐      ┌─────────────┐    │
-│  │   Minerva   │◄──────►│ Task Queue   │◄────►│  Agent      │    │
-│  │ (Orchestrator)│      │ (Shared State)│      │  Registry  │    │
-│  │             │        │              │      │             │    │
-│  └──────┬──────┘        └──────┬───────┘      └─────────────┘    │
-│         │                      │                                  │
-├─────────┼──────────────────────┼──────────────────────────────────┤
-│         │     Message Bus      │                                  │
-│         │   (MQTT/NATS/ZeroMQ) │                                  │
-├─────────┼──────────────────────┼──────────────────────────────────┤
-│         ▼                      ▼                                  │
-│  ┌─────────────┐        ┌──────────────┐      ┌─────────────┐    │
-│  │   Vulcan    │        │  Worker-1    │      │  Worker-2   │    │
-│  │  (Builder)  │        │  (Flexible)  │      │  (Flexible)  │    │
-│  │             │        │              │      │             │    │
-│  └─────────────┘        └──────────────┘      └─────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-```
+## Existing Architecture (v1.0)
 
-### Component Responsibilities
-
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| **Orchestrator (Minerva)** | Maintains project context, delegates tasks to agents, monitors progress, aggregates results | Central coordinator with full project state, decision-making logic for agent selection |
-| **Agent Registry** | Tracks available agents, their capabilities, current status, and machine assignments | Discovery service with capability metadata and health checking |
-| **Task Queue** | Shared state for pending/in-progress/completed tasks, supports dependency tracking | Persistent store with atomic operations, can use message broker queues |
-| **Message Bus** | Transports messages between agents, handles routing, provides pub/sub and request/reply patterns | Lightweight broker (MQTT/NATS) or direct messaging (ZeroMQ) |
-| **Worker Agents** | Execute assigned tasks, report status, request guidance when needed | Specialized processes with role-specific capabilities |
-| **State Store** | Maintains shared project state accessible to all instances | Lightweight database or file-based store with synchronization |
-
-## Recommended Project Structure
-
-For OpenClaw Swarm coordination layer:
+### Current System Overview
 
 ```
-openclaw-swarm/
-├── cmd/
-│   ├── orchestrator/    # Minerva - runs on griak-brain
-│   │   └── main.go
-│   ├── worker/          # Worker agent - runs on all machines
-│   │   └── main.go
-│   └── registry/        # Optional standalone registry service
-│       └── main.go
-├── internal/
-│   ├── agent/           # Agent core functionality
-│   │   ├── agent.go     # Agent interface and base implementation
-│   │   ├── lifecycle.go # Start/stop/restart logic
-│   │   └── heartbeat.go # Health monitoring
-│   ├── communication/   # Messaging layer
-│   │   ├── bus.go       # Message bus abstraction
-│   │   ├── mqtt.go      # MQTT implementation
-│   │   ├── nats.go      # NATS implementation
-│   │   └── zmq.go       # ZeroMQ implementation
-│   ├── coordination/    # Coordination logic
-│   │   ├── orchestrator.go # Task delegation and routing
-│   │   ├── registry.go     # Agent discovery and registration
-│   │   └── dispatcher.go   # Task assignment logic
-│   ├── protocol/        # Message definitions
-│   │   ├── messages.go  # Message types (Task, Status, Result)
-│   │   └── codec.go     # Serialization/deserialization
-│   ├── state/           # State management
-│   │   ├── store.go     # Shared state interface
-│   │   ├── memory.go    # In-memory implementation
-│   │   └── sqlite.go    # Persistent implementation
-│   └── transport/       # Transport layer
-│       ├── client.go    # Transport client
-│       └── server.go    # Transport server
-├── pkg/
-│   └── swarm/           # Public API for OpenClaw integration
-│       ├── client.go    # Client for interacting with swarm
-│       └── types.go     # Public types
-├── config/
-│   ├── brain.yaml       # Config for griak-brain (orchestrator)
-│   ├── server.yaml      # Config for griak-server
-│   └── worker.yaml      # Config for worker machines
-└── scripts/
-    ├── install.sh       # Installation script
-    └── start-swarm.sh   # Startup script for all instances
+┌─────────────────────────────────────────────────────────────────┐
+│  Minerva (griak-brain)                                          │
+│  ├─ Task Router (role-based, static capability config)         │
+│  ├─ DAG Dependency Manager                                      │
+│  ├─ Memory Monitor (85% threshold)                             │
+│  └─ REST API (12 endpoints)                                    │
+├─────────────────────────────────────────────────────────────────┤
+│  MQTT Pub/Sub (Mosquitto)                                       │
+│  ├─ QoS 0: Heartbeats                                          │
+│  ├─ QoS 1: Tasks                                               │
+│  └─ MessagePack serialization                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  SQLite State Store (WAL mode)                                  │
+│  ├─ Agent registry (static config)                             │
+│  ├─ Task tracking                                              │
+│  └─ Checkpoint metadata                                        │
+├─────────────────────────────────────────────────────────────────┤
+│  Workers                                                        │
+│  ├─ griak-server: Vulcan (fixed role)                          │
+│  ├─ griak-worker-1: Flexible (dynamic roles)                   │
+│  └─ griak-worker-2: Flexible (1GB RAM, throttled)              │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Structure Rationale
+### Component Boundaries
 
-- **cmd/**: Separate binaries for orchestrator, worker, and optional registry - allows role-based deployment
-- **internal/agent/**: Core agent functionality with lifecycle management and health monitoring
-- **internal/communication/**: Pluggable messaging layer supporting multiple protocols for flexibility
-- **internal/coordination/**: Orchestrator logic, registry, and task dispatcher - clear separation of concerns
-- **internal/protocol/**: Message definitions and codec - ensures type-safe communication
-- **internal/state/**: Abstracted state management allowing different backends (memory, SQLite, Redis)
-- **pkg/swarm/**: Public API for OpenClaw gateway integration - clean interface boundary
-- **config/**: Separate configs per machine role - enables environment-specific tuning
+| Component | Responsibility | Communicates With |
+|-----------|---------------|-------------------|
+| Minerva | Task orchestration, routing decisions | All workers via MQTT, SQLite for state |
+| Task Router | Capability matching, DAG resolution | Minerva, agent registry |
+| Memory Monitor | Load detection, task throttling | Local agent process |
+| MQTT Broker | Message delivery, pub/sub routing | All agents |
+| SQLite Store | Shared state, checkpoint metadata | REST API consumers |
+
+## v1.1 Architecture Extensions
+
+### System Overview with v1.1 Enhancements
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Minerva (griak-brain)                                                  │
+│  ├─ Task Router (role-based + dynamic capabilities)                    │
+│  ├─ Load Balancer (new)                                                │
+│  ├─ DAG Dependency Manager                                             │
+│  ├─ Memory Monitor (85% threshold)                                     │
+│  ├─ REST API (12 endpoints + dashboard support)                        │
+│  └─ WebSocket Bridge (new)                                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│  MQTT Pub/Sub (Mosquitto)                                               │
+│  ├─ QoS 0: Heartbeats                                                  │
+│  ├─ QoS 1: Tasks                                                       │
+│  ├─ MessagePack serialization                                          │
+│  └─ Message Batching Layer (new)                                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SQLite State Store (WAL mode + connection pooling)                     │
+│  ├─ Agent registry (static + dynamic capabilities)                     │
+│  ├─ Task tracking                                                      │
+│  ├─ Checkpoint metadata + recovery completeness                        │
+│  └─ Context references (new)                                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│  Visualization Dashboard (new, runs on griak-brain)                     │
+│  ├─ Static web server (serves from /opt/openclaw-swarm/dashboard)      │
+│  ├─ WebSocket client (subscribes to bridge)                            │
+│  ├─ REST API client                                                    │
+│  └─ Auto-discovery (finds ~/.openclaw-swarm or OPENCLAW_SWARM_HOME)    │
+├─────────────────────────────────────────────────────────────────────────┤
+│  Workers (enhanced)                                                     │
+│  ├─ griak-server: Vulcan (fixed role + load reporting)                 │
+│  ├─ griak-worker-1: Flexible (dynamic roles + capability declaration)   │
+│  └─ griak-worker-2: Flexible (1GB RAM, throttled + load reporting)      │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Architectural Patterns
 
-### Pattern 1: Actor Model with Message Passing
+### Pattern 1: Dynamic Capability Declaration
 
-**What:** Each agent is an "actor" that processes messages asynchronously, maintains private state, and communicates only via message passing. No direct state access between agents.
+**What:** Workers declare their capabilities at runtime, extending the static configuration in v1.0.
 
-**When to use:**
-- Concurrent task execution across multiple agents
-- Fault isolation between agent processes
-- Natural mapping to distributed systems
+**When to use:** For v1.1 advanced routing where workers need to advertise skills, performance characteristics, or current load.
 
 **Trade-offs:**
-- Pros: Excellent concurrency, fault isolation, scales well
-- Cons: Message overhead, debugging complexity, eventual consistency challenges
+- Pros: Flexible adaptation to changing worker capabilities, enables load-based routing
+- Cons: Requires trust model (workers could lie about capabilities), adds startup latency
 
-**Example:**
-```go
-// Agent as an actor
-type Agent struct {
-    id       string
-    role     string
-    inbox    chan Message
-    state    AgentState
-    handler  MessageHandler
+**Implementation:**
+
+```typescript
+// Worker capability declaration (runs on worker startup)
+interface CapabilityDeclaration {
+  workerId: string;
+  capabilities: string[];
+  performance: {
+    avgTaskDuration: number;  // milliseconds
+    successRate: number;       // 0-1
+  };
+  load: {
+    cpu: number;               // 0-1
+    memory: number;            // 0-1
+    activeTasks: number;
+  };
+  timestamp: number;
 }
 
-func (a *Agent) Start() {
-    go func() {
-        for msg := range a.inbox {
-            // Process message, update private state
-            response := a.handler.Handle(msg, a.state)
-            // Send response (no direct state access)
-            a.send(response)
+// MQTT topic: openclaw/swarm/capabilities/declare
+// Retained: true (so late-joining workers see current state)
+// QoS: 1 (must be delivered)
+
+// Integration with existing static config:
+// - Static config provides baseline capabilities (from v1.0 agent registry)
+// - Dynamic declarations add/override capabilities at runtime
+// - Minerva merges: config.capabilities + declared.capabilities
+```
+
+**Integration Point:** Extends existing agent registry in SQLite. New table `dynamic_capabilities` linked to `agents` table.
+
+### Pattern 2: Load-Based Routing
+
+**What:** Route tasks based on current worker load, not just capabilities.
+
+**When to use:** For optimization when some workers are overwhelmed while others idle.
+
+**Trade-offs:**
+- Pros: Better resource utilization, faster task completion
+- Cons: Requires load monitoring (CPU/memory overhead), adds routing complexity
+
+**Implementation:**
+
+```typescript
+// Load tracker (runs on each worker)
+class LoadTracker {
+  private interval: NodeJS.Timeout;
+
+  constructor(private mqttClient: mqtt.Client, private workerId: string) {
+    this.interval = setInterval(() => this.reportLoad(), 5000);
+  }
+
+  private reportLoad() {
+    const load = {
+      cpu: os.loadavg()[0] / os.cpus().length,
+      memory: process.memoryUsage().heapUsed / process.memoryUsage().heapTotal,
+      activeTasks: this.getActiveTaskCount(),
+      timestamp: Date.now()
+    };
+
+    // MQTT topic: openclaw/swarm/load/{workerId}
+    // Retained: true (always has latest value)
+    // QoS: 0 (latest value sufficient)
+    this.mqttClient.publish(
+      `openclaw/swarm/load/${this.workerId}`,
+      MessagePack.encode(load),
+      { retain: true, qos: 0 }
+    );
+  }
+}
+
+// Minerva load-aware routing (extends TaskRouter)
+class LoadAwareRouter {
+  selectWorker(requiredCapability: string): string {
+    const candidates = this.getWorkersWithCapability(requiredCapability);
+
+    // Score based on capability match + current load
+    const scored = candidates.map(w => ({
+      worker: w,
+      score: this.calculateScore(w, requiredCapability)
+    }));
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored[0].worker;
+  }
+
+  private calculateScore(worker: Worker, capability: string): number {
+    const load = this.getWorkerLoad(worker.id);
+
+    // Lower load = higher score
+    // Available memory consideration for Pi 2B
+    const loadScore = 1 - ((load.cpu * 0.5) + (load.memory * 0.5));
+
+    // Historical performance for this capability
+    const perfScore = this.getHistoricalPerformance(worker.id, capability);
+
+    return (loadScore * 0.7) + (perfScore * 0.3);
+  }
+}
+```
+
+**Integration Point:** New component in Minerva. Requires workers to run LoadTracker. Load state stored in MQTT retained messages (not SQLite, for speed).
+
+### Pattern 3: Multi-Capability Matching
+
+**What:** Route tasks requiring multiple capabilities to workers that have all required skills.
+
+**When to use:** For complex tasks requiring multiple agent types (e.g., "debug + test").
+
+**Trade-offs:**
+- Pros: Enables richer task descriptions, reduces task decomposition overhead
+- Cons: Fewer workers qualify, harder to load balance
+
+**Implementation:**
+
+```typescript
+// Multi-capability routing (extends TaskRouter)
+class MultiCapabilityRouter {
+  findWorker(requiredCapabilities: string[]): string | null {
+    // Get all workers with ALL required capabilities
+    const candidates = this.getWorkers()
+      .filter(w => requiredCapabilities.every(cap =>
+        w.capabilities.includes(cap)
+      ));
+
+    if (candidates.length === 0) {
+      // Fallback: decompose task
+      return this.decomposeAndRoute(requiredCapabilities);
+    }
+
+    // Apply load-based selection
+    return this.selectByLoad(candidates);
+  }
+
+  private decomposeAndRoute(capabilities: string[]): string {
+    // Create sub-tasks for each capability
+    // Assign to different workers
+    // Return orchestrator worker ID
+    return this.createCompositeTask(capabilities);
+  }
+}
+```
+
+**Integration Point:** Extends existing TaskRouter. No new storage requirements.
+
+### Pattern 4: Context References in SQLite
+
+**What:** Store references to large context instead of duplicating data across tasks.
+
+**When to use:** When tasks share large context (project files, conversation history).
+
+**Trade-offs:**
+- Pros: Reduces storage overhead, keeps checkpoint size small
+- Cons: Requires reference resolution, adds query complexity
+
+**Implementation:**
+
+```typescript
+// Context reference schema (SQLite)
+CREATE TABLE context_references (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,  -- 'project', 'conversation', 'file'
+  location TEXT NOT NULL,  -- file path or external reference
+  hash TEXT,  -- content hash for change detection
+  created_at INTEGER NOT NULL,
+  accessed_at INTEGER,
+  size_bytes INTEGER
+);
+
+// Task linking (modification to existing tasks table)
+CREATE TABLE task_contexts (
+  task_id TEXT NOT NULL,
+  context_id TEXT NOT NULL,
+  role TEXT,  -- 'input', 'output', 'reference'
+  PRIMARY KEY (task_id, context_id),
+  FOREIGN KEY (context_id) REFERENCES context_references(id)
+);
+
+// Usage pattern
+class ContextManager {
+  private db: Database;
+
+  createContext(type: string, location: string, data: Buffer): string {
+    const id = generateId();
+    const hash = hashContent(data);
+
+    // Check for duplicate
+    const existing = this.db.prepare(
+      'SELECT id FROM context_references WHERE hash = ? AND location = ?'
+    ).get(hash, location);
+
+    if (existing) {
+      return existing.id;
+    }
+
+    // Store reference (data stored separately)
+    this.db.prepare(
+      'INSERT INTO context_references (id, type, location, hash, created_at, size_bytes) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(id, type, location, hash, Date.now(), data.length);
+
+    // Store data in separate location (file system or blob store)
+    this.storeData(id, data);
+
+    return id;
+  }
+
+  linkTaskToContext(taskId: string, contextId: string, role: string) {
+    this.db.prepare(
+      'INSERT INTO task_contexts (task_id, context_id, role) VALUES (?, ?, ?)'
+    ).run(taskId, contextId, role);
+
+    // Update access time
+    this.db.prepare(
+      'UPDATE context_references SET accessed_at = ? WHERE id = ?'
+    ).run(Date.now(), contextId);
+  }
+
+  resolveContext(contextId: string): Buffer {
+    const ref = this.db.prepare(
+      'SELECT * FROM context_references WHERE id = ?'
+    ).get(contextId);
+
+    return this.loadData(ref.id);
+  }
+}
+```
+
+**Integration Point:** New SQLite tables and ContextManager service. Extends existing task storage.
+
+### Pattern 5: Message Batching in MQTT
+
+**What:** Batch multiple small messages into single MQTT publish for efficiency.
+
+**When to use:** For high-frequency small messages (progress updates, metrics).
+
+**Trade-offs:**
+- Pros: Reduced protocol overhead, better throughput
+- Cons: Increased latency, partial failure handling complexity
+
+**Implementation:**
+
+```typescript
+// Message batcher (client-side)
+class MessageBatcher {
+  private buffer: Map<string, any[]> = new Map();
+  private timeouts: Map<string, NodeJS.Timeout> = new Map();
+
+  constructor(
+    private mqttClient: mqtt.Client,
+    private config = {
+      maxSize: 100,      // messages per batch
+      maxWait: 500,      // milliseconds
+      maxBytes: 64 * 1024 // 64KB
+    }
+  ) {}
+
+  publish(topic: string, message: any, options?: mqtt.IClientPublishOptions) {
+    const key = topic;  // batch per topic
+
+    if (!this.buffer.has(key)) {
+      this.buffer.set(key, []);
+    }
+
+    const batch = this.buffer.get(key)!;
+    batch.push(message);
+
+    // Check if should flush
+    const size = JSON.stringify(batch).length;
+    if (batch.length >= this.config.maxSize || size >= this.config.maxBytes) {
+      this.flush(key, options);
+    } else if (!this.timeouts.has(key)) {
+      // Set timeout for auto-flush
+      this.timeouts.set(key, setTimeout(() => {
+        this.flush(key, options);
+      }, this.config.maxWait));
+    }
+  }
+
+  private flush(topic: string, options?: mqtt.IClientPublishOptions) {
+    const batch = this.buffer.get(topic);
+    if (!batch || batch.length === 0) return;
+
+    const payload = MessagePack.encode({
+      count: batch.length,
+      messages: batch
+    });
+
+    this.mqttClient.publish(topic, payload, options);
+
+    // Cleanup
+    this.buffer.delete(topic);
+    const timeout = this.timeouts.get(topic);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.timeouts.delete(topic);
+    }
+  }
+}
+
+// Usage for progress updates
+const progressBatcher = new MessageBatcher(mqttClient, {
+  maxSize: 50,
+  maxWait: 1000  // 1 second
+});
+
+progressBatcher.publish('openclaw/swarm/progress', {
+  taskId: 'task-123',
+  progress: 45,
+  message: 'Processing file 1 of 10'
+});
+```
+
+**Integration Point:** Wraps existing MQTT client calls. Use for high-frequency topics only (progress, metrics), not task assignment.
+
+### Pattern 6: Connection Pooling for SQLite
+
+**What:** Reuse database connections instead of opening/closing for each query.
+
+**When to use:** better-sqlite3 is synchronous, so traditional connection pooling doesn't apply. Instead, use a singleton connection with prepared statement caching.
+
+**Trade-offs:**
+- Pros: Faster queries, less overhead
+- Cons: Single connection can become bottleneck (mitigated by WAL mode)
+
+**Implementation:**
+
+```typescript
+// Connection singleton with prepared statement cache
+class DatabaseConnection {
+  private static instance: Database;
+  private statements: Map<string, Statement> = new Map();
+
+  static getInstance(): Database {
+    if (!DatabaseConnection.instance) {
+      const db = new Database('/opt/openclaw-swarm/state/swarm.db', {
+        timeout: 5000,
+        verbose: null
+      });
+
+      // Configure for multi-access
+      db.pragma('journal_mode = WAL');
+      db.pragma('cache_size = 32000');
+      db.pragma('synchronous = NORMAL');
+      db.pragma('wal_autocheckpoint = 1000');
+
+      DatabaseConnection.instance = db;
+    }
+
+    return DatabaseConnection.instance;
+  }
+
+  // Prepared statement cache
+  prepare(sql: string): Statement {
+    if (!this.statements.has(sql)) {
+      this.statements.set(sql, DatabaseConnection.instance.prepare(sql));
+    }
+    return this.statements.get(sql)!;
+  }
+
+  // Periodic checkpoint to prevent WAL growth
+  startCheckpointManager() {
+    setInterval(() => {
+      try {
+        DatabaseConnection.instance.pragma('wal_checkpoint(RESTART)');
+      } catch (e) {
+        console.error('Checkpoint failed:', e);
+      }
+    }, 5 * 60 * 1000);  // Every 5 minutes
+  }
+}
+
+// Usage
+const db = DatabaseConnection.getInstance();
+const stmt = db.prepare('SELECT * FROM tasks WHERE status = ?');
+const activeTasks = stmt.all('active');
+```
+
+**Integration Point:** Replace existing direct `new Database()` calls with singleton pattern. Add checkpoint manager for long-running processes.
+
+### Pattern 7: Checkpoint Recovery Completeness
+
+**What:** Ensure cross-machine recovery includes all distributed state.
+
+**When to use:** For crash recovery where tasks were in-progress across multiple workers.
+
+**Trade-offs:**
+- Pros: Consistent recovery, no lost state
+- Cons: Requires coordination during checkpoint, adds latency
+
+**Implementation:**
+
+```typescript
+// Coordinated checkpoint (Chandy-Lamport inspired)
+class DistributedCheckpoint {
+  async createCheckpoint(): Promise<string> {
+    const checkpointId = generateId();
+
+    // Phase 1: Minerva initiates checkpoint
+    // Pause new task assignment
+    await this.pauseTaskAssignment();
+
+    // Phase 2: Request all workers to checkpoint
+    const workerPromises = this.workers.map(worker =>
+      this.requestWorkerCheckpoint(worker, checkpointId)
+    );
+
+    const workerResults = await Promise.allSettled(workerPromises);
+
+    // Phase 3: Record in-flight messages
+    const inFlight = await this.recordInFlightMessages();
+
+    // Phase 4: Write checkpoint metadata to SQLite
+    this.db.prepare(`
+      INSERT INTO checkpoints
+      (id, timestamp, workers, in_flight_messages, status)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      checkpointId,
+      Date.now(),
+      JSON.stringify(workerResults),
+      JSON.stringify(inFlight),
+      'complete'
+    );
+
+    // Resume task assignment
+    await this.resumeTaskAssignment();
+
+    return checkpointId;
+  }
+
+  private async requestWorkerCheckpoint(
+    worker: string,
+    checkpointId: string
+  ): Promise<WorkerCheckpoint> {
+    return new Promise((resolve, reject) => {
+      const topic = `openclaw/swarm/worker/${worker}/checkpoint`;
+      const responseTopic = `openclaw/swarm/worker/${worker}/checkpoint/${checkpointId}`;
+
+      // Subscribe for response
+      this.mqtt.subscribe(responseTopic, { qos: 1 });
+
+      const timeout = setTimeout(() => {
+        this.mqtt.unsubscribe(responseTopic);
+        reject(new Error(`Checkpoint timeout for ${worker}`));
+      }, 30000);
+
+      this.mqtt.once('message', (topic, message) => {
+        if (topic === responseTopic) {
+          clearTimeout(timeout);
+          this.mqtt.unsubscribe(responseTopic);
+          resolve(MessagePack.decode(message));
         }
-    }()
-}
+      });
 
-// Communication via messages, not state access
-type TaskMessage struct {
-    TaskID   string
-    Type     string
-    Payload  interface{}
+      // Send checkpoint request
+      this.mqtt.publish(topic, MessagePack.encode({
+        checkpointId,
+        timestamp: Date.now()
+      }), { qos: 1 });
+    });
+  }
+
+  async restoreFromCheckpoint(checkpointId: string): Promise<void> {
+    // Get checkpoint metadata
+    const checkpoint = this.db.prepare(
+      'SELECT * FROM checkpoints WHERE id = ?'
+    ).get(checkpointId);
+
+    if (!checkpoint) {
+      throw new Error(`Checkpoint ${checkpointId} not found`);
+    }
+
+    const workers = JSON.parse(checkpoint.workers);
+
+    // Restore each worker's state
+    for (const result of workers) {
+      if (result.status === 'fulfilled') {
+        await this.restoreWorkerState(result.value);
+      }
+    }
+
+    // Replay in-flight messages
+    const inFlight = JSON.parse(checkpoint.in_flight_messages);
+    await this.replayMessages(inFlight);
+  }
 }
 ```
 
-### Pattern 2: Master-Worker with Task Queue
+**Integration Point:** Extends existing checkpoint system. Requires checkpoint coordination protocol via MQTT.
 
-**What:** Central orchestrator (Minerva) maintains task queue, assigns tasks to workers based on capabilities and availability. Workers pull tasks, execute, and report results.
+### Pattern 8: Dashboard Architecture
 
-**When to use:**
-- Clear task decomposition and delegation workflow
-- Centralized project context management
-- Need for task dependencies and ordering
+**What:** Web dashboard for real-time visualization of swarm state.
+
+**When to use:** For monitoring, debugging, and understanding swarm behavior.
 
 **Trade-offs:**
-- Pros: Simple mental model, easy debugging, centralized control
-- Cons: Single point of failure (orchestrator), potential bottleneck
+- Pros: Visibility into system state, easier debugging
+- Cons: Adds dependency (web server), increases memory footprint
 
-**Example:**
-```go
-type Orchestrator struct {
-    taskQueue  chan Task
-    agents     map[string]*AgentInfo
-    dispatcher *Dispatcher
+**Implementation:**
+
+```typescript
+// Dashboard architecture (inspired by openclaw-mission-control)
+//
+// Location: Runs on griak-brain (where Minerva and SQLite live)
+// Stack: Node.js + Express + WebSocket + static HTML/JS
+// Auto-discovery: Finds ~/.openclaw-swarm or OPENCLAW_SWARM_HOME
+//
+// Directory structure:
+// /opt/openclaw-swarm/
+//   ├── dashboard/
+//   │   ├── dist/          # Built static files (HTML/CSS/JS)
+//   │   │   └── bundle.js  # Frontend bundle
+//   │   └── server.ts      # Dashboard server
+//   └── state/
+//       └── swarm.db       # SQLite database
+
+// Dashboard server (runs alongside Minerva)
+import express from 'express';
+import { WebSocketServer } from 'ws';
+import http from 'http';
+
+class DashboardServer {
+  private app: express.Application;
+  private server: http.Server;
+  private wss: WebSocketServer;
+  private mqttClient: mqtt.Client;
+  private db: Database;
+
+  constructor() {
+    this.app = express();
+    this.server = http.createServer(this.app);
+    this.wss = new WebSocketServer({ server: this.server });
+    this.db = DatabaseConnection.getInstance();
+    this.mqttClient = getMQTTClient();
+
+    this.setupRoutes();
+    this.setupWebSocket();
+    this.setupMQTTBridge();
+  }
+
+  private setupRoutes() {
+    // Serve static files
+    this.app.use(express.static('/opt/openclaw-swarm/dashboard/dist'));
+
+    // REST API endpoints for dashboard
+    this.app.get('/api/agents', (req, res) => {
+      const agents = this.db.prepare('SELECT * FROM agents').all();
+      res.json(agents);
+    });
+
+    this.app.get('/api/tasks', (req, res) => {
+      const tasks = this.db.prepare(
+        'SELECT * FROM tasks ORDER BY created_at DESC LIMIT 100'
+      ).all();
+      res.json(tasks);
+    });
+
+    this.app.get('/api/workers/:workerId/load', (req, res) => {
+      // Load comes from MQTT retained messages, not SQLite
+      const load = this.getWorkerLoadFromMQTT(req.params.workerId);
+      res.json(load);
+    });
+  }
+
+  private setupWebSocket() {
+    this.wss.on('connection', (ws) => {
+      console.log('Dashboard client connected');
+
+      // Send initial state
+      this.sendInitialState(ws);
+
+      ws.on('close', () => {
+        console.log('Dashboard client disconnected');
+      });
+    });
+  }
+
+  private setupMQTTBridge() {
+    // Subscribe to all swarm topics
+    this.mqttClient.subscribe('openclaw/swarm/#', { qos: 0 });
+
+    // Bridge MQTT messages to WebSocket clients
+    this.mqttClient.on('message', (topic, message) => {
+      const data = MessagePack.decode(message);
+
+      this.wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'mqtt',
+            topic,
+            data
+          }));
+        }
+      });
+    });
+  }
+
+  private sendInitialState(ws: WebSocket) {
+    // Send agents, tasks, current state
+    const state = {
+      agents: this.db.prepare('SELECT * FROM agents').all(),
+      tasks: this.db.prepare('SELECT * FROM tasks WHERE status != ?').all('completed'),
+      workers: this.getCurrentWorkerStates()
+    };
+
+    ws.send(JSON.stringify({
+      type: 'init',
+      data: state
+    }));
+  }
+
+  listen(port: number) {
+    this.server.listen(port, () => {
+      console.log(`Dashboard listening on port ${port}`);
+    });
+  }
 }
 
-func (o *Orchestrator) DelegateTask(task Task) error {
-    // Select best agent based on role/capabilities
-    agent := o.dispatcher.SelectBestAgent(task, o.agents)
-    // Send task to selected agent
-    return o.sendTask(agent, task)
-}
+// Auto-discovery (similar to openclaw-mission-control)
+function discoverOpenClawSwarm() {
+  const paths = [
+    process.env.OPENCLAW_SWARM_HOME,
+    path.join(os.homedir(), '.openclaw-swarm'),
+    '/opt/openclaw-swarm'
+  ].filter(Boolean);
 
-type Worker struct {
-    role      string
-    taskQueue chan Task
-}
-
-func (w *Worker) Run() {
-    for task := range w.taskQueue {
-        result := w.execute(task)
-        w.reportResult(result)
+  for (const p of paths) {
+    if (fs.existsSync(path.join(p, 'state', 'swarm.db'))) {
+      return p;
     }
+  }
+
+  throw new Error('Cannot find OpenClaw Swarm installation');
 }
 ```
 
-### Pattern 3: Publish-Subscribe for Event Broadcasting
+**Integration Point:** New DashboardServer runs on griak-brain. Serves static files, provides REST API, bridges MQTT to WebSocket. Minimal impact on existing components.
 
-**What:** Agents publish events (status updates, completions) to topics; other agents subscribe to relevant topics. Decouples senders from receivers.
+**Mosquitto Configuration for WebSocket:**
 
-**When to use:**
-- Status broadcasting (heartbeats, progress updates)
-- Event-driven coordination
-- Multi-agent notifications
+```ini
+# /etc/mosquitto/mosquitto.conf
 
-**Trade-offs:**
-- Pros: Loose coupling, flexible routing, natural for IoT/embedded
-- Cons: No guaranteed delivery without QoS, message ordering challenges
+# Existing MQTT TCP
+port 1883
 
-**Example:**
-```go
-// Publisher (any agent)
-func (a *Agent) PublishStatus(status Status) {
-    msg := Message{
-        Topic:   "agent.status",
-        Payload: status,
-    }
-    a.bus.Publish(msg)
-}
-
-// Subscriber (orchestrator or other agents)
-func (o *Orchestrator) SubscribeToStatuses() {
-    o.bus.Subscribe("agent.status", func(msg Message) {
-        status := msg.Payload.(Status)
-        o.updateAgentStatus(status)
-    })
-}
+# Add WebSocket support
+listener 9001
+protocol websockets
+allow_anonymous false
+password_file /etc/mosquitto/passwd
 ```
 
-### Pattern 4: Request-Reply for Synchronous Queries
+**Dashboard Connection Flow:**
 
-**What:** Agent sends request and waits for reply. Useful for queries, guidance requests, and RPC-style interactions.
-
-**When to use:**
-- Agent requesting guidance from orchestrator
-- Synchronous queries to registry
-- Direct command-response patterns
-
-**Trade-offs:**
-- Pros: Simple request/response semantics, clear correlation
-- Cons: Blocking, requires both endpoints available, less resilient
-
-**Example:**
-```go
-// Requester (worker asking for guidance)
-func (w *Worker) RequestGuidance(taskID string) (Guidance, error) {
-    request := GuidanceRequest{
-        TaskID: taskID,
-        AgentID: w.id,
-    }
-    return w.client.Request("guidance", request)
-}
-
-// Replier (orchestrator providing guidance)
-func (o *Orchestrator) HandleGuidanceRequest(req GuidanceRequest) Guidance {
-    // Provide project context or task clarification
-    return o.getGuidanceFor(req.TaskID)
-}
+```
+Browser
+  ↓ HTTP (port 3333)
+Dashboard static files (HTML/JS)
+  ↓ WebSocket (port 3333)
+Dashboard WebSocket Server
+  ↓ MQTT subscribe
+Mosquitto Broker (port 1883/9001)
+  ↓ publish
+All workers and Minerva
 ```
 
 ## Data Flow
 
-### Task Delegation Flow
+### v1.1 Enhanced Request Flow
 
 ```
-User Request
+[User Request via Dashboard]
     ↓
-Minerva (Orchestrator)
-    ↓ (analyze task)
-Agent Registry (query capabilities)
-    ↓ (select best agent)
-Message Bus (send task)
+[Dashboard REST API]
     ↓
-Worker Agent (receive task)
-    ↓ (execute)
-State Store (update status)
+[Minerva Task Router] → [Capability Matcher] → [Load Balancer]
+    ↓                           ↓                    ↓
+[Worker Selection] ← [Agent Registry] ← [Worker Load Reports]
     ↓
-Message Bus (publish result)
+[MQTT Task Publish]
     ↓
-Minerva (aggregate result)
+[Worker receives task]
     ↓
-User Response
+[Progress updates via Message Batcher]
+    ↓
+[MQTT Progress Publish]
+    ↓
+[Dashboard WebSocket Bridge]
+    ↓
+[Real-time UI Update]
 ```
 
-### State Management Flow
+### Checkpoint Recovery Flow
 
 ```
-[Minerva]────────────┐
-      │              │
-      │ writes       │ reads
-      ▼              │
-  [Shared State Store]◀────┐
-      │                      │
-      │ publishes            │ subscribes
-      ▼                      │
-  [Message Bus]─────────────┼───────┐
-      │                      │       │
-      ▼                      ▼       ▼
-  [Vulcan]            [Worker-1] [Worker-2]
-   subscribes          subscribes subscribes
+[Checkpoint Triggered]
+    ↓
+[Minerva pauses task assignment]
+    ↓
+[Send checkpoint request to all workers via MQTT]
+    ↓
+[Workers save local state (60s interval) → respond]
+    ↓
+[Minerva records in-flight messages]
+    ↓
+[Checkpoint metadata written to SQLite]
+    ↓
+[Resume task assignment]
+
+On Recovery:
+    ↓
+[Minerva reads checkpoint metadata from SQLite]
+    ↓
+[Restore worker states from worker checkpoints]
+    ↓
+[Replay in-flight messages]
+    ↓
+[Resume operation]
 ```
 
-### Key Data Flows
+## Project Structure
 
-1. **Task Assignment:** Minerva → Task Queue → Worker Agent (pull or push)
-2. **Status Updates:** Worker Agent → Message Bus (pub) → Minerva (sub)
-3. **Guidance Request:** Worker Agent → Message Bus (req/rep) → Minerva
-4. **Result Reporting:** Worker Agent → State Store + Message Bus → Minerva
-5. **Agent Discovery:** Worker Agent → Registry → Minerva (query)
+### v1.1 Enhanced Structure
 
-## Scaling Considerations
+```
+/opt/openclaw-swarm/
+├── src/
+│   ├── minerva/                      # Minerva orchestrator
+│   │   ├── task-router.ts            # Existing: capability matching
+│   │   ├── load-aware-router.ts      # NEW: load-based routing
+│   │   ├── multi-capability-router.ts # NEW: multi-capability matching
+│   │   ├── dag-manager.ts            # Existing: dependency resolution
+│   │   └── checkpoint-coordinator.ts # NEW: distributed checkpointing
+│   ├── workers/                      # Worker implementations
+│   │   ├── load-tracker.ts           # NEW: load reporting
+│   │   ├── capability-declarator.ts  # NEW: dynamic capability declaration
+│   │   └── task-executor.ts          # Existing: task execution
+│   ├── mqtt/
+│   │   ├── client.ts                 # Existing: MQTT wrapper
+│   │   ├── message-batcher.ts        # NEW: message batching
+│   │   └── topics.ts                 # Existing: topic constants
+│   ├── storage/
+│   │   ├── database.ts               # Existing: SQLite connection
+│   │   ├── connection-pool.ts        # NEW: singleton + prepared statements
+│   │   ├── context-manager.ts        # NEW: context references
+│   │   └── checkpoint-store.ts       # Existing: checkpoint metadata
+│   ├── rest-api/
+│   │   ├── server.ts                 # Existing: Express server
+│   │   ├── routes/
+│   │   │   ├── agents.ts             # Existing
+│   │   │   ├── tasks.ts              # Existing
+│   │   │   └── dashboard.ts          # NEW: dashboard-specific endpoints
+│   │   └── websocket-bridge.ts       # NEW: MQTT → WebSocket bridge
+│   └── dashboard/                    # NEW: Dashboard server & frontend
+│       ├── server.ts                 # Dashboard HTTP/WebSocket server
+│       ├── auto-discovery.ts         # Find OpenClaw Swarm installation
+│       └── frontend/                 # Web UI source
+│           ├── src/
+│           │   ├── components/       # React components
+│           │   │   ├── SwarmOverview.tsx
+│           │   │   ├── TaskTimeline.tsx
+│           │   │   ├── CapabilityMatrix.tsx
+│           │   │   └── WorkerStatus.tsx
+│           │   ├── hooks/
+│           │   │   ├── useSwarmState.ts
+│           │   │   └── useWebSocket.ts
+│           │   └── pages/
+│           │       └── Dashboard.tsx
+│           └── package.json
+├── state/
+│   └── swarm.db                      # SQLite database (enhanced schema)
+├── dashboard/
+│   └── dist/                         # Built frontend assets
+├── config/
+│   ├── agent-registry.json           # Existing: static agent config
+│   └── dashboard.json                # NEW: dashboard config
+└── package.json
+```
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 2-4 agents (current) | Single orchestrator, in-memory state, lightweight broker (MQTT/ZeroMQ) |
-| 5-10 agents | Add persistent state store (SQLite), consider clustering (NATS) |
-| 10+ agents | Distributed orchestrator (leader election), Redis for state, partitioned topics |
+### Structure Rationale
 
-### Scaling Priorities
-
-1. **First bottleneck: Orchestrator memory/context**
-   - Mitigation: Offload project context to persistent store, implement context windowing, streaming state updates
-
-2. **Second bottleneck: Message bus throughput**
-   - Mitigation: Switch from MQTT to NATS for higher throughput, use topic partitioning, implement message batching
-
-3. **Third bottleneck: Network latency**
-   - Mitigation: Local message queuing, compression for large payloads, opportunistic synchronization
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Tight Coupling via Direct State Access
-
-**What people do:** Agents directly read/write each other's state or share memory
-**Why it's wrong:** Breaks encapsulation, creates race conditions, makes distributed debugging impossible
-**Do this instead:** Use message passing with private actor state, all state changes via messages
-
-### Anti-Pattern 2: Chatty Communications
-
-**What people do:** Excessive small messages between agents (status updates per line of code)
-**Why it's wrong:** Overwhelms message bus, especially on constrained networks (Pi 2B)
-**Do this instead:** Batch updates, heartbeat intervals, event-driven (not polling) status
-
-### Anti-Pattern 3: Synchronous Delegation Chains
-
-**What people do:** Minerva → Worker-1 → Worker-2 synchronously, blocking at each hop
-**Why it's wrong:** Long chains compound latency, single failure blocks entire chain
-**Do this instead:** Fire-and-forget with callbacks, parallel delegation where possible
-
-### Anti-Pattern 4: Ignoring Hardware Constraints
-
-**What people do:** Design assuming cloud resources, not considering Pi 2B (1GB RAM)
-**Why it's wrong:** OOM kills, swap thrashing, unusable system
-**Do this instead:** Memory budget per agent, streaming processing, lightweight protocol (MQTT vs Kafka)
+- **minerva/**: Orchestrator enhancements for v1.1 features (routing, checkpointing)
+- **workers/**: Worker-side enhancements (load tracking, capability declaration)
+- **mqtt/**: Message batching layer, extends existing MQTT client
+- **storage/**: Connection pooling, context references, extends existing SQLite access
+- **rest-api/**: Adds dashboard support routes and WebSocket bridge
+- **dashboard/**: New visualization layer, isolated to minimize impact on core
 
 ## Integration Points
 
@@ -356,91 +897,100 @@ User Response
 
 | Service | Integration Pattern | Notes |
 |---------|---------------------|-------|
-| OpenClaw Gateway | Direct library integration | Use pkg/swarm client API |
-| Message Broker (MQTT/NATS) | TCP client connection | Run on griak-brain, accessible to all |
-| State Store | Embedded SQLite (v1) | Single file on griak-brain, synced via messaging |
+| Mosquitto MQTT | Existing MQTT.js client | Add WebSocket listener on port 9001 |
+| SQLite | better-sqlite3 singleton | Add WAL checkpoint manager |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| Minerva ↔ Workers | Message Bus (req/rep + pub/sub) | Minerva sends tasks, receives results |
-| Workers ↔ Registry | Message Bus (req/rep) | Workers register, query capabilities |
-| Workers ↔ Workers | Message Bus (pub/sub) | Optional direct collaboration |
-| Swarm Layer ↔ OpenClaw | Library calls (in-process) | On same machine, no network needed |
+| Minerva ↔ Workers | MQTT pub/sub | Add load reporting topics, capability declaration topics |
+| Dashboard ↔ Minerva | REST API + WebSocket | REST for state queries, WebSocket for real-time updates |
+| Dashboard ↔ MQTT | MQTT subscribe + WebSocket bridge | Bridge subscribes to `openclaw/swarm/#`, forwards to WebSocket clients |
+| LoadTracker ↔ TaskRouter | MQTT retained messages | Load state in MQTT (not SQLite) for speed |
+| ContextManager ↔ Tasks | SQLite foreign keys | New tables extend existing task schema |
 
-## Hardware-Aware Design
+## Memory Impact on Pi 2B
 
-Given Pi 2B constraints (1GB RAM), architecture must prioritize:
+| Component | Additional Memory | Mitigation |
+|-----------|-------------------|------------|
+| Message Batching | ~1MB (buffer) | Configurable batch size, flush on memory pressure |
+| Load Tracker | <100KB | Minimal, only reports metrics |
+| Capability Declarator | <50KB | One-time at startup |
+| Dashboard (griak-brain only) | ~30MB (server) | Not on Pi 2B workers |
+| Connection Pooling | <1MB (statement cache) | Replaces connection overhead |
+| Context Manager | <500KB | Reduces duplication |
 
-1. **Memory Budget per Agent:** ~50-100MB max per agent process
-2. **Protocol Choice:** MQTT (lightweight) preferred over heavier brokers
-3. **State Storage:** SQLite with limited in-memory cache, not full Redis
-4. **Message Batching:** Combine multiple status updates into single message
-5. **Streaming Context:** Send task context in chunks, not all at once
+**Total on Pi 2B workers:** ~2-3MB additional
+**Total on griak-brain:** ~35MB additional (dashboard server)
+**Conclusion:** Acceptable within 1GB constraint, especially with existing 85% throttling threshold.
 
-## Recommended Build Order
+## Scaling Considerations
 
-Based on dependencies and complexity:
+| Scale | Current Architecture | v1.1 Impact |
+|-------|---------------------|-------------|
+| 4 workers (current) | MQTT handles easily | No change needed |
+| 10 workers | MQTT still fine | Dashboard may need rate limiting |
+| 50+ workers | Message batching critical | Load-based routing essential |
 
-1. **Phase 1: Communication Layer**
-   - Message bus abstraction + MQTT implementation
-   - Protocol definitions (messages, codec)
-   - Basic transport (client/server)
+### Scaling Priorities
 
-2. **Phase 2: Agent Core**
-   - Agent base implementation with lifecycle
-   - Heartbeat and health monitoring
-   - Message handling loop
+1. **First bottleneck:** Dashboard WebSocket connection count (mitigate with connection pooling on server)
+2. **Second bottleneck:** SQLite concurrent access (mitigate with WAL mode + connection pooling)
 
-3. **Phase 3: Registry and Discovery**
-   - Agent registration
-   - Capability querying
-   - Health tracking
+## Anti-Patterns
 
-4. **Phase 4: Task Queue and State**
-   - Task queue implementation
-   - Shared state store (SQLite)
-   - Status tracking
+### Anti-Pattern 1: Synchronous Load Reporting
 
-5. **Phase 5: Orchestrator (Minerva)**
-   - Task delegation logic
-   - Agent selection based on capabilities
-   - Result aggregation
+**What people do:** Query workers for load on every routing decision.
 
-6. **Phase 6: Worker Implementation**
-   - Task execution wrapper
-   - Status reporting
-   - Guidance request handling
+**Why it's wrong:** Blocks task assignment, high latency, worker overload from polling.
 
-7. **Phase 7: OpenClaw Integration**
-   - pkg/swarm client API
-   - Gateway integration hooks
-   - Configuration management
+**Do this instead:** Workers push load via MQTT retained messages every 5 seconds. Minerva reads from retained message (cache hit, no worker query).
+
+### Anti-Pattern 2: Storing Load State in SQLite
+
+**What people do:** Write load metrics to SQLite on every update.
+
+**Why it's wrong:** High write contention, unnecessary persistence (load is ephemeral), slower queries.
+
+**Do this instead:** Use MQTT retained messages for load state. Only persist to SQLite for historical analysis (async, separate table).
+
+### Anti-Pattern 3: Large Checkpoint Transactions
+
+**What people do:** Wrap entire checkpoint in single SQLite transaction.
+
+**Why it's wrong:** Blocks all other access, huge WAL growth, recovery time explodes.
+
+**Do this instead:** Per-worker checkpoints stored separately. SQLite only stores metadata and coordination state. Workers checkpoint locally first, then register with Minerva.
+
+### Anti-Pattern 4: Dashboard Polling REST API
+
+**What people do:** Frontend polls REST API every second for updates.
+
+**Why it's wrong:** High server load, stale data, unnecessary network traffic.
+
+**Do this instead:** WebSocket + MQTT bridge for real-time push updates. REST API only for initial state and queries.
+
+### Anti-Pattern 5: Message Batching Everything
+
+**What people do:** Batch all MQTT messages including task assignment.
+
+**Why it's wrong:** Adds unacceptable latency to task assignment, complex partial failure handling.
+
+**Do this instead:** Only batch high-frequency, low-value messages (progress, metrics, heartbeats). Task assignment and critical control messages remain unbatched.
 
 ## Sources
 
-### Agent Swarm Architecture Patterns
-- [Agent 蜂群模式（Swarm）](https://juejin.cn/post/7603575399255949352) - Swarm vs Supervisor vs Chain mode comparison
-- [AutoGen智能体开发：多代理设计模式](https://m.blog.csdn.net/shanghaiwren/article/details/155362307) - Multi-agent design patterns
-- [AgentScope: Actor-Based Distributed Multi-Agent Platform](https://arxiv.org/html/2402.14034) - Actor-based distributed mechanism research
-
-### Communication Protocols
-- [MQTT.org - Official Site](https://mqtt.org/) - MQTT protocol specification
-- [Eclipse Paho](https://www.eclipse.org/paho/index.php?page=clients/rust/index.php) - MQTT client implementations
-- [NATS with MQTT Support](https://cloud.tencent.com/developer/article/2517911) - NATS 2.10+ MQTT integration
-- [MQTT协议详解](https://m.blog.csdn.net/gitblog_00506/article/details/154165487) - MQTT protocol deep dive
-
-### Actor Model and Messaging
-- [Go语言的消息传递：ZeroMQ](https://m.blog.csdn.net/universsky2015/article/details/137281866) - ZeroMQ with Golang
-- [Golang之ZeroMQ基础使用](https://juejin.cn/post/7127297450066313253) - ZeroMQ tutorial
-- [Actor Model of Computation](https://xueshu.baidu.com/usercenter/paper/show?paperid=12f2249c49252cafde7690f36f3dfa50) - Actor model theory
-
-### Lightweight Coordination
-- [Adaptive Energy Management for Smart Microgrids](https://www.mdpi.com/2076-3417/15/19/10358) - Multi-agent with MQTT on Raspberry Pi
-- [构建跨设备音频流的多媒体管理系统](https://wenku.csdn.net/doc/3xx0hrezde) - ZeroMQ on Raspberry Pi 3B+
-- [nats-server边缘计算](https://m.blog.csdn.net/gitblog_00239/article/details/151143507) - NATS for edge computing
+- [Gossip-Enhanced Communication for Agentic AI](https://arxiv.org/html/2512.03285v1) - Dynamic capability discovery patterns
+- [Microsoft Learn: Cloud Challenges - Fault Tolerance](https://learn.microsoft.com/zh-cn/training/modules/cmu-distributed-programming-introduction/12-challenges-fault-tolerance/) - Distributed checkpoint consistency
+- [Mosquitto Web Management Tools (CSDN)](https://blog.csdn.net/gitblog_00216/article/details/151525166) - WebSocket configuration
+- [MQTT.js Documentation](http://www.jb51.net/article/281193.htm) - WebSocket connection patterns
+- [SQLite Advanced Usage and Security (CSDN)](https://m.blog.csdn.net/qq_62848032/article/details/147366088) - WAL mode optimization
+- [openclaw-mission-control](https://github.com/robsannaa/openclaw-mission-control) - Dashboard architecture reference
+- [Eunomia: Checkpoint/Restore Systems](https://eunomia.dev/zh/blog/posts/check-restore/) - Checkpoint implementation patterns
+- [GeeksforGeeks: Message Logging and Checkpointing](https://www.geeksforgeeks.org/system-design/distributed-system-fault-tolerance-using-message-logging-and-checkpointing/) - Recovery patterns
 
 ---
-*Architecture research for: OpenClaw Swarm - Distributed Agent Coordination*
-*Researched: 2026-02-21*
+*Architecture research for: OpenClaw Swarm v1.1 Enhancements*
+*Researched: 2026-02-22*
