@@ -18,12 +18,13 @@
  * - Retry logic with exponential backoff (ERRO-01)
  * - Progress tracking (STAT-02)
  * - Error classification (ERRO-02)
+ * - Memory throttling (HARD-04, Phase 4 Plan 02)
  */
 export interface Task {
   /** Unique task ID (UUID) */
   id: string;
-  /** Current task status */
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
+  /** Current task status (includes 'paused' for memory throttling) */
+  status: 'pending' | 'in_progress' | 'paused' | 'completed' | 'failed' | 'cancelled';
   /** Task priority (higher = more important) */
   priority: number;
   /** Agent ID assigned to this task (if any) */

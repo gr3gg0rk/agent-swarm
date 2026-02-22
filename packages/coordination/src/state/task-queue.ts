@@ -14,8 +14,9 @@ import type { Task as DelegationTask, TaskCreate as DelegationTaskCreate, TaskPr
 
 /**
  * Task status enumeration.
+ * Includes 'paused' for memory throttling per Phase 4 Plan 02.
  */
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
+export type TaskStatus = 'pending' | 'in_progress' | 'paused' | 'completed' | 'failed' | 'cancelled';
 
 /**
  * Task record from database.
