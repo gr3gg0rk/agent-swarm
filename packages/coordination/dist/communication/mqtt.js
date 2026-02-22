@@ -1,0 +1,201 @@
+/**
+ * MQTT client wrapper with auto-reconnect for OpenClaw Swarm coordination layer.
+ * Provides reliable message pub/sub with QoS support and MessagePack serialization.
+ */
+import mqtt from 'mqtt';
+import { EventEmitter } from 'events';
+import { v4 as uuidv4 } from 'uuid';
+// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
+import { MessagePack } from 'msgpackr';
+/**
+ * MQTT client wrapper with auto-reconnect and MessagePack serialization.
+ * Wraps MQTT.js client instance with typed events and serialization.
+ */
+export class MqttClient {
+    client;
+    config;
+    emitter;
+    /**
+     * Creates a new MQTT client wrapper.
+     * @param config - Broker connection configuration
+     */
+    constructor(config, client) {
+        this.config = config;
+        this.client = client;
+        this.emitter = new EventEmitter();
+        this.setupEventListeners();
+    }
+    /**
+     * Connects to the MQTT broker with auto-reconnect enabled.
+     * @param config - Broker connection configuration
+     * @returns Promise that resolves when connected
+     */
+    static async connectToBroker(config) {
+        return new Promise((resolve, reject) => {
+            const options = {
+                clientId: config.clientId,
+                clean: true,
+                connectTimeout: 4000,
+                reconnectPeriod: 1000,
+                ...(config.username && { username: config.username }),
+                ...(config.password && { password: config.password }),
+            };
+            const client = mqtt.connect(config.brokerUrl, options);
+            // Wait for 'connect' event
+            client.on('connect', () => {
+                const mqttClient = new MqttClient(config, client);
+                mqttClient.emitter.emit('connect');
+                resolve(mqttClient);
+            });
+            client.on('error', (error) => {
+                reject(new Error('MQTT connection failed: ' + error.message));
+            });
+        });
+    }
+    /**
+     * Sets up event listeners on the underlying MQTT client.
+     */
+    setupEventListeners() {
+        this.client.on('error', (error) => {
+            this.emitter.emit('error', error);
+        });
+        this.client.on('reconnect', () => {
+            this.emitter.emit('reconnect');
+        });
+        this.client.on('close', () => {
+            this.emitter.emit('close');
+        });
+        this.client.on('message', (topic, message) => {
+            try {
+                const envelope = MessagePack.decode(message);
+                this.emitter.emit('message', envelope, topic);
+            }
+            catch (error) {
+                this.emitter.emit('error', error);
+            }
+        });
+    }
+    /**
+     * Registers an event listener.
+     * @param event - Event name
+     * @param listener - Event listener
+     */
+    on(event, listener) {
+        this.emitter.on(event, listener);
+    }
+    /**
+     * Removes an event listener.
+     * @param event - Event name
+     * @param listener - Event listener
+     */
+    off(event, listener) {
+        this.emitter.off(event, listener);
+    }
+    /**
+     * Publishes a message to a topic.
+     * Uses MessagePack encoding for payloads per HARD-05.
+     * @param topic - MQTT topic to publish to
+     * @param envelope - Message envelope to publish
+     * @returns Promise that resolves when published
+     */
+    async publish(topic, envelope) {
+        return new Promise((resolve, reject) => {
+            try {
+                // Ensure timestamp is set
+                if (!envelope.timestamp) {
+                    envelope.timestamp = Date.now();
+                }
+                // Ensure messageId and idempotencyKey are set
+                if (!envelope.messageId) {
+                    envelope.messageId = uuidv4();
+                }
+                if (!envelope.idempotencyKey) {
+                    envelope.idempotencyKey = uuidv4();
+                }
+                // Serialize with MessagePack
+                const payload = MessagePack.encode(envelope);
+                // Determine QoS level (default 1, allow 0 for heartbeats per COMM-07)
+                const qos = envelope.qos ?? 1;
+                const retain = envelope.retain ?? false;
+                this.client.publish(topic, payload, { qos, retain }, (error) => {
+                    if (error) {
+                        reject(new Error('Publish failed: ' + error.message));
+                    }
+                    else {
+                        resolve();
+                    }
+                });
+            }
+            catch (error) {
+                reject(error);
+            }
+        });
+    }
+    /**
+     * Subscribes to a topic.
+     * @param topic - MQTT topic to subscribe to
+     * @param qos - QoS level for subscription (default 1)
+     * @returns Promise that resolves when subscribed
+     */
+    async subscribe(topic, qos = 1) {
+        return new Promise((resolve, reject) => {
+            this.client.subscribe(topic, { qos }, (error) => {
+                if (error) {
+                    reject(new Error('Subscription failed: ' + error.message));
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
+    }
+    /**
+     * Unsubscribes from a topic.
+     * @param topic - MQTT topic to unsubscribe from
+     * @returns Promise that resolves when unsubscribed
+     */
+    async unsubscribe(topic) {
+        return new Promise((resolve, reject) => {
+            this.client.unsubscribe(topic, (error) => {
+                if (error) {
+                    reject(new Error('Unsubscribe failed: ' + error.message));
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
+    }
+    /**
+     * Gracefully disconnects from the broker.
+     * @returns Promise that resolves when disconnected
+     */
+    async end() {
+        return new Promise((resolve, reject) => {
+            this.client.end(false, {}, (error) => {
+                if (error) {
+                    reject(new Error('Disconnect failed: ' + error.message));
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
+    }
+    /**
+     * Gets the underlying MQTT client instance.
+     * Use for advanced operations not exposed by this wrapper.
+     */
+    getRawClient() {
+        return this.client;
+    }
+}
+/**
+ * Convenience function to connect to the MQTT broker.
+ * @param config - Broker connection configuration
+ * @returns Promise that resolves to connected MqttClient
+ */
+export async function connectToBroker(config) {
+    return MqttClient.connectToBroker(config);
+}
+//# sourceMappingURL=mqtt.js.map
