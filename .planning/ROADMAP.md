@@ -58,12 +58,12 @@
   3. Router stops routing to agent after 3 consecutive rejections (circuit breaker pattern)
   4. Workers report load metrics every 5 seconds via MQTT retained messages
   5. Router uses weighted scoring (70% load + 30% historical performance) for agent selection
-**Plans:** TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 06-01: Load metrics collection and MQTT heartbeat reporting
-- [ ] 06-02: Load-aware routing algorithm with weighted scoring
-- [ ] 06-03: Task rejection, exponential backoff, and circuit breaker
+- [ ] 06-01: Load metrics collection and MQTT heartbeat reporting (ROUT-02)
+- [ ] 06-02: Load-aware routing algorithm with weighted scoring (ROUT-01, ROUT-03)
+- [ ] 06-03: Task rejection, exponential backoff, and circuit breaker (ROUT-04, ROUT-05, ROUT-06)
 
 ### Phase 7: Optimization
 **Goal:** Message throughput improved 10x through batching, connection pooling, and context reference passing
