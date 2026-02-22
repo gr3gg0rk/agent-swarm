@@ -19,7 +19,8 @@ export type MessageType =
   | 'cancel'
   | 'guidance_request'
   | 'guidance_response'
-  | 'task_failed';
+  | 'task_failed'
+  | 'load_metrics';
 
 /**
  * Task delegation message types for task execution flow.

@@ -12,6 +12,8 @@ import { v4 as uuidv4 } from 'uuid';
 import type { MqttClientMinimal } from '../discovery/registry.js';
 import { Topics } from '../communication/topics.js';
 import type { MessageEnvelope } from '../communication/message.js';
+import type { LoadMetrics } from '../delegation/types.js';
+import type { MemoryMonitor } from '../memory/monitor.js';
 
 // better-sqlite3 type import for database persistence
 // Database is optional - heartbeat works without persistence
@@ -36,6 +38,8 @@ export interface HeartbeatConfig {
   mqttClient: MqttClientMinimal;
   /** Optional database for persisting heartbeat state */
   db?: Database;
+  /** Optional memory monitor for load metrics */
+  memoryMonitor?: MemoryMonitor;
 }
 
 /**
@@ -62,6 +66,8 @@ export class HeartbeatPublisher {
   private config: HeartbeatConfig;
   private intervalId?: NodeJS.Timeout;
   private currentStatus: 'idle' | 'busy' | 'error' = 'idle';
+  private activeTaskCount: number = 0;
+  private maxCapacity: number = 5;
 
   constructor(config: HeartbeatConfig) {
     this.config = config;
@@ -104,6 +110,25 @@ export class HeartbeatPublisher {
   }
 
   /**
+   * Update active task count for load metrics reporting.
+   * Called by WorkerTaskExecutor when tasks start/complete.
+   *
+   * @param count - Current number of active tasks
+   */
+  setActiveTaskCount(count: number): void {
+    this.activeTaskCount = count;
+  }
+
+  /**
+   * Set maximum task capacity for this agent.
+   *
+   * @param capacity - Maximum concurrent tasks
+   */
+  setMaxCapacity(capacity: number): void {
+    this.maxCapacity = capacity;
+  }
+
+  /**
    * Publish heartbeat message via MQTT.
    * Creates MessageEnvelope with type='heartbeat', qos=0 per COMM-07.
    */
@@ -129,6 +154,54 @@ export class HeartbeatPublisher {
 
     this.config.mqttClient.publish(topic, payload, { qos: 0, retain: false }).catch((error) => {
       console.error('Failed to publish heartbeat:', error);
+    });
+
+    // Publish load metrics after heartbeat
+    this.publishLoadMetrics();
+  }
+
+  /**
+   * Publish load metrics via MQTT retained message.
+   *
+   * Per ROUT-02: Workers report load metrics every 5 seconds via retained messages.
+   * Per ROUT-04: Includes CPU/memory for 85% overload threshold.
+   */
+  publishLoadMetrics(): void {
+    // Get memory stats if monitor available, otherwise use defaults
+    let memoryPercent = 0;
+    let cpuPercent = 0;
+
+    if (this.config.memoryMonitor) {
+      const stats = this.config.memoryMonitor.getMemoryStats();
+      memoryPercent = stats.usagePercent * 100;
+      cpuPercent = this.config.memoryMonitor.getCPUPercent();
+    }
+
+    const metrics: LoadMetrics = {
+      agentId: this.config.agentId,
+      cpuPercent,
+      memoryPercent,
+      activeTasks: this.activeTaskCount,
+      maxCapacity: this.maxCapacity,
+      timestamp: Date.now(),
+    };
+
+    const envelope: MessageEnvelope = {
+      messageId: uuidv4(),
+      idempotencyKey: uuidv4(),
+      from: this.config.agentId,
+      type: 'load_metrics',
+      timestamp: Date.now(),
+      payload: metrics,
+      qos: 0,
+      retain: true,  // CRITICAL: retained for last-known-value
+    };
+
+    const topic = Topics.agentLoad(this.config.agentId);
+    const payload = JSON.stringify(envelope);
+
+    this.config.mqttClient.publish(topic, payload, { qos: 0, retain: true }).catch((error) => {
+      console.error('Failed to publish load metrics:', error);
     });
   }
 }
