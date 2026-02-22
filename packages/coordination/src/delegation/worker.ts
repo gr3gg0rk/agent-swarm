@@ -24,7 +24,7 @@ import type { RetryManager } from './retry.js';
 import type { GuidanceRequest } from './guidance.js';
 import type { ProgressReporter } from './progress.js';
 import { createProgressReporter } from './progress.js';
-import type { TaskCommandPayload, TaskResult, TaskProgress } from './types.js';
+import type { TaskCommandPayload, TaskResult, TaskProgress, TaskRejectedPayload } from './types.js';
 import type { ResumeLogic } from '../checkpoint/resume.js';
 import type { MemoryMonitor } from '../memory/monitor.js';
 
@@ -180,6 +180,75 @@ export class WorkerTaskExecutor {
   }
 
   /**
+   * Check if agent is overloaded before accepting task.
+   *
+   * Per ROUT-04: Agents can reject tasks when overloaded (CPU or memory above 85%).
+   *
+   * @returns true if overloaded, false if can accept task
+   */
+  private isOverloaded(): boolean {
+    if (!this.memoryMonitor) {
+      // No memory monitor available - assume not overloaded
+      return false;
+    }
+
+    const stats = this.memoryMonitor.getMemoryStats();
+    const cpuPercent = this.memoryMonitor.getCPUPercent();
+
+    // Check 85% threshold per ROUT-04
+    const memoryOverloaded = stats.usagePercent >= 0.85;
+    const cpuOverloaded = cpuPercent >= 85;
+
+    return memoryOverloaded || cpuOverloaded;
+  }
+
+  /**
+   * Send task rejection message.
+   *
+   * Per ROUT-04: Worker rejects task when overloaded.
+   *
+   * @param taskId - Task ID being rejected
+   * @param reason - Rejection reason
+   */
+  private async sendRejection(taskId: string, reason: 'overloaded' | 'no_capacity'): Promise<void> {
+    let cpuPercent = 0;
+    let memoryPercent = 0;
+
+    if (this.memoryMonitor) {
+      const stats = this.memoryMonitor.getMemoryStats();
+      memoryPercent = stats.usagePercent * 100;
+      cpuPercent = this.memoryMonitor.getCPUPercent();
+    }
+
+    const payload: TaskRejectedPayload = {
+      taskId,
+      reason,
+      cpuPercent,
+      memoryPercent,
+      timestamp: Date.now(),
+    };
+
+    const envelope: MessageEnvelope = {
+      messageId: uuidv4(),
+      idempotencyKey: uuidv4(),
+      from: this.agentId,
+      type: 'task_rejected',
+      timestamp: Date.now(),
+      payload,
+      qos: 1, // At-least-once delivery
+      retain: false,
+    };
+
+    const topic = Topics.taskResult(this.agentId);
+    await this.mqttClient.publish(topic, envelope);
+
+    console.warn(
+      `Task ${taskId} rejected by ${this.agentId}: ${reason} ` +
+      `(CPU: ${cpuPercent.toFixed(1)}%, Memory: ${memoryPercent.toFixed(1)}%)`
+    );
+  }
+
+  /**
    * Handle incoming command message.
    * Routes to appropriate handler based on message type.
    *
@@ -212,6 +281,18 @@ export class WorkerTaskExecutor {
   private async executeTask(command: TaskCommandPayload): Promise<void> {
     const { taskId, payload, timeoutMs, maxRetries = 3 } = command;
     const startTime = Date.now();
+
+    // CHECK: Is agent overloaded before accepting task?
+    if (this.isOverloaded()) {
+      await this.sendRejection(taskId, 'overloaded');
+      return;
+    }
+
+    // CHECK: Is agent at capacity?
+    if (this.activeTasks.size >= 5) {  // Default max capacity of 5
+      await this.sendRejection(taskId, 'no_capacity');
+      return;
+    }
 
     // Attempt to resume from checkpoint if resume logic is available
     let workingContext: unknown | undefined;
