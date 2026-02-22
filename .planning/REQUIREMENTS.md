@@ -9,9 +9,9 @@ Requirements for enhanced coordination capabilities. Each maps to roadmap phases
 
 ### Advanced Routing (ROUT)
 
-- [ ] **ROUT-01**: Router selects least-loaded agent matching required capability using heartbeat CPU/memory data
+- [x] **ROUT-01**: Router selects least-loaded agent matching required capability using heartbeat CPU/memory data
 - [ ] **ROUT-02**: Workers report load metrics (CPU, memory, active task count) every 5 seconds via MQTT retained messages
-- [ ] **ROUT-03**: Router implements weighted scoring (70% load score + 30% historical performance)
+- [x] **ROUT-03**: Router implements weighted scoring (70% load score + 30% historical performance)
 - [ ] **ROUT-04**: Agents can reject tasks when overloaded (CPU or memory above 85% threshold)
 - [ ] **ROUT-05**: Router retries rejected tasks with exponential backoff (2^n × 100ms, max 5s)
 - [ ] **ROUT-06**: Router implements circuit breaker — stops routing to agent after 3 consecutive rejections
@@ -90,9 +90,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ROUT-01 | Phase 6 | Pending |
+| ROUT-01 | Phase 6 | Complete |
 | ROUT-02 | Phase 6 | Pending |
-| ROUT-03 | Phase 6 | Pending |
+| ROUT-03 | Phase 6 | Complete |
 | ROUT-04 | Phase 6 | Pending |
 | ROUT-05 | Phase 6 | Pending |
 | ROUT-06 | Phase 6 | Pending |
