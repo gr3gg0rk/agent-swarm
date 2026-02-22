@@ -114,6 +114,9 @@ export class WorkerTaskExecutor {
   /** Task execution start times keyed by task ID */
   private taskStartTimes: Map<string, number>;
 
+  /** Pause check intervals keyed by task ID */
+  private pauseCheckIntervals: Map<string, NodeJS.Timeout>;
+
   /** Optional resume logic for checkpoint recovery */
   private resumeLogic?: ResumeLogic;
 
@@ -143,6 +146,7 @@ export class WorkerTaskExecutor {
   ) {
     this.activeTasks = new Map();
     this.taskStartTimes = new Map();
+    this.pauseCheckIntervals = new Map();
 
     // Store optional components
     this.resumeLogic = options.resumeLogic;
@@ -251,6 +255,13 @@ export class WorkerTaskExecutor {
     // Store start time
     this.taskStartTimes.set(taskId, startTime);
 
+    // Check if task is paused by memory throttle controller (HARD-04)
+    const task = this.taskQueue.getTask(taskId);
+    if (task && task.status === 'paused') {
+      console.info(`Task ${taskId} is paused, skipping execution`);
+      return;
+    }
+
     // Update task status to in_progress
     this.taskQueue.updateTaskStatus(taskId, 'in_progress', this.agentId);
 
@@ -282,6 +293,18 @@ export class WorkerTaskExecutor {
       (tid, retryCount) => this.handleTimeout(tid, retryCount)
     );
 
+    // Start pause status monitoring (HARD-04)
+    // Check task status every 1 second during execution
+    const pauseCheckInterval = setInterval(() => {
+      const currentTask = this.taskQueue.getTask(taskId);
+      if (currentTask && currentTask.status === 'paused') {
+        clearInterval(pauseCheckInterval);
+        this.pauseCheckIntervals.delete(taskId);
+        throw new Error('Task paused by memory throttle controller');
+      }
+    }, 1000);
+    this.pauseCheckIntervals.set(taskId, pauseCheckInterval);
+
     try {
       // Execute task with resume context if available
       const taskPayload = workingContext !== undefined ? workingContext : payload;
@@ -299,6 +322,11 @@ export class WorkerTaskExecutor {
       });
 
       // Cleanup
+      const pauseInterval = this.pauseCheckIntervals.get(taskId);
+      if (pauseInterval) {
+        clearInterval(pauseInterval);
+        this.pauseCheckIntervals.delete(taskId);
+      }
       this.timeoutMonitor.cancelTimeout(taskId);
       progressReporter.stop();
       this.activeTasks.delete(taskId);
@@ -355,7 +383,12 @@ export class WorkerTaskExecutor {
       // Schedule retry via RetryManager
       await this.retryManager.scheduleRetry(taskId, error);
 
-      // Cleanup: progressReporter, timeoutMonitor, activeTasks
+      // Cleanup: pauseCheckInterval, progressReporter, timeoutMonitor, activeTasks
+      const pauseInterval = this.pauseCheckIntervals.get(taskId);
+      if (pauseInterval) {
+        clearInterval(pauseInterval);
+        this.pauseCheckIntervals.delete(taskId);
+      }
       progressReporter.stop();
       this.timeoutMonitor.cancelTimeout(taskId);
       this.activeTasks.delete(taskId);
@@ -382,7 +415,12 @@ export class WorkerTaskExecutor {
         executionTime,
       });
 
-      // Cleanup: progressReporter, timeoutMonitor, activeTasks
+      // Cleanup: pauseCheckInterval, progressReporter, timeoutMonitor, activeTasks
+      const pauseInterval = this.pauseCheckIntervals.get(taskId);
+      if (pauseInterval) {
+        clearInterval(pauseInterval);
+        this.pauseCheckIntervals.delete(taskId);
+      }
       progressReporter.stop();
       this.timeoutMonitor.cancelTimeout(taskId);
       this.activeTasks.delete(taskId);
