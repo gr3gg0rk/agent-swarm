@@ -1,164 +1,169 @@
 # Roadmap: OpenClaw Swarm
 
-**Created:** 2026-02-21
-**Depth:** Comprehensive
-**Phases:** 5
+**Created:** 2026-02-22
+**Depth:** Standard
+**Milestone:** v1.1 Enhancements
 
-## Progress
+## Milestones
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Communication & Discovery | 3/3 | ✓ Complete | 2026-02-21 |
-| 2. Shared State & Lifecycle | 1/3 | In progress | 2026-02-21 |
-| 3. Task Delegation | 3/3 | ✓ Complete | 2026-02-21 |
-| 4. Error Handling & Recovery | 2/2 | Ready for execution | 2026-02-21 |
-| 5. Integration Wiring | 1/1 | Ready for execution | |
+- ✅ **v1.0 MVP** - Phases 1-5 (shipped 2026-02-22)
+- 🚧 **v1.1 Enhancements** - Phases 6-9 (in progress)
+- 📋 **v2.0 Advanced** - Future (planned)
 
 ## Phases
 
-- [x] **Phase 1: Communication & Discovery** ✓ (2026-02-21) - Message bus, MQTT implementation, agent registration
-- [ ] **Phase 2: Shared State & Lifecycle** - State persistence, heartbeat monitoring, agent supervision
-- [x] **Phase 3: Task Delegation** ✓ (2026-02-21) - Task queue, orchestrator delegation, worker execution, retry and guidance
-- [ ] **Phase 4: Error Handling & Recovery** - Checkpointing, graceful degradation, recovery from crashes
-- [ ] **Phase 5: Integration Wiring** - Gap closure for pause handling, guidance, and notification integrations
+<details>
+<summary>✅ v1.0 MVP (Phases 1-5) - SHIPPED 2026-02-22</summary>
+
+### Phase 1: Communication & Discovery ✓
+**Goal:** Agents can discover each other and exchange messages reliably across machines
+**Plans:** 3 plans
+
+### Phase 2: Shared State & Lifecycle ✓
+**Goal:** All agents share consistent view of system state and agent health
+**Plans:** 3 plans
+
+### Phase 3: Task Delegation ✓
+**Goal:** Minerva can assign tasks to agents and receive results back
+**Plans:** 3 plans
+
+### Phase 4: Error Handling & Recovery ✓
+**Goal:** System handles failures gracefully and recovers from crashes
+**Plans:** 2 plans
+
+### Phase 5: Integration Wiring ✓
+**Goal:** Complete all cross-phase integrations identified in v1.0 audit
+**Plans:** 1 plan
+
+</details>
+
+### 🚧 v1.1 Enhancements (In Progress)
+
+**Milestone Goal:** Advanced routing, optimization, checkpointing robustness, and operational visibility
+
+- [ ] **Phase 6: Advanced Routing** - Load-aware routing, dynamic capabilities, task rejection
+- [ ] **Phase 7: Optimization** - Message batching, connection pooling, context references
+- [ ] **Phase 8: Checkpointing Gaps** - Atomic writes, corruption recovery, cross-machine ordering
+- [ ] **Phase 9: Visualization** - Web dashboard for agent status, task progress, metrics
 
 ## Phase Details
 
-### Phase 1: Communication & Discovery
-
-**Goal:** Agents can discover each other and exchange messages reliably across machines
-
-**Depends on:** Nothing (first phase)
-
-**Requirements:** COMM-01, COMM-02, COMM-03, COMM-04, COMM-05, COMM-06, COMM-07, DISC-01, DISC-02, DISC-03, DISC-05, ERRO-03, HARD-01, HARD-02, HARD-05
-
+### Phase 6: Advanced Routing
+**Goal:** Router intelligently selects agents based on real-time load, capabilities, and historical performance
+**Depends on:** Phase 5 (v1.0 Integration Wiring)
+**Requirements:** ROUT-01, ROUT-02, ROUT-03, ROUT-04, ROUT-05, ROUT-06
 **Success Criteria** (what must be TRUE):
-1. Agent starting on any machine can discover other agents via MQTT retained messages
-2. Agent can send a message to a specific agent by ID and receive confirmation
-3. Agent can broadcast status updates that all other agents receive
-4. Duplicate messages are detected and discarded using idempotency keys
-5. MQTT broker runs on Pi 2B with <10MB RAM footprint
+  1. Router assigns task to least-loaded agent matching required capability using heartbeat CPU/memory data
+  2. Worker can reject task when overloaded (CPU or memory above 85%) and router retries with exponential backoff
+  3. Router stops routing to agent after 3 consecutive rejections (circuit breaker pattern)
+  4. Workers report load metrics every 5 seconds via MQTT retained messages
+  5. Router uses weighted scoring (70% load + 30% historical performance) for agent selection
+**Plans:** TBD
 
-**Plans:**
-- [x] 01-01-PLAN.md ✓ — MQTT message bus with QoS levels and message envelope structure
-- [x] 01-02-PLAN.md ✓ — Agent discovery using retained MQTT messages with duplicate rejection
-- [x] 01-03-PLAN.md ✓ — Idempotency, error logging, and complete example agent
+Plans:
+- [ ] 06-01: Load metrics collection and MQTT heartbeat reporting
+- [ ] 06-02: Load-aware routing algorithm with weighted scoring
+- [ ] 06-03: Task rejection, exponential backoff, and circuit breaker
 
----
-
-### Phase 2: Shared State & Lifecycle
-
-**Goal:** All agents share consistent view of system state and agent health
-
-**Depends on:** Phase 1 (communication layer)
-
-**Requirements:** DISC-04, LIFE-01, LIFE-02, LIFE-03, LIFE-05, STAT-01, STAT-04, STAT-05, STATE-01, STATE-02, STATE-03, STATE-04, STATE-05, HARD-03
-
+### Phase 7: Optimization
+**Goal:** Message throughput improved 10x through batching, connection pooling, and context reference passing
+**Depends on:** Phase 6 (routing metrics provide batching data)
+**Requirements:** OPTI-01, OPTI-02, OPTI-03, OPTI-04, OPTI-05, OPTI-06
 **Success Criteria** (what must be TRUE):
-1. Minerva can query and see real-time status of all agents (idle/busy/error)
-2. Shared task queue is accessible to all agents and supports concurrent read/write
-3. Agent that crashes is automatically restarted and rejoins the swarm
-4. Agent missing 4 consecutive heartbeats is marked offline
-5. State persists across agent restarts without data loss
+  1. High-frequency messages (progress, metrics, heartbeats) are buffered and sent in batches
+  2. MQTT connections are reused via connection pools (hardware-aware: Pi 2B=3, Pi 5=5, Beelink=10)
+  3. Context payloads larger than 10KB are passed by reference ID instead of full content
+  4. Context manager stores large contexts in SQLite with hash-based deduplication
+  5. Batching uses per-type thresholds (tasks=10ms, status=50ms, heartbeats=100ms)
+**Plans:** TBD
 
-**Plans:**
-- [ ] 02-01-PLAN.md — SQLite database with WAL mode, REST API for task queue and context storage
-- [ ] 02-02-PLAN.md — Heartbeat monitoring with 4-miss offline detection, systemd service templates, graceful shutdown
-- [ ] 02-03-PLAN.md — Per-agent HTTP health check endpoint with database and MQTT connectivity verification
+Plans:
+- [ ] 07-01: Message batching layer with per-type thresholds
+- [ ] 07-02: MQTT connection pooling with hardware-aware limits
+- [ ] 07-03: Context reference passing and SQLite-based context manager
 
----
-
-### Phase 3: Task Delegation
-
-**Goal:** Minerva can assign tasks to agents and receive results back
-
-**Depends on:** Phase 2 (state and lifecycle)
-
-**Requirements:** TASK-01, TASK-02, TASK-03, TASK-04, TASK-05, TASK-06, STAT-02, STAT-03, ERRO-01, ERRO-02, ERRO-04, ERRO-05
-
+### Phase 8: Checkpointing Gaps
+**Goal:** System recovers from corruption and cross-machine failures without data loss
+**Depends on:** Phase 7 (optimization frees memory for robustness features)
+**Requirements:** CHKP-01, CHKP-02, CHKP-03, CHKP-04, CHKP-05
 **Success Criteria** (what must be TRUE):
-1. Minerva can delegate a task to a specific agent by agent ID and receive result
-2. Minerva can delegate a task to any agent with a specific role
-3. Worker agent receives task, executes it, and publishes completion result
-4. Task that times out triggers escalation notification to Minerva
-5. Task with dependency waits for prerequisite task to complete first
+  1. Checkpoint writes are atomic (temp file + rename pattern) to prevent corruption
+  2. System keeps last 3 checkpoints for fallback on corruption detection
+  3. Checkpoint metadata includes CRC32 checksum validated on recovery
+  4. Recovery merges checkpoint state with current state (reconciliation, not overwrite)
+  5. Vector clocks track checkpoint ordering to tolerate clock skew across machines
+**Plans:** TBD
 
-**Plans:**
-- [x] 03-01-PLAN.md ✓ — Task delegation types, role-based router with hierarchical fallback, DAG-based dependency scheduler, timeout monitor with exponential backoff (2026-02-21)
-- [x] 03-02-PLAN.md ✓ — TaskDelegator for Minerva task assignment, WorkerTaskExecutor for task execution with progress tracking, TaskCancellation for cooperative cancellation (2026-02-21)
-- [x] 03-03-PLAN.md ✓ — RetryManager for automatic task retry with exponential backoff, GuidanceRequest for agent-to-Minerva communication, extended error handling (2026-02-21)
+Plans:
+- [ ] 08-01: Atomic checkpoint writes with CRC32 checksums
+- [ ] 08-02: Multi-checkpoint retention with fallback recovery
+- [ ] 08-03: State reconciliation and vector clock ordering
 
----
-
-### Phase 4: Error Handling & Recovery
-
-**Goal:** System handles failures gracefully and recovers from crashes
-
-**Depends on:** Phase 3 (task execution)
-
-**Requirements:** LIFE-04, HARD-04
-
+### Phase 9: Visualization
+**Goal:** Minerva can view real-time swarm status via lightweight web dashboard
+**Depends on:** Phase 6 (routing metrics), Phase 7 (optimized message flow)
+**Requirements:** VIZ-01, VIZ-02, VIZ-03, VIZ-04, VIZ-05, VIZ-06
 **Success Criteria** (what must be TRUE):
-1. Agent that crashes during task execution resumes from last checkpoint after restart
-2. System runs on griak-worker-2 (Pi 2B, 1GB RAM) without OOM errors
+  1. Dashboard displays agent status list (online/offline, CPU, memory, last heartbeat)
+  2. Dashboard displays active task progress (task ID, agent, status, % complete)
+  3. Dashboard displays system metrics overview (total agents, active tasks, queue depth)
+  4. Dashboard receives real-time updates via SSE throttled to 10 updates/second
+  5. Dashboard runs on griak-brain only (NOT on Pi 2B workers) using Vite + Alpine.js + Chart.js (~50MB)
+**Plans:** TBD
 
-**Plans:**
-- [x] 04-01-PLAN.md — Incremental checkpointing with hybrid local+SQLite storage, 60-second interval, 5-minute sync
-- [x] 04-02-PLAN.md — Resume validation with corruption detection, memory monitoring at 85% threshold, graceful task pausing
-- [ ] 04-03-PLAN.md — CheckpointManager TaskQueue integration and MemoryMonitor initialization cleanup
+Plans:
+- [ ] 09-01: Dashboard foundation with Vite + Alpine.js + Chart.js stack
+- [ ] 09-02: Agent status, task progress, and metrics views
+- [ ] 09-03: SSE real-time updates with throttling
 
----
+## Progress
 
-### Phase 5: Integration Wiring
+**Execution Order:**
+Phases execute in numeric order: 6 → 7 → 8 → 9
 
-**Goal:** Complete all cross-phase integrations identified in v1.0 audit
-
-**Depends on:** Phase 4 (error handling and recovery)
-
-**Requirements:** HARD-04, ERRO-05, ERRO-04
-
-**Gap Closure:** Closes integration gaps from v1.0 audit
-
-**Success Criteria** (what must be TRUE):
-1. WorkerTaskExecutor explicitly handles 'paused' task status from ThrottleController
-2. GuidanceRequest is connected to worker error handling (no TODO stubs)
-3. Minerva notification is sent when task exhausts all retries
-
-**Plans:**
-- [ ] 05-01-PLAN.md — Wire pause handling in WorkerTaskExecutor, connect GuidanceRequest, implement Minerva notification
-
----
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Communication & Discovery | v1.0 | 3/3 | Complete | 2026-02-21 |
+| 2. Shared State & Lifecycle | v1.0 | 3/3 | Complete | 2026-02-21 |
+| 3. Task Delegation | v1.0 | 3/3 | Complete | 2026-02-21 |
+| 4. Error Handling & Recovery | v1.0 | 2/2 | Complete | 2026-02-22 |
+| 5. Integration Wiring | v1.0 | 1/1 | Complete | 2026-02-22 |
+| 6. Advanced Routing | v1.1 | 0/3 | Not started | - |
+| 7. Optimization | v1.1 | 0/3 | Not started | - |
+| 8. Checkpointing Gaps | v1.1 | 0/3 | Not started | - |
+| 9. Visualization | v1.1 | 0/3 | Not started | - |
 
 ## Dependencies
 
 ```
-Phase 1: Communication & Discovery
+Phase 5: Integration Wiring (v1.0 COMPLETE)
     |
     v
-Phase 2: Shared State & Lifecycle
+Phase 6: Advanced Routing (load metrics for dashboard)
     |
     v
-Phase 3: Task Delegation
+Phase 7: Optimization (independent, immediate gains)
     |
     v
-Phase 4: Error Handling & Recovery
+Phase 8: Checkpointing Gaps (critical reliability)
     |
     v
-Phase 5: Integration Wiring
+Phase 9: Visualization (consumes routing + optimization data)
 ```
 
 ## Coverage Summary
 
 | Phase | Requirements | Coverage |
 |-------|--------------|----------|
-| 1 | 15 | COMM (7), DISC (4 of 5), ERRO (1), HARD (3) |
-| 2 | 14 | DISC (1), LIFE (4 of 5), STAT (3), STATE (5), HARD (1) |
-| 3 | 12 | TASK (6), STAT (2), ERRO (4) |
-| 4 | 1 | LIFE (1), HARD (1 continuous) |
+| 6 | 6 | ROUT-01 through ROUT-06 (Advanced Routing) |
+| 7 | 6 | OPTI-01 through OPTI-06 (Optimization) |
+| 8 | 5 | CHKP-01 through CHKP-05 (Checkpointing) |
+| 9 | 6 | VIZ-01 through VIZ-06 (Visualization) |
 
-**Total:** 42 v1 requirements mapped
+**Total:** 23 v1.1 requirements mapped
 **Unmapped:** 0
 **Coverage:** 100%
 
 ---
-*Roadmap created: 2026-02-21*
+*Roadmap created: 2026-02-22*
+*Milestone: v1.1 Enhancements*
