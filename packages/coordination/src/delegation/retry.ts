@@ -18,6 +18,9 @@ import { v4 as uuidv4 } from 'uuid';
 import type { TaskQueue } from '../state/task-queue.js';
 import type { TimeoutMonitor } from './timeout.js';
 import { classifyError, calculateBackoffDelay } from './timeout.js';
+import type { MqttClient } from '../communication/mqtt.js';
+import { Topics } from '../communication/topics.js';
+import type { MessageEnvelope } from '../communication/message.js';
 
 /**
  * Active retry state.
@@ -77,7 +80,7 @@ export interface RetryManagerOptions {
  *
  * @example
  * ```ts
- * const retryManager = new RetryManager(taskQueue, timeoutMonitor);
+ * const retryManager = new RetryManager(taskQueue, timeoutMonitor, mqttClient);
  *
  * // Schedule retry for transient error
  * await retryManager.scheduleRetry('task-123', timeoutError);
@@ -99,11 +102,13 @@ export class RetryManager {
    *
    * @param taskQueue - Task queue for updating retry counts and status
    * @param timeoutMonitor - Timeout monitor for error classification
+   * @param mqttClient - MQTT client for publishing failure notifications to Minerva
    * @param options - Optional configuration
    */
   constructor(
     private taskQueue: TaskQueue,
     private timeoutMonitor: TimeoutMonitor,
+    private mqttClient: MqttClient,
     options: RetryManagerOptions = {}
   ) {
     this.maxDelayMs = options.maxDelayMs ?? 30000; // 30 second cap
@@ -250,8 +255,8 @@ export class RetryManager {
   /**
    * Notify Minerva of exhausted retry attempts.
    *
-   * Creates TaskResult with failure details and publishes notification.
-   * Currently stubs the notification - actual Minerva integration to be implemented.
+   * Creates MessageEnvelope with task_failed type and publishes to MQTT.
+   * Per ERRO-04: Minerva notified when task fails after exhausting retries.
    *
    * @param taskId - Task ID that exhausted retries
    * @param error - Final error that caused failure
@@ -260,23 +265,33 @@ export class RetryManager {
     const task = this.taskQueue.getTask(taskId);
     const errorType = classifyError(error);
 
-    // Create failure result
-    const failureResult = {
-      taskId,
-      success: false,
-      error: {
-        type: errorType,
-        message: error.message,
-        stack: error.stack,
-        reason: `Task failed after ${task?.maxRetries ?? 3} retries`,
-      },
+    // Create message envelope for Minerva notification
+    const envelope: MessageEnvelope = {
+      messageId: uuidv4(),
+      idempotencyKey: uuidv4(),
+      from: 'retry-manager',
+      to: 'minerva',
+      type: 'task_failed',
       timestamp: Date.now(),
+      payload: {
+        taskId,
+        agentId: task?.assignedAgent,
+        error: {
+          type: errorType,
+          message: error.message,
+          reason: `Task failed after ${task?.maxRetries ?? 3} retries`,
+        },
+      },
+      qos: 1, // At-least-once delivery
+      retain: false,
     };
 
-    // TODO: Publish to Minerva via guidance request or dedicated topic
-    // For now, just log the failure
-    console.error(
-      `Task ${taskId} exhausted retries (${task?.maxRetries ?? 3} attempts). Error: ${error.message}`
+    // Publish to guidance request topic for Minerva (ERRO-04)
+    const topic = Topics.guidanceRequest();
+    await this.mqttClient.publish(topic, envelope);
+
+    console.log(
+      `Task ${taskId} exhausted retries (${task?.maxRetries ?? 3} attempts), notified Minerva via MQTT`
     );
 
     // Update task status to failed
@@ -329,13 +344,15 @@ export class RetryManager {
  *
  * @param taskQueue - Task queue for updating retry counts
  * @param timeoutMonitor - Timeout monitor for error classification
+ * @param mqttClient - MQTT client for publishing failure notifications to Minerva
  * @param options - Optional configuration
  * @returns RetryManager instance
  */
 export function createRetryManager(
   taskQueue: TaskQueue,
   timeoutMonitor: TimeoutMonitor,
+  mqttClient: MqttClient,
   options?: RetryManagerOptions
 ): RetryManager {
-  return new RetryManager(taskQueue, timeoutMonitor, options);
+  return new RetryManager(taskQueue, timeoutMonitor, mqttClient, options);
 }
