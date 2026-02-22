@@ -28,3 +28,6 @@ export * from './delegation/index.js';
 
 // Re-export all checkpoint types and functions
 export * from './checkpoint/index.js';
+
+// Re-export all memory management types and functions
+export * from './memory/index.js';
