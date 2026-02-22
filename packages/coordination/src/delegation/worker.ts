@@ -81,6 +81,8 @@ export interface WorkerTaskExecutorOptions {
   resumeLogic?: ResumeLogic;
   /** Optional memory monitor for automatic memory tracking */
   memoryMonitor?: MemoryMonitor;
+  /** Optional guidance request for ambiguous error handling (ERRO-05) */
+  guidanceRequest?: GuidanceRequest;
 }
 
 /**
@@ -123,6 +125,9 @@ export class WorkerTaskExecutor {
   /** Optional memory monitor for automatic memory tracking */
   private memoryMonitor?: MemoryMonitor;
 
+  /** Optional guidance request for ambiguous error handling */
+  protected guidanceRequest?: GuidanceRequest;
+
   /**
    * Creates a new worker task executor.
    *
@@ -134,7 +139,7 @@ export class WorkerTaskExecutor {
    * @param taskQueue - Task queue for status updates
    * @param timeoutMonitor - Timeout monitor for task timeout tracking
    * @param retryManager - Retry manager for error handling
-   * @param options - Optional configuration including resumeLogic and memoryMonitor
+   * @param options - Optional configuration including resumeLogic, memoryMonitor, and guidanceRequest
    */
   constructor(
     protected agentId: string,
@@ -151,6 +156,7 @@ export class WorkerTaskExecutor {
     // Store optional components
     this.resumeLogic = options.resumeLogic;
     this.memoryMonitor = options.memoryMonitor;
+    this.guidanceRequest = options.guidanceRequest;
 
     // Set up command handler (subscribe to task topic)
     this.setupCommandHandler();
@@ -375,6 +381,10 @@ export class WorkerTaskExecutor {
       ? Date.now() - this.taskStartTimes.get(taskId)!
       : 0;
 
+    // Request guidance for ambiguous errors (ERRO-05)
+    // Call before retry decision so guidance can inform retry behavior
+    await this.requestGuidanceIfNeeded(error, taskId);
+
     // Check if should retry
     if (this.retryManager.shouldRetry(error, retryCount, maxRetries)) {
       // Calculate backoff
@@ -460,11 +470,29 @@ export class WorkerTaskExecutor {
       return; // Not ambiguous, no guidance needed
     }
 
-    // Create guidance request and request guidance
-    // TODO: Integrate GuidanceRequest class when available
-    // For now, just log the situation
-    console.warn(`Ambiguous situation encountered for task ${taskId}: ${error.message}`);
-    console.warn(`Agent ${this.agentId} should request guidance from Minerva`);
+    // Request guidance from Minerva (ERRO-05)
+    if (this.guidanceRequest) {
+      try {
+        const guidance = await this.guidanceRequest.requestGuidance(taskId, error.message);
+
+        if (guidance) {
+          // Guidance received
+          console.info(`Guidance received for task ${taskId}: ${guidance}`);
+          // Store guidance or apply it - for now just log it
+          // The guidance could be used to retry with different parameters
+        } else {
+          // Timeout - no guidance received within 30 seconds
+          console.warn(`Guidance request timed out for task ${taskId}, proceeding with default behavior`);
+        }
+      } catch (guidanceError) {
+        console.error(`Guidance request failed for task ${taskId}: ${guidanceError}`);
+        // Proceed with default behavior on guidance request failure
+      }
+    } else {
+      // No guidance request available - log for manual intervention
+      console.warn(`Ambiguous situation encountered for task ${taskId}: ${error.message}`);
+      console.warn(`Agent ${this.agentId} should request guidance from Minerva (GuidanceRequest not configured)`);
+    }
   }
 
   /**
