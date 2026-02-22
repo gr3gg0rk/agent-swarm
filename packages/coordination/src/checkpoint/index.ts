@@ -3,6 +3,7 @@
  *
  * Exports all checkpoint types and classes for agent crash recovery.
  * Per 04-01-PLAN.md Task 5.
+ * Per 04-02-PLAN.md Task 1.
  */
 
 // Types
@@ -27,6 +28,9 @@ export type {
   CheckpointTaskStatus,
   TaskRef,
 } from './manager.js';
+
+export { ResumeLogic, createResumeLogic } from './resume.js';
+export type { ResumeLogicOptions } from './resume.js';
 
 /**
  * Factory function to create a fully configured CheckpointManager.
