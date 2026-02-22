@@ -30,6 +30,10 @@ export class MemoryMonitor {
   private readonly config: ThrottleConfig;
   private checkInterval: NodeJS.Timeout | null = null;
 
+  // CPU tracking fields for delta calculation
+  private lastCpuUsage: NodeJS.CpuUsage = { user: 0, system: 0 };
+  private lastCpuTimestamp: number = Date.now();
+
   /**
    * Creates a new MemoryMonitor instance.
    *
@@ -42,6 +46,8 @@ export class MemoryMonitor {
   ) {
     this.throttleController = throttleController;
     this.config = { ...DEFAULT_THROTTLE_CONFIG, ...config };
+    this.lastCpuUsage = process.cpuUsage();
+    this.lastCpuTimestamp = Date.now();
   }
 
   /**
@@ -166,6 +172,39 @@ export class MemoryMonitor {
    */
   getConfig(): ThrottleConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Get current CPU usage percentage.
+   *
+   * Calculates CPU percent from process.cpuUsage() across the check interval.
+   * Returns 0 on first call (needs delta between two measurements).
+   *
+   * Stores previous CPU usage and timestamp to calculate delta.
+   *
+   * @returns CPU usage percentage (0-100)
+   */
+  getCPUPercent(): number {
+    const usage = process.cpuUsage(this.lastCpuUsage);
+    const now = Date.now();
+    const timeDelta = now - this.lastCpuTimestamp;
+
+    // Store current values for next call
+    this.lastCpuUsage = process.cpuUsage();
+    this.lastCpuTimestamp = now;
+
+    // First call returns 0 (no delta yet)
+    if (timeDelta === 0) {
+      return 0;
+    }
+
+    // Calculate CPU percent: (user + system) / (elapsed time * number of CPUs)
+    const cpuTime = usage.user + usage.system;
+    const cpuCount = require('node:os').cpus().length;
+    const totalCpuTime = timeDelta * cpuCount * 1000; // Convert to microseconds
+    const cpuPercent = (cpuTime / totalCpuTime) * 100;
+
+    return Math.min(100, Math.max(0, cpuPercent));
   }
 
   /**
