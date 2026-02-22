@@ -130,8 +130,8 @@ From research/SUMMARY.md:
 
 ### Session Handoff
 
-**Stopped at:** Phase 3 Plan 03 complete, Phase 3 complete
-**Resume file:** .planning/phases/03-task-delegation/03-03-SUMMARY.md
+**Stopped at:** Phase 4 context gathered
+**Resume file:** .planning/phases/04-error-handling-recovery/04-CONTEXT.md
 
 ### Blockers
 
