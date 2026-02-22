@@ -71,7 +71,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **HARD-01**: Coordination layer (minus agent work) uses <100MB RAM per machine
 - [x] **HARD-02**: MQTT broker uses <10MB RAM on Pi 2B
 - [x] **HARD-03**: SQLite state store uses <15MB RAM on Pi 2B
-- [ ] **HARD-04**: System functions on griak-worker-2 (Pi 2B, 1GB RAM) without OOM
+- [x] **HARD-04**: System functions on griak-worker-2 (Pi 2B, 1GB RAM) without OOM
 - [x] **HARD-05**: Message payloads over 1KB are serialized with MessagePack for efficiency
 
 ## v2 Requirements
@@ -168,7 +168,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HARD-01 | Phase 1 | Complete |
 | HARD-02 | Phase 1 | Complete |
 | HARD-03 | Phase 2 | Complete |
-| HARD-04 | Phase 1, 2, 3, 4 | Pending |
+| HARD-04 | Phase 1, 2, 3, 4 | Complete |
 | HARD-05 | Phase 1 | Complete |
 
 **Coverage:**
