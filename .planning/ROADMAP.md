@@ -61,7 +61,7 @@
 **Plans:** 3 plans
 
 Plans:
-- [ ] 06-01: Load metrics collection and MQTT heartbeat reporting (ROUT-02)
+- [x] 06-01: Load metrics collection and MQTT heartbeat reporting (ROUT-02) - Completed 2026-02-22
 - [ ] 06-02: Load-aware routing algorithm with weighted scoring (ROUT-01, ROUT-03)
 - [ ] 06-03: Task rejection, exponential backoff, and circuit breaker (ROUT-04, ROUT-05, ROUT-06)
 
