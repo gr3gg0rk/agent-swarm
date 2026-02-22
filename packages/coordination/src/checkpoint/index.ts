@@ -13,6 +13,7 @@ export type {
   ResumeResult,
   CreateCheckpointOptions,
   CheckpointSyncStats,
+  CheckpointManagerOptions,
 } from './types.js';
 
 // Classes
@@ -24,13 +25,15 @@ export type { SQLiteSyncOptions } from './sync.js';
 
 export { CheckpointManager, createCheckpointManager } from './manager.js';
 export type {
-  CheckpointManagerOptions,
   CheckpointTaskStatus,
   TaskRef,
 } from './manager.js';
 
 export { ResumeLogic, createResumeLogic } from './resume.js';
 export type { ResumeLogicOptions } from './resume.js';
+
+// Re-export TaskQueue for CheckpointManagerOptions
+export type { TaskQueue } from '../state/task-queue.js';
 
 /**
  * Factory function to create a fully configured CheckpointManager.

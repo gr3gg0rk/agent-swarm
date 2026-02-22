@@ -7,21 +7,10 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { CheckpointData, CheckpointMetadata, CreateCheckpointOptions, CheckpointSyncStats } from './types.js';
+import type { CheckpointData, CheckpointMetadata, CreateCheckpointOptions, CheckpointSyncStats, CheckpointManagerOptions } from './types.js';
 import type { LocalFileStore } from './store.js';
 import type { SQLiteSync } from './sync.js';
-
-/**
- * Configuration for CheckpointManager.
- */
-export interface CheckpointManagerOptions {
-  /** Local file store for 60-second checkpoints */
-  localStore: LocalFileStore;
-  /** SQLite sync for 5-minute sync and cross-machine recovery */
-  sqliteSync: SQLiteSync;
-  /** Sync interval in milliseconds (default: 300000 = 5 minutes) */
-  syncIntervalMs?: number;
-}
+import type { TaskQueue } from '../state/task-queue.js';
 
 /**
  * Task status for checkpoint filtering decisions.

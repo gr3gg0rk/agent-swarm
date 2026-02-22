@@ -6,6 +6,8 @@
  * Per 04-01-PLAN.md Task 1.
  */
 
+import type { TaskQueue } from '../state/task-queue.js';
+
 /**
  * Core checkpoint data stored locally and in SQLite.
  * Task-specific fields (workingContext, partialResults, resourceHandles)
@@ -107,4 +109,19 @@ export interface CheckpointSyncStats {
   syncedCount: number;
   /** Timestamp of last successful sync */
   lastSyncTime: number;
+}
+
+/**
+ * Configuration options for CheckpointManager.
+ * Per 04-03-PLAN.md Task 1: Extended with optional TaskQueue dependency.
+ */
+export interface CheckpointManagerOptions {
+  /** Local file store for 60-second checkpoints */
+  localStore: import('./store.js').LocalFileStore;
+  /** SQLite sync for 5-minute sync and cross-machine recovery */
+  sqliteSync: import('./sync.js').SQLiteSync;
+  /** Sync interval in milliseconds (default: 300000 = 5 minutes) */
+  syncIntervalMs?: number;
+  /** Optional TaskQueue for actual task status queries in getTaskRef() */
+  taskQueue?: TaskQueue;
 }
