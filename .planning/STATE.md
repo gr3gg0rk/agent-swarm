@@ -1,23 +1,23 @@
 # Project State: OpenClaw Swarm
 
-**Last updated:** 2026-02-21
+**Last updated:** 2026-02-22
 
 ## Project Reference
 
 **Core Value:** Minerva can assign a task to any agent in the swarm and get a result back
 
-**Current Focus:** Phase 3 Plan 03 complete, Phase 3 complete
+**Current Focus:** Phase 4 Plan 01 complete
 
 ## Current Position
 
-**Phase:** 3 - Task Delegation
-**Plan:** 3 of 3 (COMPLETE)
-**Status:** Milestone complete
-**Progress:** [██████████] 100%
+**Phase:** 4 - Error Handling & Recovery
+**Plan:** 1 of 2 (COMPLETE)
+**Status:** In progress
+**Progress:** [████░░░░░] 50%
 
-### Phase 3 Goal
+### Phase 4 Goal
 
-Minerva can assign tasks to agents and receive results back with progress tracking, timeout handling, and automatic retry on failure
+System handles failures gracefully and recovers from crashes. Agents resume from last checkpoint after restart, and the system runs on constrained hardware (Pi 2B, 1GB RAM) without OOM errors.
 
 ## Performance Metrics
 
@@ -26,12 +26,14 @@ Minerva can assign tasks to agents and receive results back with progress tracki
 - **Phase 1 requirements:** 15 requirements (COMPLETE)
 - **Phase 2 requirements:** 14 requirements (8 COMPLETE - STATE-01 through STATE-05, HARD-03, STAT-04, STAT-05)
 - **Phase 3 requirements:** 10 requirements (10 COMPLETE - TASK-01 through TASK-06, STAT-02, STAT-03, ERRO-01, ERRO-02, ERRO-04, ERRO-05)
+- **Phase 4 requirements:** 3 requirements (1 COMPLETE - LIFE-04)
 - **Phase 1 completion:** 2026-02-21 (3 plans, ~320s execution time)
 - **Phase 2 Plan 01 completion:** 2026-02-21 (3 tasks, 201s execution time, 14 files created)
 - **Phase 3 Plan 01 completion:** 2026-02-21 (5 tasks, 192s execution time, 5 files created)
 - **Phase 3 Plan 02 completion:** 2026-02-21 (5 tasks, 234s execution time, 4 files created)
 - **Phase 3 Plan 03 completion:** 2026-02-21 (5 tasks, 423s execution time, 6 files created)
 - **Phase 3 completion:** 2026-02-21 (3 plans, ~849s total execution time)
+- **Phase 4 Plan 01 completion:** 2026-02-22 (5 tasks, 334s execution time, 8 files created)
 - **Estimated completion:** TBD
 
 ## Accumulated Context
@@ -84,6 +86,14 @@ Minerva can assign tasks to agents and receive results back with progress tracki
 - WorkerTaskExecutor.handleFailure() classifies errors, retries transient, aborts permanent
 - Minerva notified after max retries exhausted via task_failed message type
 
+**2026-02-22: Incremental Checkpointing for Crash Recovery (Plan 04-01)**
+- Hybrid checkpointing: local JSON files every 60 seconds for fast recovery, SQLite sync every 5 minutes for cross-machine recovery
+- CheckpointManager with smart filtering: 2-minute minimum threshold, state change detection, active-only checkpointing
+- LocalFileStore with atomic write pattern (temp file + rename) prevents corruption on crash
+- SQLiteSync with prepared statements for fast checkpoint CRUD operations
+- GracefulShutdown extended to sync checkpoints before process exit
+- CheckpointTaskStatus renamed from TaskStatus to avoid naming conflict with state module
+
 **2026-02-21: Agent Discovery (Plan 01-02)**
 - Used Node.js built-in EventEmitter instead of eventemitter3 due to TypeScript typing issues
 - eventemitter3@5.0.4 used (6.0.0 doesn't exist)
@@ -130,8 +140,8 @@ From research/SUMMARY.md:
 
 ### Session Handoff
 
-**Stopped at:** Phase 4 context gathered
-**Resume file:** .planning/phases/04-error-handling-recovery/04-CONTEXT.md
+**Stopped at:** Completed Phase 4 Plan 01 - Incremental Checkpointing
+**Resume file:** None
 
 ### Blockers
 
