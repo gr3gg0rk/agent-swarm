@@ -58,6 +58,9 @@ export const Topics = {
 
   /** Guidance response from Minerva (subscribe: requesting agent) - ERRO-05 */
   guidanceResponse: (agentId: string): string => `agent/${agentId}/guidance`,
+
+  /** Agent load metrics (ROUT-02) - retained message for current load */
+  agentLoad: (agentId: string): string => `agent/${agentId}/load`,
 } as const;
 
 /**
@@ -81,6 +84,9 @@ export const Subscriptions = {
 
   /** All agent registrations (retained messages) */
   agentStates: 'swarm/agents/#',
+
+  /** All agent load metrics (router subscribes here) */
+  allAgentLoads: 'agent/+/load',
 } as const;
 
 /**

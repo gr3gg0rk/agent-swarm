@@ -166,6 +166,27 @@ export const DEFAULT_ROLE_HIERARCHY: RoleHierarchy = {
 export const DEFAULT_TIMEOUT_MS = 120000;
 
 /**
+ * Load metrics published by agents for routing decisions.
+ *
+ * Per ROUT-02: Workers report load metrics (CPU, memory, active task count) every 5 seconds.
+ * Per ROUT-04: 85% threshold for overload detection.
+ */
+export interface LoadMetrics {
+  /** Agent ID reporting metrics */
+  agentId: string;
+  /** CPU usage percentage (0-100) */
+  cpuPercent: number;
+  /** Memory usage percentage (0-100) */
+  memoryPercent: number;
+  /** Number of currently active tasks */
+  activeTasks: number;
+  /** Maximum concurrent task capacity */
+  maxCapacity: number;
+  /** Unix timestamp in milliseconds */
+  timestamp: number;
+}
+
+/**
  * Default retry limit (ERRO-01).
  */
 export const DEFAULT_MAX_RETRIES = 3;
