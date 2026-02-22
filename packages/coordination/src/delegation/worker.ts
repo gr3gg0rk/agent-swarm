@@ -518,9 +518,30 @@ export class WorkerTaskExecutor {
       this.taskQueue.updateTaskStatus(taskId, 'pending');
       console.log(`Task ${taskId} timed out, re-queued for retry (${retryCount}/${maxRetries})`);
     } else {
-      // Max retries exhausted: notify Minerva
-      // TODO: Implement proper Minerva notification system
-      console.error(`Task ${taskId} failed after ${maxRetries} retries (timeout exhausted)`);
+      // Max retries exhausted: notify Minerva via MQTT
+      const envelope: MessageEnvelope = {
+        messageId: uuidv4(),
+        idempotencyKey: uuidv4(),
+        from: this.agentId,
+        to: 'minerva',
+        type: 'task_failed',
+        timestamp: Date.now(),
+        payload: {
+          taskId,
+          agentId: this.agentId,
+          error: {
+            type: 'permanent',
+            message: `Task timed out after ${maxRetries} retries`,
+            reason: 'Timeout exhausted',
+          },
+        },
+        qos: 1,
+        retain: false,
+      };
+
+      const topic = Topics.guidanceRequest();
+      await this.mqttClient.publish(topic, envelope);
+      console.error(`Task ${taskId} failed after ${maxRetries} retries (timeout exhausted), notified Minerva`);
     }
   }
 
