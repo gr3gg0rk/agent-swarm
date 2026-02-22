@@ -2,7 +2,7 @@
 
 **Created:** 2026-02-21
 **Depth:** Comprehensive
-**Phases:** 4
+**Phases:** 5
 
 ## Progress
 
@@ -12,6 +12,7 @@
 | 2. Shared State & Lifecycle | 1/3 | In progress | 2026-02-21 |
 | 3. Task Delegation | 3/3 | ✓ Complete | 2026-02-21 |
 | 4. Error Handling & Recovery | 2/2 | Ready for execution | 2026-02-21 |
+| 5. Integration Wiring | 0/1 | Gap closure | |
 
 ## Phases
 
@@ -19,6 +20,7 @@
 - [ ] **Phase 2: Shared State & Lifecycle** - State persistence, heartbeat monitoring, agent supervision
 - [x] **Phase 3: Task Delegation** ✓ (2026-02-21) - Task queue, orchestrator delegation, worker execution, retry and guidance
 - [ ] **Phase 4: Error Handling & Recovery** - Checkpointing, graceful degradation, recovery from crashes
+- [ ] **Phase 5: Integration Wiring** - Gap closure for pause handling, guidance, and notification integrations
 
 ## Phase Details
 
@@ -107,6 +109,26 @@
 
 ---
 
+### Phase 5: Integration Wiring
+
+**Goal:** Complete all cross-phase integrations identified in v1.0 audit
+
+**Depends on:** Phase 4 (error handling and recovery)
+
+**Requirements:** HARD-04, ERRO-05, ERRO-04
+
+**Gap Closure:** Closes integration gaps from v1.0 audit
+
+**Success Criteria** (what must be TRUE):
+1. WorkerTaskExecutor explicitly handles 'paused' task status from ThrottleController
+2. GuidanceRequest is connected to worker error handling (no TODO stubs)
+3. Minerva notification is sent when task exhausts all retries
+
+**Plans:**
+- [ ] 05-01-PLAN.md — Wire pause handling in WorkerTaskExecutor, connect GuidanceRequest, implement Minerva notification
+
+---
+
 ## Dependencies
 
 ```
@@ -120,6 +142,9 @@ Phase 3: Task Delegation
     |
     v
 Phase 4: Error Handling & Recovery
+    |
+    v
+Phase 5: Integration Wiring
 ```
 
 ## Coverage Summary

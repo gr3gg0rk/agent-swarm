@@ -29,16 +29,16 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **TASK-01**: Minerva can delegate a task to a specific agent by agent ID
 - [x] **TASK-02**: Minerva can delegate a task to any agent with a specific role (e.g., "builder", "debugger")
-- [ ] **TASK-03**: Tasks include unique IDs, capability requirements, priority, and context
-- [ ] **TASK-04**: Tasks have explicit timeout values (default 2 minutes) that trigger escalation
-- [ ] **TASK-05**: Minerva can cancel in-progress tasks and workers acknowledge cancellation
+- [x] **TASK-03**: Tasks include unique IDs, capability requirements, priority, and context
+- [x] **TASK-04**: Tasks have explicit timeout values (default 2 minutes) that trigger escalation
+- [x] **TASK-05**: Minerva can cancel in-progress tasks and workers acknowledge cancellation
 - [x] **TASK-06**: Task dependencies are tracked (Task B depends on Task A completing first)
 
 ### Status Reporting
 
 - [x] **STAT-01**: Agents publish heartbeat messages every 30 seconds with status (idle/busy/error)
-- [ ] **STAT-02**: Agents publish progress updates when working on long-running tasks
-- [ ] **STAT-03**: Agents publish completion results when tasks finish (success or failure)
+- [x] **STAT-02**: Agents publish progress updates when working on long-running tasks
+- [x] **STAT-03**: Agents publish completion results when tasks finish (success or failure)
 - [x] **STAT-04**: Minerva maintains real-time view of all agent statuses
 - [x] **STAT-05**: Status history is persisted for debugging and audit purposes
 
@@ -141,13 +141,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-05 | Phase 1 | Complete |
 | TASK-01 | Phase 3 | Complete |
 | TASK-02 | Phase 3 | Complete |
-| TASK-03 | Phase 3 | Pending |
-| TASK-04 | Phase 3 | Pending |
-| TASK-05 | Phase 3 | Pending |
+| TASK-03 | Phase 3 | Complete |
+| TASK-04 | Phase 3 | Complete |
+| TASK-05 | Phase 3 | Complete |
 | TASK-06 | Phase 3 | Complete |
 | STAT-01 | Phase 2 | Complete |
-| STAT-02 | Phase 3 | Pending |
-| STAT-03 | Phase 3 | Pending |
+| STAT-02 | Phase 3 | Complete |
+| STAT-03 | Phase 3 | Complete |
 | STAT-04 | Phase 2 | Complete |
 | STAT-05 | Phase 2 | Complete |
 | STATE-01 | Phase 2 | Complete |
@@ -158,8 +158,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERRO-01 | Phase 3 | Complete |
 | ERRO-02 | Phase 3 | Complete |
 | ERRO-03 | Phase 1 | Complete |
-| ERRO-04 | Phase 3 | Complete |
-| ERRO-05 | Phase 3 | Complete |
+| ERRO-04 | Phase 3, 5 | Complete |
+| ERRO-05 | Phase 3, 5 | Complete |
 | LIFE-01 | Phase 2 | Complete |
 | LIFE-02 | Phase 2 | Complete |
 | LIFE-03 | Phase 2 | Complete |
@@ -168,7 +168,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HARD-01 | Phase 1 | Complete |
 | HARD-02 | Phase 1 | Complete |
 | HARD-03 | Phase 2 | Complete |
-| HARD-04 | Phase 1, 2, 3, 4 | Complete |
+| HARD-04 | Phase 1, 2, 3, 4, 5 | Complete |
 | HARD-05 | Phase 1 | Complete |
 
 **Coverage:**
