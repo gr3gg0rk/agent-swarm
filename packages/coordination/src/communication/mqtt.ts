@@ -69,8 +69,14 @@ export class MqttClient {
   private constructor(config: BrokerConfig, client: MqttClientInstance) {
     this.config = config;
     this.client = client;
+    this.connectionPool = config.connectionPool;
     this.emitter = new EventEmitter();
     this.setupEventListeners();
+
+    // Generate operation ID for connection pool tracking
+    if (this.connectionPool) {
+      this.poolOperationId = `mqtt-${config.clientId}-${Date.now()}`;
+    }
   }
 
   /**
@@ -168,6 +174,29 @@ export class MqttClient {
   }
 
   /**
+   * Sets the connection pool for reusing MQTT connections (07-02).
+   * When set, connections are acquired from and released to the pool.
+   * Note: Connection pooling is opt-in and doesn't affect existing behavior when not set.
+   *
+   * @param pool - ConnectionPoolManager instance (optional)
+   */
+  setConnectionPool(pool: ConnectionPoolManager | undefined): void {
+    this.connectionPool = pool;
+    // Update operation ID when pool is set
+    if (pool) {
+      this.poolOperationId = `mqtt-${this.config.clientId}-${Date.now()}`;
+    }
+  }
+
+  /**
+   * Gets the current connection pool if set.
+   * @returns ConnectionPoolManager instance or undefined
+   */
+  getConnectionPool(): ConnectionPoolManager | undefined {
+    return this.connectionPool;
+  }
+
+  /**
    * Publishes a message to a topic.
    * Uses MessagePack encoding for payloads per HARD-05.
    * When batchPublisher is set, high-frequency messages are batched for throughput (07-01).
@@ -255,12 +284,18 @@ export class MqttClient {
   /**
    * Gracefully disconnects from the broker.
    * Flushes batcher if set before disconnecting (07-01).
+   * Releases connection back to pool if using connection pooling (07-02).
    * @returns Promise that resolves when disconnected
    */
   async end(): Promise<void> {
     // Flush batcher before disconnect to avoid losing messages
     if (this.batchPublisher) {
       await this.batchPublisher.stop();
+    }
+
+    // Release connection back to pool if using connection pooling
+    if (this.connectionPool && this.poolOperationId) {
+      await this.connectionPool.releaseConnection(this.poolOperationId);
     }
 
     return new Promise((resolve, reject) => {
