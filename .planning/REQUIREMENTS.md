@@ -22,8 +22,8 @@ Requirements for enhanced coordination capabilities. Each maps to roadmap phases
 - [x] **OPTI-02**: Batching uses per-type thresholds (tasks=10ms, status=50ms, heartbeats=100ms)
 - [x] **OPTI-03**: MQTT connection pooling reuses connections (2-4 per agent based on hardware)
 - [x] **OPTI-04**: Connection pool limits respect hardware (Pi 2B=3, Pi 5=5, Beelink=10)
-- [ ] **OPTI-05**: Context references pass IDs for payloads >10KB instead of full content
-- [ ] **OPTI-06**: Context manager stores large contexts in SQLite with hash for deduplication
+- [x] **OPTI-05**: Context references pass IDs for payloads >10KB instead of full content
+- [x] **OPTI-06**: Context manager stores large contexts in SQLite with hash for deduplication
 
 ### Checkpointing (CHKP)
 
@@ -100,8 +100,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OPTI-02 | Phase 7 | Complete |
 | OPTI-03 | Phase 7 | Complete |
 | OPTI-04 | Phase 7 | Complete |
-| OPTI-05 | Phase 7 | Pending |
-| OPTI-06 | Phase 7 | Pending |
+| OPTI-05 | Phase 7 | Complete |
+| OPTI-06 | Phase 7 | Complete |
 | CHKP-01 | Phase 8 | Pending |
 | CHKP-02 | Phase 8 | Pending |
 | CHKP-03 | Phase 8 | Pending |
