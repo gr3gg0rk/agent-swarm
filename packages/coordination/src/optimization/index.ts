@@ -1,8 +1,8 @@
 /**
  * Optimization module exports.
  *
- * Provides connection pooling and message batching optimizations for
- * the OpenClaw Swarm coordination layer.
+ * Provides connection pooling, message batching, and context reference passing
+ * optimizations for the OpenClaw Swarm coordination layer.
  */
 
 // Connection pooling
@@ -21,3 +21,12 @@ export {
   BatchConfig,
   DEFAULT_BATCH_CONFIG
 } from './batcher.js';
+
+// Context reference passing
+export {
+  ContextManager,
+  ContextReference,
+  ContextOptions,
+  prepareMessagePayload,
+  resolveMessagePayload
+} from './context-manager.js';
