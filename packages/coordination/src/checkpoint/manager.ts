@@ -14,6 +14,7 @@ import type { TaskQueue } from '../state/task-queue.js';
 import type { MqttClient } from '../communication/mqtt.js';
 import type { MessageEnvelope } from '../communication/message.js';
 import { VectorClockImpl } from './vector-clock.js';
+import { resolveMessagePayload } from '../optimization/context-manager.js';
 
 /**
  * Task status for checkpoint filtering decisions.
@@ -56,6 +57,7 @@ export class CheckpointManager {
   private readonly taskQueue?: TaskQueue;
   private readonly mqttClient?: MqttClient;
   private readonly agentId?: string;
+  private readonly contextManager?: import('../optimization/context-manager.js').ContextManager;
   private readonly vectorClock: VectorClockImpl;
 
   private readonly lastCheckpointTime: Map<string, number>;
@@ -76,6 +78,7 @@ export class CheckpointManager {
     this.taskQueue = options.taskQueue;
     this.mqttClient = options.mqttClient;
     this.agentId = options.agentId;
+    this.contextManager = options.contextManager;
 
     // Initialize vector clock for cross-machine ordering
     this.vectorClock = new VectorClockImpl(options.agentId || 'unknown');
@@ -219,6 +222,20 @@ export class CheckpointManager {
       try {
         const checkpoint = await this.localStore.load(checkpointId);
         if (checkpoint) {
+          // Resolve context references if contextManager available (Phase 10)
+          if (this.contextManager && checkpoint.workingContext) {
+            try {
+              checkpoint.workingContext = await resolveMessagePayload(
+                checkpoint.workingContext,
+                this.contextManager
+              );
+            } catch (resolveError) {
+              // Log warning but don't fail recovery - graceful degradation
+              console.warn(
+                `Failed to resolve context references for checkpoint ${checkpointId}: ${resolveError}`
+              );
+            }
+          }
           return checkpoint; // Success - found valid checkpoint
         }
       } catch (error) {
