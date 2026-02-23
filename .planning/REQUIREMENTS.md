@@ -39,7 +39,7 @@ Requirements for enhanced coordination capabilities. Each maps to roadmap phases
 - [x] **VIZ-02**: Dashboard displays active task progress (task ID, agent, status, % complete)
 - [x] **VIZ-03**: Dashboard displays system metrics overview (total agents, active tasks, queue depth)
 - [x] **VIZ-04**: Dashboard uses lightweight stack (Vite + Alpine.js + Chart.js, ~50MB)
-- [ ] **VIZ-05**: Real-time updates via SSE (Server-Sent Events) throttled to 10 updates/second
+- [x] **VIZ-05**: Real-time updates via SSE (Server-Sent Events) throttled to 10 updates/second
 - [x] **VIZ-06**: Dashboard deploys on griak-brain only, not Pi 2B workers
 
 ## v2 Requirements
@@ -111,7 +111,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIZ-02 | Phase 9 | Complete |
 | VIZ-03 | Phase 9 | Complete |
 | VIZ-04 | Phase 9 | Complete |
-| VIZ-05 | Phase 9 | Pending |
+| VIZ-05 | Phase 9 | Complete |
 | VIZ-06 | Phase 9 | Complete |
 
 **Coverage:**
