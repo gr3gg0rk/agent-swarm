@@ -9,8 +9,8 @@ Requirements for installation reliability and developer experience improvements.
 
 ### Critical Fixes
 
-- [ ] **CRIT-01**: Developer can run `npm install && npm run build` without import errors
-- [ ] **CRIT-02**: msgpackr imports use correct API (pack/unpack functions, not MessagePack class)
+- [x] **CRIT-01**: Developer can run `npm install && npm run build` without import errors
+- [x] **CRIT-02**: msgpackr imports use correct API (pack/unpack functions, not MessagePack class)
 - [ ] **CRIT-03**: Optimization module (MessageBatcher, ConnectionPoolManager, loadOptimizationConfig) exported from coordination package
 - [ ] **CRIT-04**: Schema functions (initializeSchema, validateSchema) exported from coordination package
 - [x] **CRIT-05**: Database pragma calls use `{ simple: true }` option for string return values
@@ -79,8 +79,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CRIT-01 | Phase 12 | Pending |
-| CRIT-02 | Phase 12 | Pending |
+| CRIT-01 | Phase 12 | Complete |
+| CRIT-02 | Phase 12 | Complete |
 | CRIT-03 | Phase 12 | Pending |
 | CRIT-04 | Phase 12 | Pending |
 | CRIT-05 | Phase 12 | Complete |
