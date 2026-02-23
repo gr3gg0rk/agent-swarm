@@ -75,12 +75,12 @@ Plans:
   3. Context payloads larger than 10KB are passed by reference ID instead of full content
   4. Context manager stores large contexts in SQLite with hash-based deduplication
   5. Batching uses per-type thresholds (tasks=10ms, status=50ms, heartbeats=100ms)
-**Plans:** TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 07-01: Message batching layer with per-type thresholds
-- [ ] 07-02: MQTT connection pooling with hardware-aware limits
-- [ ] 07-03: Context reference passing and SQLite-based context manager
+- [ ] 07-01-PLAN.md — Message batching layer with per-type thresholds (OPTI-01, OPTI-02)
+- [ ] 07-02-PLAN.md — MQTT connection pooling with hardware-aware limits (OPTI-03, OPTI-04)
+- [ ] 07-03-PLAN.md — Context reference passing and SQLite-based context manager (OPTI-05, OPTI-06)
 
 ### Phase 8: Checkpointing Gaps
 **Goal:** System recovers from corruption and cross-machine failures without data loss
@@ -129,7 +129,7 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 | 4. Error Handling & Recovery | v1.0 | 2/2 | Complete | 2026-02-22 |
 | 5. Integration Wiring | v1.0 | 1/1 | Complete | 2026-02-22 |
 | 6. Advanced Routing | v1.1 | 3/3 | Complete | 2026-02-23 |
-| 7. Optimization | v1.1 | 0/3 | Not started | - |
+| 7. Optimization | v1.1 | 0/3 | Ready to execute | - |
 | 8. Checkpointing Gaps | v1.1 | 0/3 | Not started | - |
 | 9. Visualization | v1.1 | 0/3 | Not started | - |
 
