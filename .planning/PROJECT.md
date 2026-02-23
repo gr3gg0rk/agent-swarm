@@ -32,7 +32,15 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 
 ### Active
 
-**Milestone v2.0 Goals (Planned):**
+**Milestone v1.2 Installation Fixes (Current):**
+- Fix critical msgpackr import errors (pack/unpack vs MessagePack)
+- Fix database schema initialization and exports
+- Fix column count mismatch in task queue INSERT
+- Add proper npm workspaces configuration
+- Add setup scripts and run scripts for easier deployment
+- Document Mosquitto persistence requirements
+
+**Milestone v2.0 Goals (Deferred):**
 - Multi-capability AND logic for task routing
 - Dynamic capability declaration at runtime
 - Adaptive batching with dynamic window scaling
@@ -125,4 +133,4 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 | Feature flags for optimization | Debugging flexibility | ✓ Good — environment variables |
 
 ---
-*Last updated: 2026-02-23 after v1.1 milestone completion*
+*Last updated: 2026-02-23 after v1.2 milestone started*

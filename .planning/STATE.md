@@ -7,13 +7,14 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** Minerva can assign a task to any agent in the swarm and get a result back
-**Current focus:** Planning v2.0 milestone
+**Current focus:** Milestone v1.2 Installation Fixes
 
 ## Current Position
 
-Phase: v1.1 COMPLETE — Ready for v2.0 planning
-Status: Milestone v1.1 Enhancements shipped 2026-02-23
-Last activity: 2026-02-23 — Milestone v1.1 complete with 6 phases, 14 plans, 23 requirements
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-23 — Milestone v1.2 Installation Fixes started
 
 Progress: [████████] 100% (v1.0: 13 plans, v1.1: 14 plans)
 
