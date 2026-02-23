@@ -98,7 +98,13 @@ Future phases for advanced features:
 5. Database pragma calls return string values (not Database objects) via `{ simple: true }` option
 6. Task queue INSERT statement has correct number of placeholders (15 columns, 15 placeholders)
 
-**Plans:** TBD
+**Plans:** 6 plans
+- [ ] 12-01-PLAN.md — Fix msgpackr imports to use pack/unpack functions
+- [ ] 12-02-PLAN.md — Add optimization module exports to main index
+- [ ] 12-03-PLAN.md — Add schema function exports to main index
+- [ ] 12-04-PLAN.md — Fix database pragma calls to use simple option
+- [ ] 12-05-PLAN.md — Fix INSERT statement placeholder count
+- [ ] 12-06-PLAN.md — Add regression tests and verify fixes
 
 ### Phase 13: Setup & Validation
 
