@@ -192,6 +192,23 @@ export interface LoadMetrics {
 export const DEFAULT_MAX_RETRIES = 3;
 
 /**
+ * Extended agent registration for routing decisions.
+ * Adds current task count and capacity information.
+ */
+export interface AgentWithCapacity {
+  /** Agent ID */
+  agentId: string;
+  /** Agent role */
+  role: string;
+  /** Agent capabilities */
+  capabilities: string[];
+  /** Number of tasks currently assigned to this agent */
+  currentTasks: number;
+  /** Maximum number of concurrent tasks this agent can handle */
+  maxCapacity: number;
+}
+
+/**
  * Performance record for historical task execution tracking.
  *
  * Per ROUT-03: Router uses 30% historical performance in weighted scoring.

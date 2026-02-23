@@ -14,22 +14,13 @@
  */
 
 import type { AgentRegistration } from '../discovery/types.js';
-import type { LoadMetrics } from './types.js';
-import type { AgentWithLoadMetrics, ScoringWeights, CircuitBreakerState as CircuitBreakerStateType } from './types.js';
+import type { LoadMetrics, AgentWithCapacity, AgentWithLoadMetrics, ScoringWeights } from './types.js';
 import type { PerformanceStore } from './performance-store.js';
 import type { CircuitBreakerRegistry } from './circuit-breaker.js';
 import { DEFAULT_ROLE_HIERARCHY, DEFAULT_SCORING_WEIGHTS, type RoleHierarchy } from './types.js';
 
-/**
- * Extended agent registration for routing decisions.
- * Adds current task count and capacity information.
- */
-export interface AgentWithCapacity extends AgentRegistration {
-  /** Number of tasks currently assigned to this agent */
-  currentTasks: number;
-  /** Maximum number of concurrent tasks this agent can handle */
-  maxCapacity: number;
-}
+// Re-export AgentWithCapacity for backward compatibility
+export type { AgentWithCapacity } from './types.js';
 
 /**
  * Circuit breaker interface for agent filtering.
@@ -102,16 +93,16 @@ export class TaskRouter {
    * 2. Calculate composite score for each eligible agent
    * 3. Return agent with highest score
    *
-   * @param agents - Available agents with load metrics
+   * @param agents - Available agents (with or without load metrics)
    * @param requiredRole - Minimum role level required for task
    * @param requiredCapability - Optional specific capability required
    * @returns Best matching agent or null if no eligible agent found
    */
-  findAgentForTask(
-    agents: AgentWithLoadMetrics[],
+  findAgentForTask<T extends AgentWithCapacity>(
+    agents: T[],
     requiredRole: string,
     requiredCapability?: string
-  ): AgentWithLoadMetrics | null {
+  ): T | null {
     const requiredLevel = this.getRoleLevel(requiredRole);
 
     // Filter agents by role level, capability, capacity, and circuit breaker state
@@ -152,10 +143,10 @@ export class TaskRouter {
    *
    * Per ROUT-03: 70% load score + 30% performance score.
    *
-   * @param agent - Agent with load metrics
+   * @param agent - Agent (with or without load metrics)
    * @returns Composite score (0-100, higher is better)
    */
-  private calculateCompositeScore(agent: AgentWithLoadMetrics): number {
+  private calculateCompositeScore(agent: AgentWithCapacity): number {
     const loadScore = this.calculateLoadScore(agent);
     const performanceScore = this.calculatePerformanceScore(agent.agentId);
 
@@ -171,21 +162,33 @@ export class TaskRouter {
    *
    * Combines CPU (40%), memory (40%), and task ratio (20%).
    * Lower load = higher score (inverted).
+   * If no load metrics available, uses task ratio only.
    *
    * Per ROUT-01: Uses heartbeat CPU/memory data.
    *
-   * @param agent - Agent with load metrics
+   * @param agent - Agent (with or without load metrics)
    * @returns Load score (0-100, higher is better)
    */
-  private calculateLoadScore(agent: AgentWithLoadMetrics): number {
-    // CPU load (0-1, where 1 = 100% CPU)
-    const cpuLoad = agent.cpuPercent / 100;
-
-    // Memory load (0-1, where 1 = 100% memory)
-    const memLoad = agent.memoryPercent / 100;
-
+  private calculateLoadScore(agent: AgentWithCapacity): number {
     // Task ratio (0-1, where 1 = at capacity)
     const taskRatio = agent.currentTasks / agent.maxCapacity;
+
+    // Check if load metrics are available
+    const hasLoadMetrics = 'cpuPercent' in agent && 'memoryPercent' in agent;
+
+    if (!hasLoadMetrics) {
+      // No load metrics - use task ratio only
+      const loadScore = (1 - taskRatio) * 100;
+      return Math.max(0, Math.min(100, loadScore));
+    }
+
+    const agentWithLoad = agent as AgentWithLoadMetrics;
+
+    // CPU load (0-1, where 1 = 100% CPU)
+    const cpuLoad = agentWithLoad.cpuPercent / 100;
+
+    // Memory load (0-1, where 1 = 100% memory)
+    const memLoad = agentWithLoad.memoryPercent / 100;
 
     // Combined load (weighted average)
     const combinedLoad =
