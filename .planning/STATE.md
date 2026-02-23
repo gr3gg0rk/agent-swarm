@@ -54,6 +54,7 @@ Progress: [██████░░] 56% (18/18 v1.0 plans complete, 9/15 v1.1 p
 | Phase 09-visualization P09-02 | 3min | 5 tasks | 5 files |
 | Phase 09 P03 | 262 | 5 tasks | 5 files |
 | Phase 10-context-recovery-integration P01 | 45min | 3 tasks | 3 files |
+| Phase 11 P01 | 774 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,9 @@ Recent decisions affecting current work:
 - [10-01]: Context references resolved via resolveMessagePayload() in loadCheckpointWithFallback() only (not during checkpoint creation)
 - [10-01]: Graceful degradation for missing context references: log warning but continue recovery
 - [10-01]: Checkpoint ID format must be {taskId}-{uuid} for listByTask() to work correctly
+- [Phase 11]: Production-safe defaults: both optimizations enabled by default
+- [Phase 11]: Independent feature flags allow granular debugging
+- [Phase 11]: Environment variables as configuration (no dotenv dependency)
 
 ### Pending Todos
 

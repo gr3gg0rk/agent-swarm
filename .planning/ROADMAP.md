@@ -46,7 +46,7 @@
 - [ ] **Phase 8: Checkpointing Gaps** - Atomic writes, corruption recovery, cross-machine ordering (2/3 plans)
 - [x] **Phase 9: Visualization** - Web dashboard for agent status, task progress, metrics ✓ 2026-02-23
 - [x] **Phase 10: Context Recovery Integration** - Wire ContextManager to CheckpointManager (gap closure) (completed 2026-02-23)
-- [ ] **Phase 11: Opt-In Feature Activation** - Enable MessageBatcher and ConnectionPool (gap closure)
+- [x] **Phase 11: Opt-In Feature Activation** - Enable MessageBatcher and ConnectionPool (gap closure) (completed 2026-02-23)
 
 ## Phase Details
 
@@ -143,7 +143,7 @@ Plans:
   2. ConnectionPool is activated in MQTT client initialization
   3. Feature flags allow toggling batching/pooling for debugging
   4. Documentation describes opt-in configuration options
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 11-01-PLAN.md — Activate MessageBatcher and ConnectionPool with feature flags (OPTI-01, OPTI-02, OPTI-03, OPTI-04)
@@ -165,7 +165,7 @@ Phases execute in numeric order: 6 → 7 → 8 → 9 → 10 → 11
 | 8. Checkpointing Gaps | v1.1 | 2/3 | In progress | 2026-02-23 |
 | 9. Visualization | v1.1 | 3/3 | Complete | 2026-02-23 |
 | 10. Context Recovery Integration | 1/1 | Complete    | 2026-02-23 | - |
-| 11. Opt-In Feature Activation | v1.1 | 0/1 | Pending | - |
+| 11. Opt-In Feature Activation | 1/1 | Complete   | 2026-02-23 | - |
 
 ## Dependencies
 
