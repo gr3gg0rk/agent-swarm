@@ -9,6 +9,12 @@
  * Per CONTEXT.md decisions: Timeout with exponential backoff, DAG-based dependencies.
  */
 
+// Import ContextReference from context-manager
+import { ContextReference as ContextRef } from '../optimization/context-manager.js';
+
+// Re-export for convenience
+export type { ContextRef as ContextReference };
+
 /**
  * Extended Task interface with dependency and retry tracking.
  *
@@ -309,4 +315,43 @@ export interface TaskRejectedPayload {
   memoryPercent: number;
   /** Unix timestamp in milliseconds */
   timestamp: number;
+}
+
+/**
+ * Extended task payload with context reference support.
+ *
+ * Per OPTI-05: Context payloads >10KB passed by reference ID instead of full content.
+ * Per OPTI-06: Context manager stores large contexts in SQLite with hash-based deduplication.
+ *
+ * Tasks can include either inline context (small payloads) or context reference (large payloads).
+ * The receiver uses ContextManager.getContext() to retrieve the full content.
+ */
+export interface TaskPayload {
+  /** Task-specific data */
+  payload?: unknown;
+  /** Optional context - either inline content (small) or reference (large) */
+  context?: {
+    /** Inline context content (for small payloads <10KB) */
+    content?: string | Buffer;
+    /** Reference to stored context (for large payloads >=10KB) */
+    ref?: ContextRef;
+  };
+}
+
+/**
+ * Context reference message type for notifying agents about stored context.
+ *
+ * Per OPTI-05: Context payloads larger than 10KB are passed by reference ID.
+ *
+ * When a task includes a context reference, the receiver may need to retrieve
+ * the content from the context manager. This message type can be used for
+ * context-related notifications.
+ */
+export interface ContextRefMessage {
+  /** SHA-256 hash as hex string (64 characters) */
+  ref: string;
+  /** Original content size in bytes */
+  size: number;
+  /** Agent ID storing the context */
+  agentId: string;
 }
