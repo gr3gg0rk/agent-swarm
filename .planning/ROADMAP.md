@@ -146,7 +146,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 11-01-PLAN.md — Activate MessageBatcher and ConnectionPool with feature flags
+- [ ] 11-01-PLAN.md — Activate MessageBatcher and ConnectionPool with feature flags (OPTI-01, OPTI-02, OPTI-03, OPTI-04)
 
 ## Progress
 
