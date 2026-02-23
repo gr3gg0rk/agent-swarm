@@ -14,8 +14,10 @@ import { createTaskRoutes } from './routes/tasks.js';
 import { createStatusRoutes } from './routes/status.js';
 import { createContextRoutes } from './routes/context.js';
 import { createHealthRoute } from './routes/health.js';
+import { createEventRoutes } from './routes/events.js';
 import { createTaskQueue } from '../state/task-queue.js';
 import { createContextStore } from '../state/context.js';
+import type { MqttClient } from '../communication/mqtt.js';
 
 /**
  * Server configuration options.
@@ -29,12 +31,15 @@ export interface ServerConfig {
   corsEnabled?: boolean;
   /** Allowed CORS origins (default: all localhost) */
   corsOrigins?: string[];
+  /** MQTT client for SSE load metrics subscription (optional) */
+  mqttClient?: MqttClient;
 }
 
 /**
  * Creates the Express application with all routes registered.
  *
  * @param db - Database instance
+ * @param mqttClient - Optional MQTT client for SSE load metrics subscription
  * @returns Configured Express application
  *
  * @example
@@ -43,7 +48,7 @@ export interface ServerConfig {
  * const app = createStateApi(db);
  * ```
  */
-export function createStateApi(db: Database.Database): Application {
+export function createStateApi(db: Database.Database, mqttClient?: MqttClient): Application {
   const app = express();
 
   // JSON middleware for request body parsing
@@ -58,6 +63,12 @@ export function createStateApi(db: Database.Database): Application {
   app.use('/api', createTaskRoutes(taskQueue));
   app.use('/api', createStatusRoutes(db));
   app.use('/api', createContextRoutes(contextStore));
+
+  // Register SSE event routes if mqttClient provided
+  if (mqttClient) {
+    const { router: eventRoutes } = createEventRoutes(db, mqttClient);
+    app.use('/api', eventRoutes);
+  }
 
   // 404 handler
   app.use((req, res) => {
