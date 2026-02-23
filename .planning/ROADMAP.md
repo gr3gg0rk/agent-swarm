@@ -41,7 +41,7 @@
 
 **Milestone Goal:** Advanced routing, optimization, checkpointing robustness, and operational visibility
 
-- [ ] **Phase 6: Advanced Routing** - Load-aware routing, dynamic capabilities, task rejection
+- [x] **Phase 6: Advanced Routing** - Load-aware routing, dynamic capabilities, task rejection ✓ 2026-02-23
 - [ ] **Phase 7: Optimization** - Message batching, connection pooling, context references
 - [ ] **Phase 8: Checkpointing Gaps** - Atomic writes, corruption recovery, cross-machine ordering
 - [ ] **Phase 9: Visualization** - Web dashboard for agent status, task progress, metrics
@@ -62,8 +62,8 @@
 
 Plans:
 - [x] 06-01: Load metrics collection and MQTT heartbeat reporting (ROUT-02) - Completed 2026-02-22
-- [ ] 06-02: Load-aware routing algorithm with weighted scoring (ROUT-01, ROUT-03)
-- [ ] 06-03: Task rejection, exponential backoff, and circuit breaker (ROUT-04, ROUT-05, ROUT-06)
+- [x] 06-02: Load-aware routing algorithm with weighted scoring (ROUT-01, ROUT-03) - Completed 2026-02-23
+- [x] 06-03: Task rejection, exponential backoff, and circuit breaker (ROUT-04, ROUT-05, ROUT-06) - Completed 2026-02-23
 
 ### Phase 7: Optimization
 **Goal:** Message throughput improved 10x through batching, connection pooling, and context reference passing
@@ -128,7 +128,7 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 | 3. Task Delegation | v1.0 | 3/3 | Complete | 2026-02-21 |
 | 4. Error Handling & Recovery | v1.0 | 2/2 | Complete | 2026-02-22 |
 | 5. Integration Wiring | v1.0 | 1/1 | Complete | 2026-02-22 |
-| 6. Advanced Routing | v1.1 | 0/3 | Not started | - |
+| 6. Advanced Routing | v1.1 | 3/3 | Complete | 2026-02-23 |
 | 7. Optimization | v1.1 | 0/3 | Not started | - |
 | 8. Checkpointing Gaps | v1.1 | 0/3 | Not started | - |
 | 9. Visualization | v1.1 | 0/3 | Not started | - |
