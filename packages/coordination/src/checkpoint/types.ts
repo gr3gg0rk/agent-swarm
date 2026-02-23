@@ -133,4 +133,6 @@ export interface CheckpointManagerOptions {
   mqttClient?: import('../communication/mqtt.js').MqttClient;
   /** Optional agent ID for alert from field (08-02) */
   agentId?: string;
+  /** Optional ContextManager for resolving context references during recovery (Phase 10) */
+  contextManager?: import('../optimization/context-manager.js').ContextManager;
 }
