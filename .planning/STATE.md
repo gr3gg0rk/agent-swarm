@@ -44,6 +44,7 @@ Progress: [████░░░░] 36% (14/15 v1.0 plans complete, 3/12 v1.1 p
 - Trend: Faster (Phase 6 was efficient)
 
 *Updated after each plan completion*
+| Phase 07-optimization P02 | 3min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,10 @@ Recent decisions affecting current work:
 - [06-02]: Weighted scoring algorithm: 70% load (CPU 40%, memory 40%, task ratio 20%) + 30% performance (success rate 70%, execution time 30%).
 - [06-03]: Circuit breaker opens after 3 consecutive rejections, auto-transitions to Half-Open after 60 seconds.
 - [06-03]: Exponential backoff: 2^n × 100ms with jitter, max 5s, up to 5 retry attempts.
+- [Phase 07-optimization]: Connection pooling is opt-in via BrokerConfig.connectionPool parameter
+- [Phase 07-optimization]: Hardware detection uses CPU model and total memory (Pi 2B ARMv7, Pi 5 ARMv8, Beelink x86_64)
+- [Phase 07-optimization]: LRU eviction when pool at capacity before creating new connection
+- [Phase 07-optimization]: Health checks every 30 seconds with 2-minute idle timeout
 
 ### Pending Todos
 
