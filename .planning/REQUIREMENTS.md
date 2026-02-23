@@ -13,7 +13,7 @@ Requirements for installation reliability and developer experience improvements.
 - [ ] **CRIT-02**: msgpackr imports use correct API (pack/unpack functions, not MessagePack class)
 - [ ] **CRIT-03**: Optimization module (MessageBatcher, ConnectionPoolManager, loadOptimizationConfig) exported from coordination package
 - [ ] **CRIT-04**: Schema functions (initializeSchema, validateSchema) exported from coordination package
-- [ ] **CRIT-05**: Database pragma calls use `{ simple: true }` option for string return values
+- [x] **CRIT-05**: Database pragma calls use `{ simple: true }` option for string return values
 - [x] **CRIT-06**: Task queue INSERT statement has correct number of placeholders (15, not 16)
 
 ### Setup & Validation
@@ -83,7 +83,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRIT-02 | Phase 12 | Pending |
 | CRIT-03 | Phase 12 | Pending |
 | CRIT-04 | Phase 12 | Pending |
-| CRIT-05 | Phase 12 | Pending |
+| CRIT-05 | Phase 12 | Complete |
 | CRIT-06 | Phase 12 | Complete |
 | SETUP-01 | Phase 13 | Pending |
 | SETUP-02 | Phase 13 | Pending |
