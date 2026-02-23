@@ -18,8 +18,8 @@ Requirements for enhanced coordination capabilities. Each maps to roadmap phases
 
 ### Optimization (OPTI)
 
-- [ ] **OPTI-01**: Message batching layer buffers high-frequency messages (progress, metrics, heartbeats)
-- [ ] **OPTI-02**: Batching uses per-type thresholds (tasks=10ms, status=50ms, heartbeats=100ms)
+- [x] **OPTI-01**: Message batching layer buffers high-frequency messages (progress, metrics, heartbeats)
+- [x] **OPTI-02**: Batching uses per-type thresholds (tasks=10ms, status=50ms, heartbeats=100ms)
 - [x] **OPTI-03**: MQTT connection pooling reuses connections (2-4 per agent based on hardware)
 - [x] **OPTI-04**: Connection pool limits respect hardware (Pi 2B=3, Pi 5=5, Beelink=10)
 - [ ] **OPTI-05**: Context references pass IDs for payloads >10KB instead of full content
@@ -96,8 +96,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ROUT-04 | Phase 6 | Pending |
 | ROUT-05 | Phase 6 | Pending |
 | ROUT-06 | Phase 6 | Pending |
-| OPTI-01 | Phase 7 | Pending |
-| OPTI-02 | Phase 7 | Pending |
+| OPTI-01 | Phase 7 | Complete |
+| OPTI-02 | Phase 7 | Complete |
 | OPTI-03 | Phase 7 | Complete |
 | OPTI-04 | Phase 7 | Complete |
 | OPTI-05 | Phase 7 | Pending |

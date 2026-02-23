@@ -7,16 +7,16 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Minerva can assign a task to any agent in the swarm and get a result back
-**Current focus:** Phase 7 - Optimization (next phase)
+**Current focus:** Phase 7 - Optimization
 
 ## Current Position
 
-Phase: 6 of 9 (Advanced Routing) — COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase 6 complete, ready for Phase 7
-Last activity: 2026-02-23 — Completed 06-03: Circuit breaker, task rejection, exponential backoff
+Phase: 7 of 9 (Optimization) — IN PROGRESS
+Plan: 1 of 3 in current phase
+Status: Completed 07-01 (Message Batching), ready for 07-02
+Last activity: 2026-02-23 — Completed 07-01: Time-windowed message batching with dual-trigger flushing
 
-Progress: [████░░░░] 36% (14/15 v1.0 plans complete, 3/12 v1.1 plans)
+Progress: [████░░░░] 37% (15/18 v1.0 plans complete, 3/12 v1.1 plans)
 
 ## Performance Metrics
 
@@ -65,6 +65,10 @@ Recent decisions affecting current work:
 - [06-02]: Weighted scoring algorithm: 70% load (CPU 40%, memory 40%, task ratio 20%) + 30% performance (success rate 70%, execution time 30%).
 - [06-03]: Circuit breaker opens after 3 consecutive rejections, auto-transitions to Half-Open after 60 seconds.
 - [06-03]: Exponential backoff: 2^n × 100ms with jitter, max 5s, up to 5 retry attempts.
+- [07-01]: Task assignments bypass batching entirely (latency critical per 07-RESEARCH.md Open Question 4)
+- [07-01]: Message batching uses dual-trigger flushing (time OR size, whichever first) to prevent unbounded buffer growth
+- [07-01]: Per-type batch thresholds: tasks=10ms/50, status=50ms/100, heartbeats=100ms/20 (OPTI-02)
+- [07-01]: Batcher wraps MqttClient.publish() with graceful fallback to direct publish on failure (Pitfall 4)
 - [Phase 07-optimization]: Connection pooling is opt-in via BrokerConfig.connectionPool parameter
 - [Phase 07-optimization]: Hardware detection uses CPU model and total memory (Pi 2B ARMv7, Pi 5 ARMv8, Beelink x86_64)
 - [Phase 07-optimization]: LRU eviction when pool at capacity before creating new connection
@@ -88,10 +92,10 @@ Critical for Phase 6-9:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 6 complete (all 3 plans executed and verified)
+Stopped at: Completed 07-01 (Message Batching), ready for 07-02 (Connection Pooling)
 Resume file: None
 
-Next: `/gsd:execute-phase 7` to begin Optimization phase (message batching, connection pooling, context references)
+Next: `/gsd:execute-phase 7` to continue Optimization phase (connection pooling, context references)
 
 ---
-*State updated: 2026-02-23 — Phase 6 complete*
+*State updated: 2026-02-23 — Phase 7 Plan 1 complete*
