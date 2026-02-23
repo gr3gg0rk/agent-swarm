@@ -40,6 +40,8 @@ export interface ResumeLogicOptions {
     maxClockSkewMs?: number;
     /** Enable clock skew detection (default: true) */
     enableClockSkewDetection?: boolean;
+    /** Agent ID for vector clock initialization (default: 'unknown') */
+    agentId?: string;
 }
 /**
  * Resume Logic with checkpoint validation and task relevance checking.
@@ -59,6 +61,7 @@ export declare class ResumeLogic {
     private readonly logger;
     private readonly maxClockSkewMs;
     private readonly enableClockSkewDetection;
+    private readonly vectorClock;
     /**
      * Creates a new ResumeLogic instance.
      *
@@ -76,9 +79,14 @@ export declare class ResumeLogic {
      * 2. Return { restart } if no checkpoint found
      * 3. Validate checkpoint integrity via validateCheckpoint()
      * 4. Return { request_guidance } if validation fails
-     * 5. Check task relevance via isTaskRelevant()
-     * 6. Return appropriate ResumeResult based on relevance
-     * 7. Return { resume, checkpoint } if all checks pass
+     * 5. Validate vector clock (if present) - reject older checkpoints
+     * 6. Check task relevance via isTaskRelevant()
+     * 7. Return appropriate ResumeResult based on relevance
+     * 8. Reconcile checkpoint with current state
+     * 9. Return { resume, checkpoint } if all checks pass
+     *
+     * Per 08-03-PLAN.md Task 5: Vector clock validation and state reconciliation.
+     * Per 08-CONTEXT.md: Reject older checkpoints, merge state during recovery.
      *
      * @param taskId - Task identifier
      * @returns ResumeResult with action and optional checkpoint
@@ -92,6 +100,9 @@ export declare class ResumeLogic {
      * - Timestamp not in future (clock skew detection)
      * - Progress between 0-100
      * - timeInvestedMs >= 0
+     * - CRC32 checksum if present (after field validation)
+     *
+     * Per 08-CONTEXT.md: Checksum validation happens after field validation.
      *
      * @param checkpoint - Checkpoint data to validate
      * @returns Validation result
@@ -129,6 +140,19 @@ export declare class ResumeLogic {
      * @returns CheckpointManager instance
      */
     getCheckpointManager(): CheckpointManager;
+    /**
+     * Gets current agent state for reconciliation.
+     *
+     * Extracts current progress, partial results, and working context
+     * from the task to merge with checkpoint data during recovery.
+     *
+     * Per 08-03-PLAN.md Task 5: Required for reconciliation merge.
+     *
+     * @param taskId - Task identifier
+     * @param checkpoint - Checkpoint data for fallback values
+     * @returns Current agent state for reconciliation
+     */
+    private getCurrentAgentState;
     /**
      * Get task queue instance.
      *

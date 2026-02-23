@@ -6,6 +6,7 @@
  * Per 04-01-PLAN.md Task 4.
  */
 import type { CheckpointData, CheckpointMetadata, CreateCheckpointOptions, CheckpointSyncStats, CheckpointManagerOptions } from './types.js';
+import { VectorClockImpl } from './vector-clock.js';
 /**
  * Task status for checkpoint filtering decisions.
  * Renamed to CheckpointTaskStatus to avoid conflict with state module's TaskStatus.
@@ -43,6 +44,10 @@ export declare class CheckpointManager {
     private readonly syncIntervalMs;
     private readonly minTimeInvestedMs;
     private readonly taskQueue?;
+    private readonly mqttClient?;
+    private readonly agentId?;
+    private readonly contextManager?;
+    private readonly vectorClock;
     private readonly lastCheckpointTime;
     private readonly lastCheckpointState;
     private readonly pendingSync;
@@ -78,6 +83,35 @@ export declare class CheckpointManager {
      */
     loadCheckpoint(taskId: string): Promise<CheckpointData | null>;
     /**
+     * Loads a checkpoint with fallback to previous checkpoints on corruption.
+     *
+     * Tries up to 3 most recent checkpoints for a task, falling back on corruption.
+     * When corruption is detected:
+     * - Logs a warning
+     * - Deletes the corrupted checkpoint from both local and SQLite
+     * - Emits an MQTT alert event for monitoring
+     * - Continues to the next checkpoint
+     *
+     * Per 08-02-PLAN.md Task 1: Fallback + alert on corruption detection.
+     *
+     * @param taskId - Task identifier
+     * @returns Most recent valid checkpoint data or null if all checkpoints failed
+     */
+    loadCheckpointWithFallback(taskId: string): Promise<CheckpointData | null>;
+    /**
+     * Emits a corruption alert via MQTT for monitoring.
+     *
+     * Creates a MessageEnvelope with corruption details and publishes
+     * to the 'swarm/alerts/checkpoint' topic with QoS 1.
+     *
+     * Per 08-02-PLAN.md Task 1: Alert format includes taskId, checkpointId, error, severity.
+     *
+     * @param taskId - Task identifier
+     * @param checkpointId - Corrupted checkpoint identifier
+     * @param error - Error that occurred during load
+     */
+    private emitCorruptionAlert;
+    /**
      * Syncs all pending checkpoints to SQLite.
      *
      * For each checkpoint in pendingSync set:
@@ -86,8 +120,19 @@ export declare class CheckpointManager {
      * 3. Remove from pending sync
      *
      * Called every 5 minutes by periodic sync and before shutdown.
+     * Per 08-02-PLAN.md Task 2: Enforces 3-checkpoint retention policy after sync.
      */
     syncToDatabase(): Promise<void>;
+    /**
+     * Enforces 3-checkpoint retention policy for all tasks.
+     *
+     * Keeps 3 most recent checkpoints per task, deletes older ones from both
+     * local and SQLite storage. Runs during periodic sync (5-minute interval).
+     *
+     * Per 08-CONTEXT.md: Keep 3 most recent checkpoints per task for fallback.
+     * Per 08-RESEARCH.md: Uses existing SQLiteSync.deleteOldCheckpoints() method.
+     */
+    private enforceRetentionPolicy;
     /**
      * Starts periodic sync to SQLite.
      *
@@ -130,6 +175,23 @@ export declare class CheckpointManager {
      * @param taskId - Task identifier
      */
     deleteCheckpointsByTask(taskId: string): Promise<void>;
+    /**
+     * Cleans up all checkpoints for a completed task.
+     *
+     * This method should be called when a task reaches 'completed' status.
+     * Deletes all checkpoints from both local and SQLite storage, and clears
+     * tracking maps to free up resources.
+     *
+     * Per 08-CONTEXT.md: On task completion, delete all checkpoints (completed
+     * tasks don't need recovery). This is the cleanest approach.
+     *
+     * Per 08-02-PLAN.md Task 3: Hook for future integration with task completion
+     * handlers. The actual call to this method will be added when task completion
+     * handlers are implemented.
+     *
+     * @param taskId - Task identifier
+     */
+    cleanupOnTaskCompletion(taskId: string): Promise<void>;
     /**
      * Checks if task status is inactive (should not checkpoint).
      *
@@ -175,6 +237,25 @@ export declare class CheckpointManager {
      * @returns Number of checkpoints pending sync to SQLite
      */
     getPendingSyncCount(): number;
+    /**
+     * Merges a vector clock from another machine.
+     *
+     * Called when receiving checkpoints from other machines to maintain
+     * causality across the distributed system. Takes MAX of each counter.
+     *
+     * Per 08-03-PLAN.md Task 4: Integration point for cross-machine clock sync.
+     *
+     * @param other - Serialized vector clock from remote checkpoint
+     */
+    mergeVectorClock(other: object): void;
+    /**
+     * Gets the vector clock for this manager instance.
+     *
+     * Useful for testing and debugging.
+     *
+     * @returns Current vector clock state
+     */
+    getVectorClock(): VectorClockImpl;
 }
 /**
  * Factory function to create CheckpointManager instance.

@@ -32,6 +32,10 @@ export interface CheckpointData {
     resourceHandles: unknown[];
     /** Total time invested in this task in milliseconds */
     timeInvestedMs: number;
+    /** CRC32 checksum of checkpoint data (hex string, validated on recovery) */
+    checksum?: string;
+    /** Vector clock for cross-machine ordering (serialized VectorClock) */
+    vectorClock?: object;
 }
 /**
  * Metadata for checkpoint listing and sync status tracking.
@@ -86,6 +90,7 @@ export interface CheckpointSyncStats {
 /**
  * Configuration options for CheckpointManager.
  * Per 04-03-PLAN.md Task 1: Extended with optional TaskQueue dependency.
+ * Per 08-02-PLAN.md Task 1: Extended with mqttClient and agentId for corruption alerts.
  */
 export interface CheckpointManagerOptions {
     /** Local file store for 60-second checkpoints */
@@ -96,5 +101,11 @@ export interface CheckpointManagerOptions {
     syncIntervalMs?: number;
     /** Optional TaskQueue for actual task status queries in getTaskRef() */
     taskQueue?: TaskQueue;
+    /** Optional MQTT client for publishing corruption alerts (08-02) */
+    mqttClient?: import('../communication/mqtt.js').MqttClient;
+    /** Optional agent ID for alert from field (08-02) */
+    agentId?: string;
+    /** Optional ContextManager for resolving context references during recovery (Phase 10) */
+    contextManager?: import('../optimization/context-manager.js').ContextManager;
 }
 //# sourceMappingURL=types.d.ts.map

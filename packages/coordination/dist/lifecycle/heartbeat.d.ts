@@ -8,6 +8,7 @@
  */
 import { EventEmitter } from 'events';
 import type { MqttClientMinimal } from '../discovery/registry.js';
+import type { MemoryMonitor } from '../memory/monitor.js';
 interface Database {
     prepare(sql: string): {
         run(...params: unknown[]): {
@@ -30,6 +31,8 @@ export interface HeartbeatConfig {
     mqttClient: MqttClientMinimal;
     /** Optional database for persisting heartbeat state */
     db?: Database;
+    /** Optional memory monitor for load metrics */
+    memoryMonitor?: MemoryMonitor;
 }
 /**
  * Agent heartbeat status tracking.
@@ -54,6 +57,8 @@ export declare class HeartbeatPublisher {
     private config;
     private intervalId?;
     private currentStatus;
+    private activeTaskCount;
+    private maxCapacity;
     constructor(config: HeartbeatConfig);
     /**
      * Start publishing heartbeats.
@@ -72,10 +77,30 @@ export declare class HeartbeatPublisher {
      */
     setStatus(status: 'idle' | 'busy' | 'error'): void;
     /**
+     * Update active task count for load metrics reporting.
+     * Called by WorkerTaskExecutor when tasks start/complete.
+     *
+     * @param count - Current number of active tasks
+     */
+    setActiveTaskCount(count: number): void;
+    /**
+     * Set maximum task capacity for this agent.
+     *
+     * @param capacity - Maximum concurrent tasks
+     */
+    setMaxCapacity(capacity: number): void;
+    /**
      * Publish heartbeat message via MQTT.
      * Creates MessageEnvelope with type='heartbeat', qos=0 per COMM-07.
      */
     private publish;
+    /**
+     * Publish load metrics via MQTT retained message.
+     *
+     * Per ROUT-02: Workers report load metrics every 5 seconds via retained messages.
+     * Per ROUT-04: Includes CPU/memory for 85% overload threshold.
+     */
+    publishLoadMetrics(): void;
 }
 /**
  * Heartbeat tracker - monitors agent heartbeats and detects offline agents.

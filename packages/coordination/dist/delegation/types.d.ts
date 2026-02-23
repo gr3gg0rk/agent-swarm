@@ -8,6 +8,8 @@
  * Per 03-RESEARCH.md Pattern 1: Extended Task Schema with Dependencies.
  * Per CONTEXT.md decisions: Timeout with exponential backoff, DAG-based dependencies.
  */
+import { ContextReference as ContextRef } from '../optimization/context-manager.js';
+export type { ContextRef as ContextReference };
 /**
  * Extended Task interface with dependency and retry tracking.
  *
@@ -147,7 +149,169 @@ export declare const DEFAULT_ROLE_HIERARCHY: RoleHierarchy;
  */
 export declare const DEFAULT_TIMEOUT_MS = 120000;
 /**
+ * Load metrics published by agents for routing decisions.
+ *
+ * Per ROUT-02: Workers report load metrics (CPU, memory, active task count) every 5 seconds.
+ * Per ROUT-04: 85% threshold for overload detection.
+ */
+export interface LoadMetrics {
+    /** Agent ID reporting metrics */
+    agentId: string;
+    /** CPU usage percentage (0-100) */
+    cpuPercent: number;
+    /** Memory usage percentage (0-100) */
+    memoryPercent: number;
+    /** Number of currently active tasks */
+    activeTasks: number;
+    /** Maximum concurrent task capacity */
+    maxCapacity: number;
+    /** Unix timestamp in milliseconds */
+    timestamp: number;
+}
+/**
  * Default retry limit (ERRO-01).
  */
 export declare const DEFAULT_MAX_RETRIES = 3;
+/**
+ * Extended agent registration for routing decisions.
+ * Adds current task count and capacity information.
+ */
+export interface AgentWithCapacity {
+    /** Agent ID */
+    agentId: string;
+    /** Agent role */
+    role: string;
+    /** Agent capabilities */
+    capabilities: string[];
+    /** Number of tasks currently assigned to this agent */
+    currentTasks: number;
+    /** Maximum number of concurrent tasks this agent can handle */
+    maxCapacity: number;
+}
+/**
+ * Performance record for historical task execution tracking.
+ *
+ * Per ROUT-03: Router uses 30% historical performance in weighted scoring.
+ */
+export interface PerformanceRecord {
+    /** Task ID */
+    taskId: string;
+    /** Agent ID that executed task */
+    agentId: string;
+    /** Whether task succeeded */
+    success: boolean;
+    /** Execution time in milliseconds */
+    executionTime: number;
+    /** Unix timestamp in milliseconds */
+    timestamp: number;
+}
+/**
+ * Agent with load metrics for routing decisions.
+ *
+ * Extends AgentWithCapacity with real-time load metrics from retained MQTT messages.
+ */
+export interface AgentWithLoadMetrics extends AgentWithCapacity {
+    /** Current CPU usage percentage (0-100) */
+    cpuPercent: number;
+    /** Current memory usage percentage (0-100) */
+    memoryPercent: number;
+    /** Timestamp of last load metrics update */
+    loadTimestamp: number;
+}
+/**
+ * Scoring weights for load-based routing.
+ *
+ * Per ROUT-03: 70% load score + 30% historical performance.
+ */
+export interface ScoringWeights {
+    /** Weight for load score (0-1, default 0.7) */
+    load: number;
+    /** Weight for performance score (0-1, default 0.3) */
+    performance: number;
+    /** CPU weight within load score (0-1, default 0.4) */
+    cpu: number;
+    /** Memory weight within load score (0-1, default 0.4) */
+    memory: number;
+    /** Task ratio weight within load score (0-1, default 0.2) */
+    taskRatio: number;
+    /** Success rate weight within performance score (0-1, default 0.7) */
+    successRate: number;
+    /** Execution time weight within performance score (0-1, default 0.3) */
+    executionTime: number;
+}
+/**
+ * Default scoring weights per ROUT-03.
+ */
+export declare const DEFAULT_SCORING_WEIGHTS: ScoringWeights;
+/**
+ * Circuit breaker state per agent.
+ *
+ * Per ROUT-06: Router stops routing to agent after 3 consecutive rejections.
+ */
+export interface CircuitBreakerState {
+    /** Agent ID */
+    agentId: string;
+    /** Current state */
+    state: 'closed' | 'open' | 'half-open';
+    /** Number of consecutive rejections */
+    consecutiveRejections: number;
+    /** Unix timestamp of last state change (ms) */
+    lastStateChange: number;
+    /** When to transition from Open to Half-Open (ms) */
+    nextRetryTime?: number;
+}
+/**
+ * Task rejection payload.
+ *
+ * Per ROUT-04: Agents can reject tasks when overloaded.
+ */
+export interface TaskRejectedPayload {
+    /** Task ID being rejected */
+    taskId: string;
+    /** Rejection reason */
+    reason: 'overloaded' | 'no_capacity';
+    /** CPU percentage at rejection time */
+    cpuPercent: number;
+    /** Memory percentage at rejection time */
+    memoryPercent: number;
+    /** Unix timestamp in milliseconds */
+    timestamp: number;
+}
+/**
+ * Extended task payload with context reference support.
+ *
+ * Per OPTI-05: Context payloads >10KB passed by reference ID instead of full content.
+ * Per OPTI-06: Context manager stores large contexts in SQLite with hash-based deduplication.
+ *
+ * Tasks can include either inline context (small payloads) or context reference (large payloads).
+ * The receiver uses ContextManager.getContext() to retrieve the full content.
+ */
+export interface TaskPayload {
+    /** Task-specific data */
+    payload?: unknown;
+    /** Optional context - either inline content (small) or reference (large) */
+    context?: {
+        /** Inline context content (for small payloads <10KB) */
+        content?: string | Buffer;
+        /** Reference to stored context (for large payloads >=10KB) */
+        ref?: ContextRef;
+    };
+}
+/**
+ * Context reference message type for notifying agents about stored context.
+ *
+ * Per OPTI-05: Context payloads larger than 10KB are passed by reference ID.
+ *
+ * When a task includes a context reference, the receiver may need to retrieve
+ * the content from the context manager. This message type can be used for
+ * context-related notifications.
+ */
+export interface ContextRefMessage {
+    /** SHA-256 hash as hex string (64 characters) */
+    ref: string;
+    /** Original content size in bytes */
+    size: number;
+    /** Agent ID storing the context */
+    agentId: string;
+}
 //# sourceMappingURL=types.d.ts.map

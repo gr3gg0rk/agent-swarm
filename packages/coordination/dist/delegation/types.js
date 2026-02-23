@@ -31,4 +31,16 @@ export const DEFAULT_TIMEOUT_MS = 120000;
  * Default retry limit (ERRO-01).
  */
 export const DEFAULT_MAX_RETRIES = 3;
+/**
+ * Default scoring weights per ROUT-03.
+ */
+export const DEFAULT_SCORING_WEIGHTS = {
+    load: 0.7,
+    performance: 0.3,
+    cpu: 0.4,
+    memory: 0.4,
+    taskRatio: 0.2,
+    successRate: 0.7,
+    executionTime: 0.3,
+};
 //# sourceMappingURL=types.js.map

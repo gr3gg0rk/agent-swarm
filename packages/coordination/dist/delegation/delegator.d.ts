@@ -16,12 +16,18 @@ import type { TaskQueue, TaskCreate } from '../state/task-queue.js';
 import type { TaskRouter, AgentWithCapacity } from './router.js';
 import type { DependencyScheduler } from './dependencies.js';
 import type { RetryManager } from './retry.js';
+import type { CircuitBreakerRegistry } from './circuit-breaker.js';
+import type { PerformanceStore } from './performance-store.js';
 /**
  * Task delegation options.
  */
 export interface TaskDelegatorOptions {
     /** Available agents for role-based delegation */
     agents?: AgentWithCapacity[];
+    /** Circuit breaker registry for rejection tracking */
+    circuitBreakers?: CircuitBreakerRegistry;
+    /** Performance store for historical task results */
+    performanceStore?: PerformanceStore;
 }
 /**
  * Task command payload sent to agent.
@@ -70,6 +76,8 @@ export declare class TaskDelegator {
     private dependencyScheduler;
     private retryManager;
     private agents;
+    private circuitBreakers?;
+    private performanceStore?;
     /**
      * Creates a new task delegator.
      *
@@ -180,6 +188,57 @@ export declare class TaskDelegator {
      * @param taskId - Task ID to cancel
      */
     private publishCancelCommand;
+    /**
+     * Calculate exponential backoff delay.
+     *
+     * Per ROUT-05: 2^n × 100ms, max 5s.
+     * Adds jitter to prevent thundering herd.
+     *
+     * @param attempt - Retry attempt number (0-indexed)
+     * @returns Delay in milliseconds
+     */
+    private calculateBackoff;
+    /**
+     * Sleep for specified milliseconds.
+     *
+     * @param ms - Milliseconds to sleep
+     * @returns Promise that resolves after delay
+     */
+    private sleep;
+    /**
+     * Handle task rejection with exponential backoff retry.
+     *
+     * Per ROUT-04: Worker can reject task when overloaded.
+     * Per ROUT-05: Router retries with exponential backoff.
+     * Per ROUT-06: Circuit breaker tracks consecutive rejections.
+     *
+     * @param taskId - Rejected task ID
+     * @param agentId - Agent that rejected the task
+     * @param payload - Rejection payload with CPU/memory metrics
+     * @param attempt - Current retry attempt
+     */
+    private handleTaskRejection;
+    /**
+     * Notify Minerva of task failure.
+     *
+     * @param taskId - Task ID that failed
+     * @param agentId - Agent that failed (optional)
+     * @param details - Failure details
+     */
+    private notifyMinervaTaskFailed;
+    /**
+     * Retry task delegation with new agent selection.
+     *
+     * @param taskId - Task ID to retry
+     * @param attempt - Retry attempt number
+     */
+    private retryTask;
+    /**
+     * Subscribe to task rejection and result messages.
+     *
+     * Sets up MQTT listener for task_rejected and result message types.
+     */
+    private setupRejectionHandler;
 }
 /**
  * Convenience function to create task delegator.

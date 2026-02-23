@@ -6,6 +6,8 @@
  * Per 04-01-PLAN.md Task 4.
  */
 import { v4 as uuidv4 } from 'uuid';
+import { VectorClockImpl } from './vector-clock.js';
+import { resolveMessagePayload } from '../optimization/context-manager.js';
 /**
  * Checkpoint manager with hybrid storage and smart filtering.
  *
@@ -25,6 +27,10 @@ export class CheckpointManager {
     syncIntervalMs;
     minTimeInvestedMs;
     taskQueue;
+    mqttClient;
+    agentId;
+    contextManager;
+    vectorClock;
     lastCheckpointTime;
     lastCheckpointState;
     pendingSync;
@@ -40,6 +46,11 @@ export class CheckpointManager {
         this.syncIntervalMs = options.syncIntervalMs || 300000; // 5 minutes default
         this.minTimeInvestedMs = 120000; // 2 minutes minimum
         this.taskQueue = options.taskQueue;
+        this.mqttClient = options.mqttClient;
+        this.agentId = options.agentId;
+        this.contextManager = options.contextManager;
+        // Initialize vector clock for cross-machine ordering
+        this.vectorClock = new VectorClockImpl(options.agentId || 'unknown');
         this.lastCheckpointTime = new Map();
         this.lastCheckpointState = new Map();
         this.pendingSync = new Set();
@@ -83,13 +94,16 @@ export class CheckpointManager {
             // State unchanged, skip checkpoint
             return null;
         }
+        // Tick vector clock before creating checkpoint
+        const clock = this.vectorClock.tick();
         // Generate checkpoint ID
         const checkpointId = uuidv4();
         // Add checkpoint ID to data if not already set
         const checkpointData = {
             ...data,
             checkpointId,
-            timestamp: data.timestamp || Date.now(),
+            timestamp: clock.timestamp, // Use vector clock timestamp
+            vectorClock: this.vectorClock.toJSON(), // Include vector clock for cross-machine ordering
         };
         // Write to local store (async, non-blocking)
         try {
@@ -125,6 +139,110 @@ export class CheckpointManager {
         return checkpoint;
     }
     /**
+     * Loads a checkpoint with fallback to previous checkpoints on corruption.
+     *
+     * Tries up to 3 most recent checkpoints for a task, falling back on corruption.
+     * When corruption is detected:
+     * - Logs a warning
+     * - Deletes the corrupted checkpoint from both local and SQLite
+     * - Emits an MQTT alert event for monitoring
+     * - Continues to the next checkpoint
+     *
+     * Per 08-02-PLAN.md Task 1: Fallback + alert on corruption detection.
+     *
+     * @param taskId - Task identifier
+     * @returns Most recent valid checkpoint data or null if all checkpoints failed
+     */
+    async loadCheckpointWithFallback(taskId) {
+        // Get all checkpoint metadata for task
+        const metadata = await this.localStore.listByTask(taskId);
+        if (metadata.length === 0) {
+            return null; // No checkpoints found
+        }
+        // Try each checkpoint from newest to oldest (max 3)
+        const maxAttempts = Math.min(metadata.length, 3);
+        for (let i = 0; i < maxAttempts; i++) {
+            const checkpointId = metadata[i].checkpointId;
+            try {
+                const checkpoint = await this.localStore.load(checkpointId);
+                if (checkpoint) {
+                    // Resolve context references if contextManager available (Phase 10)
+                    if (this.contextManager && checkpoint.workingContext) {
+                        try {
+                            checkpoint.workingContext = await resolveMessagePayload(checkpoint.workingContext, this.contextManager);
+                        }
+                        catch (resolveError) {
+                            // Log warning but don't fail recovery - graceful degradation
+                            console.warn(`Failed to resolve context references for checkpoint ${checkpointId}: ${resolveError}`);
+                        }
+                    }
+                    return checkpoint; // Success - found valid checkpoint
+                }
+            }
+            catch (error) {
+                // Corruption detected
+                console.warn(`Checkpoint ${checkpointId} corrupted, trying fallback ${i + 1}/${maxAttempts}`);
+                // Delete corrupted checkpoint immediately (per CONTEXT.md decision)
+                try {
+                    await this.localStore.delete(checkpointId);
+                    this.sqliteSync.deleteCheckpoint(checkpointId);
+                }
+                catch (deleteError) {
+                    console.error(`Failed to delete corrupted checkpoint ${checkpointId}: ${deleteError}`);
+                }
+                // Emit MQTT alert event for monitoring
+                this.emitCorruptionAlert(taskId, checkpointId, error);
+                // Continue to next checkpoint
+                continue;
+            }
+        }
+        // All checkpoints failed
+        return null;
+    }
+    /**
+     * Emits a corruption alert via MQTT for monitoring.
+     *
+     * Creates a MessageEnvelope with corruption details and publishes
+     * to the 'swarm/alerts/checkpoint' topic with QoS 1.
+     *
+     * Per 08-02-PLAN.md Task 1: Alert format includes taskId, checkpointId, error, severity.
+     *
+     * @param taskId - Task identifier
+     * @param checkpointId - Corrupted checkpoint identifier
+     * @param error - Error that occurred during load
+     */
+    emitCorruptionAlert(taskId, checkpointId, error) {
+        if (!this.mqttClient) {
+            // No MQTT client configured, just log and return
+            console.warn(`Corruption detected for checkpoint ${checkpointId} (no MQTT client configured)`);
+            return;
+        }
+        try {
+            const alertEnvelope = {
+                messageId: uuidv4(),
+                idempotencyKey: `corruption-${checkpointId}-${Date.now()}`,
+                from: this.agentId || 'checkpoint-manager',
+                type: 'error',
+                timestamp: Date.now(),
+                payload: {
+                    taskId,
+                    checkpointId,
+                    error: error instanceof Error ? error.message : String(error),
+                    severity: 'warning',
+                    action: 'fallback_to_previous_checkpoint'
+                },
+                qos: 1 // Must be delivered for monitoring
+            };
+            // Publish to alert topic
+            this.mqttClient.publish('swarm/alerts/checkpoint', alertEnvelope).catch((publishError) => {
+                console.error(`Failed to publish corruption alert: ${publishError}`);
+            });
+        }
+        catch (alertError) {
+            console.error(`Failed to create corruption alert: ${alertError}`);
+        }
+    }
+    /**
      * Syncs all pending checkpoints to SQLite.
      *
      * For each checkpoint in pendingSync set:
@@ -133,6 +251,7 @@ export class CheckpointManager {
      * 3. Remove from pending sync
      *
      * Called every 5 minutes by periodic sync and before shutdown.
+     * Per 08-02-PLAN.md Task 2: Enforces 3-checkpoint retention policy after sync.
      */
     async syncToDatabase() {
         const syncCount = this.pendingSync.size;
@@ -168,7 +287,51 @@ export class CheckpointManager {
         for (const id of failedIds) {
             this.pendingSync.delete(id);
         }
-        console.log(`Synced ${syncedIds.length} checkpoints, ${failedIds.length} failed`);
+        // Enforce 3-checkpoint retention policy (per 08-02-PLAN.md Task 2)
+        await this.enforceRetentionPolicy();
+        console.log(`Synced ${syncedIds.length} checkpoints, ${failedIds.length} failed, enforced retention`);
+    }
+    /**
+     * Enforces 3-checkpoint retention policy for all tasks.
+     *
+     * Keeps 3 most recent checkpoints per task, deletes older ones from both
+     * local and SQLite storage. Runs during periodic sync (5-minute interval).
+     *
+     * Per 08-CONTEXT.md: Keep 3 most recent checkpoints per task for fallback.
+     * Per 08-RESEARCH.md: Uses existing SQLiteSync.deleteOldCheckpoints() method.
+     */
+    async enforceRetentionPolicy() {
+        // Get all tasks with checkpoints from SQLite
+        const tasksWithCheckpoints = this.sqliteSync.getCountByTask();
+        if (tasksWithCheckpoints.length === 0) {
+            return; // No tasks with checkpoints
+        }
+        let totalDeleted = 0;
+        for (const { taskId, count } of tasksWithCheckpoints) {
+            if (count <= 3) {
+                continue; // Task has 3 or fewer checkpoints, no cleanup needed
+            }
+            // Delete old checkpoints from SQLite (keep 3 most recent)
+            const sqliteDeleted = this.sqliteSync.deleteOldCheckpoints(taskId, 3);
+            // Also clean up local files beyond 3
+            try {
+                const localMetadata = await this.localStore.listByTask(taskId);
+                for (let i = 3; i < localMetadata.length; i++) {
+                    await this.localStore.delete(localMetadata[i].checkpointId);
+                }
+                const localDeleted = Math.max(0, localMetadata.length - 3);
+                totalDeleted += sqliteDeleted + localDeleted;
+                if (sqliteDeleted > 0 || localDeleted > 0) {
+                    console.log(`Retention policy: deleted ${sqliteDeleted + localDeleted} old checkpoints for task ${taskId}`);
+                }
+            }
+            catch (error) {
+                console.error(`Failed to clean up local checkpoints for task ${taskId}: ${error}`);
+            }
+        }
+        if (totalDeleted > 0) {
+            console.log(`Retention policy: deleted ${totalDeleted} total old checkpoints`);
+        }
     }
     /**
      * Starts periodic sync to SQLite.
@@ -254,6 +417,26 @@ export class CheckpointManager {
         // Clear tracking maps
         this.lastCheckpointTime.delete(taskId);
         this.lastCheckpointState.delete(taskId);
+    }
+    /**
+     * Cleans up all checkpoints for a completed task.
+     *
+     * This method should be called when a task reaches 'completed' status.
+     * Deletes all checkpoints from both local and SQLite storage, and clears
+     * tracking maps to free up resources.
+     *
+     * Per 08-CONTEXT.md: On task completion, delete all checkpoints (completed
+     * tasks don't need recovery). This is the cleanest approach.
+     *
+     * Per 08-02-PLAN.md Task 3: Hook for future integration with task completion
+     * handlers. The actual call to this method will be added when task completion
+     * handlers are implemented.
+     *
+     * @param taskId - Task identifier
+     */
+    async cleanupOnTaskCompletion(taskId) {
+        await this.deleteCheckpointsByTask(taskId);
+        console.log(`Deleted all checkpoints for completed task ${taskId}`);
     }
     /**
      * Checks if task status is inactive (should not checkpoint).
@@ -347,6 +530,30 @@ export class CheckpointManager {
      */
     getPendingSyncCount() {
         return this.pendingSync.size;
+    }
+    /**
+     * Merges a vector clock from another machine.
+     *
+     * Called when receiving checkpoints from other machines to maintain
+     * causality across the distributed system. Takes MAX of each counter.
+     *
+     * Per 08-03-PLAN.md Task 4: Integration point for cross-machine clock sync.
+     *
+     * @param other - Serialized vector clock from remote checkpoint
+     */
+    mergeVectorClock(other) {
+        const otherClock = VectorClockImpl.fromJSON(other, this.agentId || 'unknown');
+        this.vectorClock.merge(otherClock.getClock());
+    }
+    /**
+     * Gets the vector clock for this manager instance.
+     *
+     * Useful for testing and debugging.
+     *
+     * @returns Current vector clock state
+     */
+    getVectorClock() {
+        return this.vectorClock;
     }
 }
 /**

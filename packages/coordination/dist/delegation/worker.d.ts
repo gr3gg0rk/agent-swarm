@@ -16,6 +16,7 @@ import type { MqttClient } from '../communication/mqtt.js';
 import type { TaskQueue } from '../state/task-queue.js';
 import type { TimeoutMonitor } from './timeout.js';
 import type { RetryManager } from './retry.js';
+import type { GuidanceRequest } from './guidance.js';
 import type { ProgressReporter } from './progress.js';
 import type { ResumeLogic } from '../checkpoint/resume.js';
 import type { MemoryMonitor } from '../memory/monitor.js';
@@ -69,6 +70,8 @@ export interface WorkerTaskExecutorOptions {
     resumeLogic?: ResumeLogic;
     /** Optional memory monitor for automatic memory tracking */
     memoryMonitor?: MemoryMonitor;
+    /** Optional guidance request for ambiguous error handling (ERRO-05) */
+    guidanceRequest?: GuidanceRequest;
 }
 /**
  * Worker task executor for task execution wrapper.
@@ -104,10 +107,14 @@ export declare class WorkerTaskExecutor {
     protected activeTasks: Map<string, ProgressReporter>;
     /** Task execution start times keyed by task ID */
     private taskStartTimes;
+    /** Pause check intervals keyed by task ID */
+    private pauseCheckIntervals;
     /** Optional resume logic for checkpoint recovery */
     private resumeLogic?;
     /** Optional memory monitor for automatic memory tracking */
     private memoryMonitor?;
+    /** Optional guidance request for ambiguous error handling */
+    protected guidanceRequest?: GuidanceRequest;
     /**
      * Creates a new worker task executor.
      *
@@ -119,7 +126,7 @@ export declare class WorkerTaskExecutor {
      * @param taskQueue - Task queue for status updates
      * @param timeoutMonitor - Timeout monitor for task timeout tracking
      * @param retryManager - Retry manager for error handling
-     * @param options - Optional configuration including resumeLogic and memoryMonitor
+     * @param options - Optional configuration including resumeLogic, memoryMonitor, and guidanceRequest
      */
     constructor(agentId: string, mqttClient: MqttClient, taskQueue: TaskQueue, timeoutMonitor: TimeoutMonitor, retryManager: RetryManager, options?: WorkerTaskExecutorOptions);
     /**
@@ -127,6 +134,23 @@ export declare class WorkerTaskExecutor {
      * Called in constructor to register task command listener.
      */
     private setupCommandHandler;
+    /**
+     * Check if agent is overloaded before accepting task.
+     *
+     * Per ROUT-04: Agents can reject tasks when overloaded (CPU or memory above 85%).
+     *
+     * @returns true if overloaded, false if can accept task
+     */
+    private isOverloaded;
+    /**
+     * Send task rejection message.
+     *
+     * Per ROUT-04: Worker rejects task when overloaded.
+     *
+     * @param taskId - Task ID being rejected
+     * @param reason - Rejection reason
+     */
+    private sendRejection;
     /**
      * Handle incoming command message.
      * Routes to appropriate handler based on message type.

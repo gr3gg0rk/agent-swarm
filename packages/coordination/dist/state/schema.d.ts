@@ -49,6 +49,7 @@ export declare function getTableCounts(db: Database.Database): {
     tasks_archive: number;
     status_archive: number;
     checkpoints: number;
+    context_refs: number;
 };
 /**
  * Drops all tables (useful for testing).
@@ -58,4 +59,21 @@ export declare function getTableCounts(db: Database.Database): {
  * @param db - Database instance
  */
 export declare function dropAllTables(db: Database.Database): void;
+/**
+ * Creates a prepared statement for context reference garbage collection.
+ *
+ * Per 07-RESEARCH.md: Delete contexts unused > 7 days OR with low access count.
+ * Policy: Keep frequently-used contexts while cleaning up old/unused ones.
+ *
+ * @param db - Database instance
+ * @returns Prepared statement for garbage collection
+ *
+ * @example
+ * ```ts
+ * const gcQuery = createGarbageCollectionQuery(db);
+ * const result = gcQuery.run();
+ * console.log(`Deleted ${result.changes} old contexts`);
+ * ```
+ */
+export declare function createGarbageCollectionQuery(db: Database.Database): any;
 //# sourceMappingURL=schema.d.ts.map

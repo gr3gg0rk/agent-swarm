@@ -25,6 +25,8 @@ export declare class MemoryMonitor {
     private readonly throttleController;
     private readonly config;
     private checkInterval;
+    private lastCpuUsage;
+    private lastCpuTimestamp;
     /**
      * Creates a new MemoryMonitor instance.
      *
@@ -89,6 +91,17 @@ export declare class MemoryMonitor {
      * @returns Throttle configuration
      */
     getConfig(): ThrottleConfig;
+    /**
+     * Get current CPU usage percentage.
+     *
+     * Calculates CPU percent from process.cpuUsage() across the check interval.
+     * Returns 0 on first call (needs delta between two measurements).
+     *
+     * Stores previous CPU usage and timestamp to calculate delta.
+     *
+     * @returns CPU usage percentage (0-100)
+     */
+    getCPUPercent(): number;
     /**
      * Check if monitoring is currently active.
      *

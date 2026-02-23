@@ -9,6 +9,7 @@
 import { type Application } from 'express';
 import http from 'http';
 import Database from 'better-sqlite3';
+import type { MqttClient } from '../communication/mqtt.js';
 /**
  * Server configuration options.
  */
@@ -21,11 +22,14 @@ export interface ServerConfig {
     corsEnabled?: boolean;
     /** Allowed CORS origins (default: all localhost) */
     corsOrigins?: string[];
+    /** MQTT client for SSE load metrics subscription (optional) */
+    mqttClient?: MqttClient;
 }
 /**
  * Creates the Express application with all routes registered.
  *
  * @param db - Database instance
+ * @param mqttClient - Optional MQTT client for SSE load metrics subscription
  * @returns Configured Express application
  *
  * @example
@@ -34,7 +38,7 @@ export interface ServerConfig {
  * const app = createStateApi(db);
  * ```
  */
-export declare function createStateApi(db: Database.Database): Application;
+export declare function createStateApi(db: Database.Database, mqttClient?: MqttClient): Application;
 /**
  * Starts the HTTP server.
  *

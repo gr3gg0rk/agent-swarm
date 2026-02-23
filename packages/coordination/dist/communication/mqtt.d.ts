@@ -4,6 +4,8 @@
  */
 import mqtt from 'mqtt';
 import type { MessageEnvelope } from './message.js';
+import type { MessageBatcher } from '../optimization/batcher.js';
+import type { ConnectionPoolManager } from '../optimization/connection-pool.js';
 type MqttClientInstance = ReturnType<typeof mqtt.connect>;
 /**
  * Configuration for connecting to the MQTT broker.
@@ -17,6 +19,8 @@ export interface BrokerConfig {
     username?: string;
     /** Optional password for authentication */
     password?: string;
+    /** Optional connection pool for reusing MQTT connections (07-02) */
+    connectionPool?: ConnectionPoolManager;
 }
 /**
  * Events emitted by MqttClient.
@@ -41,6 +45,12 @@ export declare class MqttClient {
     private client;
     private config;
     private emitter;
+    /** Optional message batcher for high-frequency messages (07-01) */
+    private batchPublisher?;
+    /** Optional connection pool for reusing connections (07-02) */
+    private connectionPool?;
+    /** Operation ID for connection pool tracking (07-02) */
+    private poolOperationId?;
     /**
      * Creates a new MQTT client wrapper.
      * @param config - Broker connection configuration
@@ -69,8 +79,35 @@ export declare class MqttClient {
      */
     off<K extends keyof MqttClientEvents>(event: K, listener: MqttClientEvents[K]): void;
     /**
+     * Sets the message batcher for high-frequency message batching (07-01).
+     * When set, the batcher will buffer progress, status, and heartbeat messages
+     * and publish them in batches for improved throughput.
+     *
+     * @param batcher - MessageBatcher instance (optional)
+     */
+    setBatchPublisher(batcher: MessageBatcher | undefined): void;
+    /**
+     * Gets the current message batcher if set.
+     * @returns MessageBatcher instance or undefined
+     */
+    getBatchPublisher(): MessageBatcher | undefined;
+    /**
+     * Sets the connection pool for reusing MQTT connections (07-02).
+     * When set, connections are acquired from and released to the pool.
+     * Note: Connection pooling is opt-in and doesn't affect existing behavior when not set.
+     *
+     * @param pool - ConnectionPoolManager instance (optional)
+     */
+    setConnectionPool(pool: ConnectionPoolManager | undefined): void;
+    /**
+     * Gets the current connection pool if set.
+     * @returns ConnectionPoolManager instance or undefined
+     */
+    getConnectionPool(): ConnectionPoolManager | undefined;
+    /**
      * Publishes a message to a topic.
      * Uses MessagePack encoding for payloads per HARD-05.
+     * When batchPublisher is set, high-frequency messages are batched for throughput (07-01).
      * @param topic - MQTT topic to publish to
      * @param envelope - Message envelope to publish
      * @returns Promise that resolves when published
@@ -91,6 +128,8 @@ export declare class MqttClient {
     unsubscribe(topic: string): Promise<void>;
     /**
      * Gracefully disconnects from the broker.
+     * Flushes batcher if set before disconnecting (07-01).
+     * Releases connection back to pool if using connection pooling (07-02).
      * @returns Promise that resolves when disconnected
      */
     end(): Promise<void>;

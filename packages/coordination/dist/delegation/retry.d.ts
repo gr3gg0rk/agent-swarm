@@ -15,6 +15,7 @@
  */
 import type { TaskQueue } from '../state/task-queue.js';
 import type { TimeoutMonitor } from './timeout.js';
+import type { MqttClient } from '../communication/mqtt.js';
 /**
  * Active retry state.
  */
@@ -55,7 +56,7 @@ export interface RetryManagerOptions {
  *
  * @example
  * ```ts
- * const retryManager = new RetryManager(taskQueue, timeoutMonitor);
+ * const retryManager = new RetryManager(taskQueue, timeoutMonitor, mqttClient);
  *
  * // Schedule retry for transient error
  * await retryManager.scheduleRetry('task-123', timeoutError);
@@ -70,6 +71,7 @@ export interface RetryManagerOptions {
 export declare class RetryManager {
     private taskQueue;
     private timeoutMonitor;
+    private mqttClient;
     private activeRetries;
     private maxDelayMs;
     private jitterMs;
@@ -78,9 +80,10 @@ export declare class RetryManager {
      *
      * @param taskQueue - Task queue for updating retry counts and status
      * @param timeoutMonitor - Timeout monitor for error classification
+     * @param mqttClient - MQTT client for publishing failure notifications to Minerva
      * @param options - Optional configuration
      */
-    constructor(taskQueue: TaskQueue, timeoutMonitor: TimeoutMonitor, options?: RetryManagerOptions);
+    constructor(taskQueue: TaskQueue, timeoutMonitor: TimeoutMonitor, mqttClient: MqttClient, options?: RetryManagerOptions);
     /**
      * Determine if task should be retried.
      *
@@ -140,8 +143,8 @@ export declare class RetryManager {
     /**
      * Notify Minerva of exhausted retry attempts.
      *
-     * Creates TaskResult with failure details and publishes notification.
-     * Currently stubs the notification - actual Minerva integration to be implemented.
+     * Creates MessageEnvelope with task_failed type and publishes to MQTT.
+     * Per ERRO-04: Minerva notified when task fails after exhausting retries.
      *
      * @param taskId - Task ID that exhausted retries
      * @param error - Final error that caused failure
@@ -178,9 +181,10 @@ export declare class RetryManager {
  *
  * @param taskQueue - Task queue for updating retry counts
  * @param timeoutMonitor - Timeout monitor for error classification
+ * @param mqttClient - MQTT client for publishing failure notifications to Minerva
  * @param options - Optional configuration
  * @returns RetryManager instance
  */
-export declare function createRetryManager(taskQueue: TaskQueue, timeoutMonitor: TimeoutMonitor, options?: RetryManagerOptions): RetryManager;
+export declare function createRetryManager(taskQueue: TaskQueue, timeoutMonitor: TimeoutMonitor, mqttClient: MqttClient, options?: RetryManagerOptions): RetryManager;
 export {};
 //# sourceMappingURL=retry.d.ts.map

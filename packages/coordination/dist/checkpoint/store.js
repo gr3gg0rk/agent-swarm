@@ -8,6 +8,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
+import { computeChecksum, validateChecksum } from './checksum.js';
 /**
  * Local file-based checkpoint storage.
  *
@@ -68,8 +69,14 @@ export class LocalFileStore {
         try {
             // Serialize data as JSON
             const jsonData = JSON.stringify(data);
+            // Compute CRC32 checksum BEFORE write (per 08-CONTEXT.md)
+            const checksum = computeChecksum(jsonData);
+            // Add checksum to data before writing
+            const dataWithChecksum = { ...data, checksum };
+            // Serialize data with checksum
+            const jsonDataWithChecksum = JSON.stringify(dataWithChecksum);
             // Write to temporary file first
-            await fs.writeFile(tempPath, jsonData, 'utf-8');
+            await fs.writeFile(tempPath, jsonDataWithChecksum, 'utf-8');
             // Atomic rename to target path
             await fs.rename(tempPath, targetPath);
         }
@@ -96,6 +103,21 @@ export class LocalFileStore {
         try {
             const content = await fs.readFile(filePath, 'utf-8');
             const data = JSON.parse(content);
+            // Validate CRC32 checksum if present (backward compatible)
+            if (data.checksum) {
+                // Remove checksum from data before validation
+                const dataWithoutChecksum = { ...data };
+                delete dataWithoutChecksum.checksum;
+                // Recompute checksum from data without checksum field
+                const jsonData = JSON.stringify(dataWithoutChecksum);
+                const computedChecksum = computeChecksum(jsonData);
+                // Validate checksum
+                if (!validateChecksum(jsonData, data.checksum)) {
+                    throw new Error(`CRC32 validation failed: stored=${data.checksum}, computed=${computedChecksum}`);
+                }
+                // Remove checksum field before returning
+                delete data.checksum;
+            }
             return data;
         }
         catch (error) {

@@ -42,6 +42,18 @@ export declare const Topics: {
     readonly guidanceRequest: () => string;
     /** Guidance response from Minerva (subscribe: requesting agent) - ERRO-05 */
     readonly guidanceResponse: (agentId: string) => string;
+    /** Agent load metrics (ROUT-02) - retained message for current load */
+    readonly agentLoad: (agentId: string) => string;
+    /** Batched progress messages (07-01) - high-frequency message batching */
+    readonly batchProgress: "swarm/batch/progress";
+    /** Batched heartbeat messages (07-01) - high-frequency message batching */
+    readonly batchHeartbeat: "swarm/batch/heartbeat";
+    /** Batched load metrics messages (07-01) - high-frequency message batching */
+    readonly batchLoadMetrics: "swarm/batch/load_metrics";
+    /** Batched task-related messages (07-01) - results and cancellations */
+    readonly batchTasks: "swarm/batch/tasks";
+    /** Batched status messages (07-01) - generic status updates */
+    readonly batchStatus: "swarm/batch/status";
 };
 /**
  * Subscription patterns for wildcard topic matching.
@@ -59,6 +71,10 @@ export declare const Subscriptions: {
     readonly allAgents: "swarm/discovery";
     /** All agent registrations (retained messages) */
     readonly agentStates: "swarm/agents/#";
+    /** All agent load metrics (router subscribes here) */
+    readonly allAgentLoads: "agent/+/load";
+    /** All batched messages (for batch consumers) - 07-01 */
+    readonly allBatches: "swarm/batch/#";
 };
 /**
  * Task delegation subscription patterns for wildcard topic matching.

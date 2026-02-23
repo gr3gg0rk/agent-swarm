@@ -50,10 +50,14 @@ export class WorkerTaskExecutor {
     activeTasks;
     /** Task execution start times keyed by task ID */
     taskStartTimes;
+    /** Pause check intervals keyed by task ID */
+    pauseCheckIntervals;
     /** Optional resume logic for checkpoint recovery */
     resumeLogic;
     /** Optional memory monitor for automatic memory tracking */
     memoryMonitor;
+    /** Optional guidance request for ambiguous error handling */
+    guidanceRequest;
     /**
      * Creates a new worker task executor.
      *
@@ -65,7 +69,7 @@ export class WorkerTaskExecutor {
      * @param taskQueue - Task queue for status updates
      * @param timeoutMonitor - Timeout monitor for task timeout tracking
      * @param retryManager - Retry manager for error handling
-     * @param options - Optional configuration including resumeLogic and memoryMonitor
+     * @param options - Optional configuration including resumeLogic, memoryMonitor, and guidanceRequest
      */
     constructor(agentId, mqttClient, taskQueue, timeoutMonitor, retryManager, options = {}) {
         this.agentId = agentId;
@@ -75,9 +79,11 @@ export class WorkerTaskExecutor {
         this.retryManager = retryManager;
         this.activeTasks = new Map();
         this.taskStartTimes = new Map();
+        this.pauseCheckIntervals = new Map();
         // Store optional components
         this.resumeLogic = options.resumeLogic;
         this.memoryMonitor = options.memoryMonitor;
+        this.guidanceRequest = options.guidanceRequest;
         // Set up command handler (subscribe to task topic)
         this.setupCommandHandler();
     }
@@ -95,6 +101,63 @@ export class WorkerTaskExecutor {
                 });
             }
         });
+    }
+    /**
+     * Check if agent is overloaded before accepting task.
+     *
+     * Per ROUT-04: Agents can reject tasks when overloaded (CPU or memory above 85%).
+     *
+     * @returns true if overloaded, false if can accept task
+     */
+    isOverloaded() {
+        if (!this.memoryMonitor) {
+            // No memory monitor available - assume not overloaded
+            return false;
+        }
+        const stats = this.memoryMonitor.getMemoryStats();
+        const cpuPercent = this.memoryMonitor.getCPUPercent();
+        // Check 85% threshold per ROUT-04
+        const memoryOverloaded = stats.usagePercent >= 0.85;
+        const cpuOverloaded = cpuPercent >= 85;
+        return memoryOverloaded || cpuOverloaded;
+    }
+    /**
+     * Send task rejection message.
+     *
+     * Per ROUT-04: Worker rejects task when overloaded.
+     *
+     * @param taskId - Task ID being rejected
+     * @param reason - Rejection reason
+     */
+    async sendRejection(taskId, reason) {
+        let cpuPercent = 0;
+        let memoryPercent = 0;
+        if (this.memoryMonitor) {
+            const stats = this.memoryMonitor.getMemoryStats();
+            memoryPercent = stats.usagePercent * 100;
+            cpuPercent = this.memoryMonitor.getCPUPercent();
+        }
+        const payload = {
+            taskId,
+            reason,
+            cpuPercent,
+            memoryPercent,
+            timestamp: Date.now(),
+        };
+        const envelope = {
+            messageId: uuidv4(),
+            idempotencyKey: uuidv4(),
+            from: this.agentId,
+            type: 'task_rejected',
+            timestamp: Date.now(),
+            payload,
+            qos: 1, // At-least-once delivery
+            retain: false,
+        };
+        const topic = Topics.taskResult(this.agentId);
+        await this.mqttClient.publish(topic, envelope);
+        console.warn(`Task ${taskId} rejected by ${this.agentId}: ${reason} ` +
+            `(CPU: ${cpuPercent.toFixed(1)}%, Memory: ${memoryPercent.toFixed(1)}%)`);
     }
     /**
      * Handle incoming command message.
@@ -129,6 +192,16 @@ export class WorkerTaskExecutor {
     async executeTask(command) {
         const { taskId, payload, timeoutMs, maxRetries = 3 } = command;
         const startTime = Date.now();
+        // CHECK: Is agent overloaded before accepting task?
+        if (this.isOverloaded()) {
+            await this.sendRejection(taskId, 'overloaded');
+            return;
+        }
+        // CHECK: Is agent at capacity?
+        if (this.activeTasks.size >= 5) { // Default max capacity of 5
+            await this.sendRejection(taskId, 'no_capacity');
+            return;
+        }
         // Attempt to resume from checkpoint if resume logic is available
         let workingContext;
         if (this.resumeLogic) {
@@ -178,6 +251,12 @@ export class WorkerTaskExecutor {
         }
         // Store start time
         this.taskStartTimes.set(taskId, startTime);
+        // Check if task is paused by memory throttle controller (HARD-04)
+        const task = this.taskQueue.getTask(taskId);
+        if (task && task.status === 'paused') {
+            console.info(`Task ${taskId} is paused, skipping execution`);
+            return;
+        }
         // Update task status to in_progress
         this.taskQueue.updateTaskStatus(taskId, 'in_progress', this.agentId);
         // Create and start progress reporter
@@ -200,6 +279,17 @@ export class WorkerTaskExecutor {
         // Start timeout monitoring
         this.timeoutMonitor.startTimeout(taskId, timeoutMs, 0, // Initial attempt (retryCount 0)
         maxRetries, (tid, retryCount) => this.handleTimeout(tid, retryCount));
+        // Start pause status monitoring (HARD-04)
+        // Check task status every 1 second during execution
+        const pauseCheckInterval = setInterval(() => {
+            const currentTask = this.taskQueue.getTask(taskId);
+            if (currentTask && currentTask.status === 'paused') {
+                clearInterval(pauseCheckInterval);
+                this.pauseCheckIntervals.delete(taskId);
+                throw new Error('Task paused by memory throttle controller');
+            }
+        }, 1000);
+        this.pauseCheckIntervals.set(taskId, pauseCheckInterval);
         try {
             // Execute task with resume context if available
             const taskPayload = workingContext !== undefined ? workingContext : payload;
@@ -214,6 +304,11 @@ export class WorkerTaskExecutor {
                 executionTime,
             });
             // Cleanup
+            const pauseInterval = this.pauseCheckIntervals.get(taskId);
+            if (pauseInterval) {
+                clearInterval(pauseInterval);
+                this.pauseCheckIntervals.delete(taskId);
+            }
             this.timeoutMonitor.cancelTimeout(taskId);
             progressReporter.stop();
             this.activeTasks.delete(taskId);
@@ -253,13 +348,21 @@ export class WorkerTaskExecutor {
         const executionTime = this.taskStartTimes.get(taskId)
             ? Date.now() - this.taskStartTimes.get(taskId)
             : 0;
+        // Request guidance for ambiguous errors (ERRO-05)
+        // Call before retry decision so guidance can inform retry behavior
+        await this.requestGuidanceIfNeeded(error, taskId);
         // Check if should retry
         if (this.retryManager.shouldRetry(error, retryCount, maxRetries)) {
             // Calculate backoff
             const backoff = this.retryManager.calculateBackoff(retryCount);
             // Schedule retry via RetryManager
             await this.retryManager.scheduleRetry(taskId, error);
-            // Cleanup: progressReporter, timeoutMonitor, activeTasks
+            // Cleanup: pauseCheckInterval, progressReporter, timeoutMonitor, activeTasks
+            const pauseInterval = this.pauseCheckIntervals.get(taskId);
+            if (pauseInterval) {
+                clearInterval(pauseInterval);
+                this.pauseCheckIntervals.delete(taskId);
+            }
             progressReporter.stop();
             this.timeoutMonitor.cancelTimeout(taskId);
             this.activeTasks.delete(taskId);
@@ -282,7 +385,12 @@ export class WorkerTaskExecutor {
                 },
                 executionTime,
             });
-            // Cleanup: progressReporter, timeoutMonitor, activeTasks
+            // Cleanup: pauseCheckInterval, progressReporter, timeoutMonitor, activeTasks
+            const pauseInterval = this.pauseCheckIntervals.get(taskId);
+            if (pauseInterval) {
+                clearInterval(pauseInterval);
+                this.pauseCheckIntervals.delete(taskId);
+            }
             progressReporter.stop();
             this.timeoutMonitor.cancelTimeout(taskId);
             this.activeTasks.delete(taskId);
@@ -316,11 +424,31 @@ export class WorkerTaskExecutor {
         if (!isAmbiguous) {
             return; // Not ambiguous, no guidance needed
         }
-        // Create guidance request and request guidance
-        // TODO: Integrate GuidanceRequest class when available
-        // For now, just log the situation
-        console.warn(`Ambiguous situation encountered for task ${taskId}: ${error.message}`);
-        console.warn(`Agent ${this.agentId} should request guidance from Minerva`);
+        // Request guidance from Minerva (ERRO-05)
+        if (this.guidanceRequest) {
+            try {
+                const guidance = await this.guidanceRequest.requestGuidance(taskId, error.message);
+                if (guidance) {
+                    // Guidance received
+                    console.info(`Guidance received for task ${taskId}: ${guidance}`);
+                    // Store guidance or apply it - for now just log it
+                    // The guidance could be used to retry with different parameters
+                }
+                else {
+                    // Timeout - no guidance received within 30 seconds
+                    console.warn(`Guidance request timed out for task ${taskId}, proceeding with default behavior`);
+                }
+            }
+            catch (guidanceError) {
+                console.error(`Guidance request failed for task ${taskId}: ${guidanceError}`);
+                // Proceed with default behavior on guidance request failure
+            }
+        }
+        else {
+            // No guidance request available - log for manual intervention
+            console.warn(`Ambiguous situation encountered for task ${taskId}: ${error.message}`);
+            console.warn(`Agent ${this.agentId} should request guidance from Minerva (GuidanceRequest not configured)`);
+        }
     }
     /**
      * Handle task timeout.
@@ -343,9 +471,29 @@ export class WorkerTaskExecutor {
             console.log(`Task ${taskId} timed out, re-queued for retry (${retryCount}/${maxRetries})`);
         }
         else {
-            // Max retries exhausted: notify Minerva
-            // TODO: Implement proper Minerva notification system
-            console.error(`Task ${taskId} failed after ${maxRetries} retries (timeout exhausted)`);
+            // Max retries exhausted: notify Minerva via MQTT
+            const envelope = {
+                messageId: uuidv4(),
+                idempotencyKey: uuidv4(),
+                from: this.agentId,
+                to: 'minerva',
+                type: 'task_failed',
+                timestamp: Date.now(),
+                payload: {
+                    taskId,
+                    agentId: this.agentId,
+                    error: {
+                        type: 'permanent',
+                        message: `Task timed out after ${maxRetries} retries`,
+                        reason: 'Timeout exhausted',
+                    },
+                },
+                qos: 1,
+                retain: false,
+            };
+            const topic = Topics.guidanceRequest();
+            await this.mqttClient.publish(topic, envelope);
+            console.error(`Task ${taskId} failed after ${maxRetries} retries (timeout exhausted), notified Minerva`);
         }
     }
     /**

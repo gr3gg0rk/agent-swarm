@@ -10,11 +10,11 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import Database from 'better-sqlite3';
-import { ContextManager } from '../../dist/optimization/context-manager.js';
-import { CheckpointManager } from '../../dist/checkpoint/manager.js';
-import { LocalFileStore } from '../../dist/checkpoint/store.js';
-import { SQLiteSync } from '../../dist/checkpoint/sync.js';
-import type { CheckpointData } from '../../dist/checkpoint/types.js';
+import { ContextManager } from '../dist/optimization/context-manager.js';
+import { CheckpointManager } from '../dist/checkpoint/manager.js';
+import { LocalFileStore } from '../dist/checkpoint/store.js';
+import { SQLiteSync } from '../dist/checkpoint/sync.js';
+import type { CheckpointData } from '../dist/checkpoint/types.js';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import { v4 as uuidv4 } from 'uuid';
