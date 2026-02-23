@@ -1,213 +1,270 @@
 # Project Research Summary
 
-**Project:** OpenClaw Swarm (v1.1 Enhancements)
-**Domain:** Lightweight Distributed Agent Swarm Coordination System
-**Researched:** 2026-02-22
-**Confidence:** HIGH
+**Project:** OpenClaw Swarm - v1.2 Installation & Package Distribution
+**Domain:** Lightweight Agent Swarm Coordination System (npm ESM package with monorepo setup tooling)
+**Researched:** 2026-02-23
+**Confidence:** MEDIUM
 
 ## Executive Summary
 
-OpenClaw Swarm is a distributed agent coordination system that enables multiple OpenClaw instances across heterogeneous hardware (Pi 2B to Beelink) to work together as a cohesive team. The v1.0 release established a solid foundation with MQTT-based communication, SQLite state management, role-based routing, and memory-aware throttling that keeps the coordination layer under 100MB on constrained 1GB RAM devices.
+OpenClaw Swarm is a distributed multi-agent coordination system designed for resource-constrained environments (Raspberry Pi 2B with 1GB RAM). v1.0 shipped a functional coordination layer with MQTT-based messaging, SQLite state management, and role-based task routing. v1.1 added load balancing, message batching, and a basic dashboard. This research synthesizes findings for v1.2, which focuses on package distribution improvements, developer experience enhancements, and installation automation.
 
-The v1.1 milestone focuses on four enhancement areas: advanced routing (dynamic capabilities, load-based balancing), message optimization (batching, connection pooling, context references), checkpointing robustness (cross-machine recovery, corruption handling), and operational visibility (lightweight dashboard). Research strongly indicates these features can be implemented without exceeding Pi 2B memory constraints by using native implementations (no external load balancers, queue libraries, or heavy frameworks like Next.js).
-
-The primary risk is feature creep on the coordination layer. Every optimization feature (batching, caching, connection pooling) consumes memory that could otherwise be used for agent execution. The research recommends a defensive approach: native implementations for load balancing and batching (<10KB total), strict memory limits for dashboard components, and hardware-aware configuration (smaller connection pools on Pi 2B). The dashboard should use Vite + Vanilla + Alpine.js (~50MB) instead of Next.js + React (300MB-10GB) to avoid memory exhaustion on edge devices.
+The recommended approach for v1.2 is to implement proper npm package distribution using native npm workspaces (avoiding Turborepo/Nx overhead for a 2-package monorepo), ESM-only exports with subpath exports for modular access, and automated setup tooling using zx scripts. Key risks include resource exhaustion on Pi 2B (mitigated by keeping coordination under 50% RAM), message delivery misconceptions (mitigated by designing idempotent operations from day one), and package installation errors (mitigated by CI verification workflows). The stack remains lightweight: no new runtime dependencies for v1.2 — all additions are build-time or development-time only.
 
 ## Key Findings
 
 ### Recommended Stack
 
-**Core technologies (v1.0 foundation, unchanged):**
-- **Node.js >=22.0.0** — Runtime (OpenClaw dependency) with async I/O ideal for coordination
-- **MQTT (Mosquitto 2.0.x)** — Message broker (~3-10MB RAM), QoS support, retained messages for discovery
-- **Better-SQLite3 ^11.9.0** — Shared state persistence (~5-15MB RAM), WAL mode for concurrency
-- **MQTT.js ^5.0.0** — MQTT client with built-in connection pooling (v5.0 feature)
+From STACK.md: The v1.2 additions focus on developer experience and package distribution with zero runtime memory impact. Native npm workspaces replace complex monorepo tools (Turborepo, Nx) for a simple 2-package structure. zx provides modern ESM-compatible setup scripting (vs ShellJS which is CommonJS-only). husky + lint-staged handle pre-commit hooks with staged file checks for faster commits. GitHub Actions provides CI/CD with matrix builds for multi-version Node.js testing and Mosquitto service integration for MQTT connectivity verification.
 
-**v1.1 additions:**
-- **Vite ^6.x** — Dashboard build tool (~50MB dev only, static files in production)
-- **Alpine.js ^3.x** — Lightweight reactivity (~10KB bundle)
-- **Chart.js ^4.x** — Data visualization (~37-60KB bundle)
-- **Native implementations** — Load balancing, message batching, context caching (<10KB code total)
+**Core technologies (v1.0 baseline):**
+- **MQTT (Mosquitto 2.0.x):** Message broker — industry standard for IoT, minimal footprint (3-10MB), QoS levels, retained messages for agent discovery
+- **Better-SQLite3 11.9.0:** Shared state persistence — faster than file I/O, ACID transactions, WAL mode for concurrency, single-file database
+- **MQTT.js 5.0.0:** MQTT client for Node.js — mature, WebSocket support, built-in connection pooling
+- **MessagePack (msgpackr):** Binary serialization — 3.5x faster than JSON, 15-50% smaller payloads
 
-**Critical stack decisions:**
-- NO external load balancing libraries (generic-proxy, node-http-proxy designed for HTTP, not MQTT)
-- NO external batching libraries (Bull/BullMQ require Redis, adds ~50MB+ memory)
-- NO Next.js 16 + React 19 for dashboard (300MB-10GB memory usage, documented leaks in v16.1.0)
-- SSE over WebSocket for dashboard real-time updates (built-in Node.js, ~14KB savings)
-- MQTT.js connection pool built-in (no generic-pool needed)
+**v1.2 additions (zero runtime impact):**
+- **npm workspaces (native):** Monorepo management — zero overhead, matches project structure
+- **package.json "exports":** ESM entry points — required for proper ESM package boundaries
+- **zx 8.0.0:** Setup automation scripts — native ESM support, modern async/await
+- **husky 9.0.0 + lint-staged 15.0.0:** Pre-commit hooks — git hooks automation, monorepo-friendly
 
 ### Expected Features
 
-**Must have (v1.1 table stakes):**
-- **Load-based task routing** — Route to least-loaded capable agent using heartbeat data
-- **Task rejection with reassignment** — Agents self-protect from overload, router retries with backoff
-- **Context reference passing** — Pass context IDs for payloads >10KB, fetch via REST API
-- **Message batching** — Buffer messages, send on count/time/size thresholds (10x throughput improvement)
-- **Connection pooling** — Reuse MQTT connections (60% latency reduction, 70% resource savings)
-- **Basic dashboard** — Agent status, task progress, system metrics (runs on brain, not Pi 2B workers)
+From FEATURES.md: v1.0 shipped with table stakes features including agent discovery, task delegation, inter-agent communication, and health monitoring. v1.1 added load-based routing, message batching, connection pooling, and a basic dashboard. v1.2 focuses on installation and distribution improvements rather than end-user features.
 
-**Should have (v1.2 differentiators):**
-- **Multi-capability AND logic** — Task requires "typescript AND testing", route to agents with all
-- **Dynamic capability declaration** — Agents advertise capabilities at runtime via MQTT retained messages
-- **Progress timeline visualization** — Gantt-style task execution tracking
-- **Capability matrix visualization** — Visual agent-capability intersections with live updates
+**v1.2 table stakes (developer experience):**
+- **Native npm workspaces configuration** — automatic linking of local packages
+- **ESM export patterns with subpath exports** — proper package boundary definition
+- **Setup automation script** — environment validation and first-time setup
+- **Pre-commit hooks with type checking** — catch errors before commit
+- **CI import verification** — ensure published package imports correctly
 
-**Defer (v2+):**
-- **Cost-aware routing** — When running heterogeneous model tiers
-- **Intelligent context caching** — LRU cache when fetch latency becomes bottleneck
-- **Adaptive batching** — Dynamic window scaling when message rate variability is high
-- **Explainable routing** — TCAR-inspired reasoning reports when routing becomes hard to debug
+**v1.1 features (already planned, partially implemented):**
+- **Load-based task routing** — route to least-loaded capable agent using heartbeat CPU/memory data
+- **Task rejection with automatic reassignment** — agents self-protect from overload, router retries
+- **Context reference passing** — pass context IDs for payloads >10KB, fetch via REST API
+- **Message batching** — 10x throughput improvement, 70% bandwidth reduction
+- **Connection pooling** — 60% latency reduction, 70% resource savings
+- **Basic dashboard** — agent status, task progress, system metrics (runs on brain machine, not Pi 2B)
+
+**Defer to v2+:**
+- **Multi-capability AND logic** — sophisticated task-agent matching (v1.2)
+- **Dynamic capability declaration** — runtime capability registration (v1.2)
+- **Explainable routing decisions** — reasoning reports for debugging (v1.2)
+- **Progress timeline visualization** — Gantt chart for task dependencies (v1.2)
 
 ### Architecture Approach
 
-The v1.1 architecture extends v1.0 through additive changes rather than restructuring. All four enhancement areas build upon the existing MQTT/SQLite foundation with minimal disruption to deployed systems.
+From ARCHITECTURE.md: The coordination package is an ESM-first TypeScript library with a modular architecture using Node16 module resolution with subpath exports pattern. Key architectural findings: the package already uses the `exports` field correctly in package.json with conditional imports (ESM-only), but the optimization module is missing from the main index.ts re-exports. No dedicated setup/validation tooling exists — health checks are implemented via `HealthCheckServer` class and Express routes but need CLI exposure. The monorepo structure lacks workspaces configuration in the root package.json.
 
 **Major components:**
-1. **Minerva (griak-brain)** — Orchestrator with enhanced routing (load-aware, multi-capability), checkpoint coordinator, dashboard WebSocket bridge
-2. **MQTT Pub/Sub (Mosquitto)** — Message delivery with optional batching layer for high-frequency topics
-3. **SQLite State Store** — Enhanced with context references, connection pooling (singleton pattern), checkpoint completeness verification
-4. **Visualization Dashboard** — New service on griak-brain with static web server, REST API endpoints, MQTT-to-WebSocket bridge
-5. **Workers (enhanced)** — Load tracking, capability declaration, task rejection with backpressure
+1. **Main Entry (index.ts)** — Barrel export of all public APIs, should re-export from each module's index.ts (currently missing optimization module)
+2. **Setup Module (NEW)** — Setup/validation utilities exported via `./setup` subpath, includes `validateEnvironment()` and `initializeSchema()`
+3. **Setup Scripts (NEW)** — Environment validation CLI, runtime health check CLI, database initialization script in `scripts/` directory
+4. **Health Check Bin (NEW)** — Executable CLI command via npm bin field for operations teams and monitoring systems
+5. **npm Exports Field** — Defines package boundary with subpath exports for modular access (`.`, `./communication`, `./state`, `./optimization`, `./setup`)
 
-**Key patterns:**
-- Dynamic capability declaration via MQTT retained messages (extends v1.0 agent registry)
-- Load-based routing with hardware-aware metric collection (5s on Pi 2B, 1s on Pi 5)
-- Native message batching (buffer + timer, no external queue libraries)
-- SQLite singleton with prepared statement caching (connection pool pattern)
-- Dashboard auto-discovery (finds ~/.openclaw-swarm or OPENCLAW_SWARM_HOME)
+**Recommended project structure (v1.2 additions):**
+```
+packages/coordination/
+├── scripts/          # NEW: Setup and utility scripts
+│   ├── setup.ts      # Environment validation and init
+│   ├── validate.ts   # Health check CLI
+│   └── init-schema.ts # Database initialization
+├── bin/              # NEW: Executable commands (optional)
+│   └── openclaw-health # Symlink to scripts/validate.ts
+└── src/
+    └── setup/        # NEW: Setup and validation utilities
+        ├── index.ts  # Public setup API
+        ├── health.ts # Health check functions
+        └── schema.ts # Schema initialization utilities
+
+root/
+├── package.json      # ADD: workspaces configuration
+├── scripts/          # NEW: Cross-package utilities
+│   ├── install.sh    # Development environment setup
+│   └── validate-env.sh # Mosquitto/config validation
+└── packages/
+    ├── coordination/
+    └── dashboard/
+```
 
 ### Critical Pitfalls
 
-1. **Dynamic routing race conditions** — Capability updates and load tracking cause stale routing decisions
-   - **Prevention:** Version vectors for capability sets, quorum reads, short TTL (5-10s), capability change notifications
+From PITFALLS.md: The top pitfalls for distributed agent swarm systems, ranked by severity and frequency of occurrence.
 
-2. **Load tracking overhead on Pi 2B** — Metric collection consumes 10-15% CPU, paradoxically reducing available resources
-   - **Prevention:** Adaptive intervals (5s on Pi 2B, 1s on Pi 5), batch with status messages, opt-in per agent type
+1. **Communication Overload and Message Storms** — Multi-agent systems experience exponential message growth. Implement async queues with message deduplication, batch messages where possible, define clear input/output contracts, use shared short-term memory layers instead of point-to-point messaging. (Addressed in v1.1 with message batching)
 
-3. **Task rejection cascades (thundering herd)** — Rejected tasks bounce between agents causing message storms
-   - **Prevention:** Rejection queue with exponential backoff, circuit breaker after 3 consecutive rejections, broker-level queuing
+2. **Distributed Memory Desynchronization** — Multiple agents maintaining separate memory banks lose context, causing inconsistent state. Use global context storage for consistency, implement event-driven synchronization with proper versioning, design state updates to be commutative where possible. (Addressed in v1.0 with SQLite state store)
 
-4. **Message batching latency trap** — Single batching config for all messages causes unacceptable latency for urgent tasks
-   - **Prevention:** Per-type batching (task=10ms, status=50ms, heartbeat=100ms), priority queues, separate real-time vs. bulk paths
+3. **Agent Coordination Deadlocks and Livelocks** — Agents form infinite loops passing tasks without progress. Implement clear task ownership with timeout-based escalation, use DAGs for task dependencies, add exponential backoff with jitter for retry logic, implement deadlock detection algorithms. (Addressed in v1.0 with DAG-based dependencies)
 
-5. **Dashboard memory footprint on Pi 2B** — Unlimited metric history and WebSocket buffers exceed 100MB
-   - **Prevention:** Rolling windows (60-120 points), aggressive downsampling, different dashboards by hardware (full on brain, none on workers)
+4. **Resource Exhaustion on Constrained Hardware** — System runs out of memory/CPU on Pi 2B (1GB RAM). Target Pi 2B as baseline, reserve headroom (keep utilization below 50-60%), use lightweight OS variants, enable ZRAM for memory compression, implement resource quotas per agent. (Critical for v1.2: all additions must be zero runtime impact)
 
-6. **Checkpoint corruption** — Power loss during write leaves system unrecoverable
-   - **Prevention:** Atomic writes (temp file + rename), keep last 3 checkpoints, CRC32 checksums, valid flag at end of write
+5. **Message Delivery Misconceptions** — Developers assume "exactly-once" delivery is possible. Design for at-least-once delivery as base reality, implement idempotency at application layer using unique task IDs, accept that "exactly-once = at-least-once + idempotent processing." (Critical for v1.2: all operations must be idempotent)
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+Based on combined research, suggested phase structure for v1.2:
 
-### Phase 1: Advanced Routing
-**Rationale:** Routing enhancements are foundational for other features. Load-based routing requires workers to track and publish metrics, which the dashboard will consume. Dynamic capabilities enable the multi-capability matching needed for complex tasks.
-**Delivers:** Load-aware task router, dynamic capability declaration, multi-capability matching, task rejection with backpressure
-**Addresses:** Load-based routing, task rejection/reassignment, multi-capability AND logic (v1.2)
-**Avoids:** Dynamic routing race conditions, load tracking overhead, rejection cascades, capability matching complexity
+### Phase 1: Package Exports & Module Boundaries
+**Rationale:** Fixes the missing optimization module export and establishes proper ESM package boundaries before adding setup tooling. This is a quick win that unblocks other work.
 
-**Implementation notes:**
-- Implement capability->agent index before multi-capability matching
-- Use hardware-adaptive metric collection (5s on Pi 2B, 1s on Pi 5)
-- Add circuit breaker after 3 consecutive rejections with exponential backoff
-- Version vectors for capability conflict detection
+**Delivers:**
+- Optimization module exported from main index.ts
+- Subpath exports configured in package.json (`.`, `./communication`, `./state`, `./optimization`, `./setup`)
+- All modules have index.ts barrel exports with selective public API
 
-### Phase 2: Message Optimization
-**Rationale:** Batching and connection pooling provide immediate performance benefits (10x throughput, 60% latency reduction) with low implementation risk. These features are independent and can be added without touching routing logic.
-**Delivers:** Message batching layer, MQTT connection pooling, enhanced context reference passing
-**Addresses:** Message batching, connection pooling, context references
-**Uses:** MQTT.js 5.0 built-in pooling, native DynamicBatcher implementation
-**Implements:** Message batching, connection pooling, context references
-**Avoids:** Batching latency trap, context invalidation during batching, connection pool exhaustion
+**Addresses:**
+- STACK.md: ESM export patterns requirement
+- ARCHITECTURE.md: "Fix Missing Exports (Quick Win)"
 
-**Implementation notes:**
-- Per-type batching config: urgent=10ms, status=50ms, bulk=100ms
-- Validate all references on batch processing, copy critical context
-- Hardware-aware pool limits: Pi 2B=3, Pi 5=5, Beelink=10
-- Native implementations (<10KB total, no external libraries)
+**Avoids:**
+- PITFALLS.md: Anti-pattern of exporting internal implementation details
 
-### Phase 3: Checkpointing Gaps
-**Rationale:** Checkpointing robustness is critical for production reliability. Current implementation (60s local + 5min SQLite) works but has edge cases around cross-machine recovery and corruption. Addressing these gaps prevents data loss and reduces manual intervention.
-**Delivers:** Cross-machine checkpoint recovery, atomic checkpoint writes, clock-skew-aware ordering, corruption recovery
-**Addresses:** Checkpointing completeness, cross-machine recovery, corruption handling
-**Avoids:** Cross-machine checkpoint conflicts, clock skew breaking ordering, partial checkpoint corruption
+### Phase 2: Setup Module & Scripts
+**Rationale:** Creates the setup/validation infrastructure that other features depend on. Separates runtime code from setup/dev tooling following established Node.js conventions.
 
-**Implementation notes:**
-- Atomic writes: write to temp file, then atomic rename
-- Keep last 3 checkpoints for fallback on corruption
-- Vector clocks for checkpoint ordering (tolerate clock skew)
-- Checkpoint reconciliation: merge state, don't clobber
+**Delivers:**
+- `src/setup/index.ts` with `validateEnvironment()` and `initializeSchema()`
+- `src/setup/health.ts` with `performHealthCheck()`
+- `src/setup/mosquitto.ts` with `checkMosquittoPersistence()`
+- `scripts/setup.ts` for development environment validation
+- `scripts/validate.ts` for runtime health check CLI
+- `scripts/init-schema.ts` for database initialization
 
-### Phase 4: Visualization Dashboard
-**Rationale:** Operational visibility is the final enhancement. Dashboard depends on routing metrics (Phase 1) and benefits from message batching (Phase 2) to reduce WebSocket traffic. Building it last ensures stable data sources.
-**Delivers:** Web dashboard with agent status, task progress, system metrics, real-time updates via SSE/WebSocket
-**Addresses:** Basic dashboard, progress timeline (v1.2), capability matrix (v1.2)
-**Avoids:** Dashboard memory footprint, WebSocket connection overhead, real-time update storms
+**Uses:**
+- STACK.md: zx for ESM-compatible setup scripting
+- ARCHITECTURE.md: Setup Script as Separate Entry Point pattern
 
-**Implementation notes:**
-- Deploy on griak-brain only (4GB), not Pi 2B workers
-- Lightweight stack: Vite + Vanilla + Alpine + Chart.js (~50MB dev, ~10MB production)
-- SSE for real-time updates (built-in Node.js, lighter than WebSocket)
-- Single multiplexed WebSocket per client, throttle to 10 updates/second
+**Implements:**
+- ARCHITECTURE.md: "Create Setup Module" and "Create Setup Scripts" phases
+
+**Addresses:**
+- STACK.md STATE-02: Database schema export fix
+- ARCHITECTURE.md: Missing setup/validation tooling
+
+### Phase 3: Monorepo Configuration & CI
+**Rationale:** Establishes the development infrastructure that supports all future work. Workspaces configuration enables local package linking, CI ensures published packages work correctly.
+
+**Delivers:**
+- Root package.json with workspaces configuration
+- Root-level `scripts/` with cross-package utilities
+- `scripts/install.sh` for first-time development environment setup
+- `scripts/validate-env.sh` for Mosquitto/config validation
+- `.github/workflows/verify-imports.yml` with matrix Node.js testing
+- `scripts/verify-imports.mjs` and `scripts/test-mqtt-connection.mjs`
+- husky + lint-staged pre-commit hooks
+
+**Uses:**
+- STACK.md: npm workspaces (native), husky, lint-staged, GitHub Actions
+
+**Implements:**
+- ARCHITECTURE.md: "Update Monorepo Root" phase
+- STACK.md: CI/CD Workflows for Import Verification
+
+### Phase 4: Optional Bin Commands
+**Rationale:** Provides executable CLI commands for operations teams and monitoring systems. Optional because not all users need CLI access — programmatic API via `./setup` subpath is sufficient for most use cases.
+
+**Delivers:**
+- `bin/health-check.js` executable symlink
+- package.json `bin` field configuration
+- Unix-style exit codes for monitoring integration
+
+**Uses:**
+- ARCHITECTURE.md: Health Check via bin/ Command pattern
+- STACK.md: Node.js assert for smoke testing
+
+**Addresses:**
+- ARCHITECTURE.md: "Add npm bin Commands (Optional)" phase
+
+### Phase 5: Documentation & Examples
+**Rationale:** Comprehensive documentation ensures users can successfully install and use the package. Should be done after all features are implemented so docs reflect final state.
+
+**Delivers:**
+- Installation guide for npm package consumers
+- Setup guide for development environment
+- API documentation for all exported modules
+- Example code for common use cases
+- Troubleshooting guide for common issues
+
+**Uses:**
+- All previous phases as reference
 
 ### Phase Ordering Rationale
 
-- **Phase 1 first:** Routing metrics are foundational data source for dashboard
-- **Phase 2 second:** Optimization independent of routing, provides immediate performance gains
-- **Phase 3 third:** Checkpointing is critical path but doesn't block other features
-- **Phase 4 last:** Dashboard consumes data from all previous phases
+- **Phase 1 first**: Export fixes are foundational — other phases depend on proper module boundaries
+- **Phase 2 second**: Setup module is needed before CI can validate it, and before bin commands can use it
+- **Phase 3 third**: Monorepo setup enables all development workflows; CI validates previous phases
+- **Phase 4 fourth**: Bin commands depend on setup module from Phase 2
+- **Phase 5 last**: Documentation must reflect final implementation state
 
-This ordering minimizes dependencies between phases, allowing parallel development where possible. Each phase delivers incremental value without requiring completion of later phases.
+This order follows the ARCHITECTURE.md build order while respecting STACK.md tooling choices and avoiding PITFALLS.md anti-patterns (especially "Mixing Runtime and Setup Code").
 
 ### Research Flags
 
 **Phases likely needing deeper research during planning:**
-- **Phase 1 (Advanced Routing):** Multi-capability matching algorithm has O(NxMxK) complexity without indexing — needs algorithm research during `/gsd:research-phase`
-- **Phase 3 (Checkpointing):** Cross-machine recovery with vector clocks and state merging is non-trivial — may need `/gsd:research-phase` for conflict resolution strategies
+- **Phase 2 (Setup Module):** Mosquitto persistence check implementation details (MQTT $SYS topics) — research mentioned this needs phase-specific validation
+- **Phase 3 (Monorepo Configuration):** Systemd service file templates for Node.js applications — not covered in current research
+- **Phase 4 (Bin Commands):** Best practices for npm bin command compilation (pkg vs nexe vs others) — current research mentioned this as gap
 
 **Phases with standard patterns (skip research-phase):**
-- **Phase 2 (Optimization):** Batching and connection pooling are well-documented patterns with clear reference implementations
-- **Phase 4 (Visualization):** openclaw-mission-control provides solid reference architecture, stack decisions are clear (avoid Next.js for Pi 2B)
+- **Phase 1 (Package Exports):** ESM export patterns are standard Node.js, verified against codebase (MEDIUM confidence)
+- **Phase 5 (Documentation):** Well-documented pattern, no specialized research needed
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | MQTT, SQLite, Node.js validated in v1.0; v1.1 additions (Vite, Alpine, Chart.js) well-documented |
-| Features | HIGH | v1.0 features shipped and validated; v1.1 features cross-referenced from multiple sources (competitors, research papers) |
-| Architecture | MEDIUM | v1.0 architecture proven; v1.1 extensions are additive but cross-machine checkpointing has complexity |
-| Pitfalls | HIGH | 13 critical+moderate pitfalls with specific prevention strategies; sources from 2025-2026 research |
+| Stack | HIGH | Core technologies (MQTT, SQLite, MessagePack) are industry standards with official documentation. v1.2 additions (npm workspaces, zx, husky) are well-established tools. |
+| Features | MEDIUM | v1.0 features are HIGH confidence (already shipped). v1.1 features are MEDIUM (some findings from blog posts rather than peer-reviewed papers, but cross-referenced). |
+| Architecture | MEDIUM | ESM export patterns are standard (MEDIUM). Setup script placement is established convention but couldn't verify recent community trends. Health check integration is HIGH (existing implementation analyzed). |
+| Pitfalls | HIGH | Based on UC Berkeley research on multi-agent system failures (41-86.7% failure rate), distributed systems research, and CAP theorem. Patterns well-documented in academic literature. |
+| Package Distribution | MEDIUM | npm workspaces and ESM exports are standard (HIGH). But installation-specific issues (STATE-01, STATE-02, STATE-03) identified from codebase analysis need validation during implementation. |
 
-**Overall confidence:** HIGH
+**Overall confidence:** MEDIUM — Core coordination patterns and pitfalls are well-documented. Package distribution and DX improvements follow established npm/Node.js patterns. Some installation-specific issues identified in codebase need resolution during implementation (msgpackr import, database schema exports, column count mismatch).
 
 ### Gaps to Address
 
-- **Multi-capability matching complexity:** Algorithm complexity grows with capabilities and agents — implement capability->agent index and profile with realistic data (10 agents x 20 capabilities)
-- **Clock skew tolerance:** Pi 2B lacks RTC, can drift ~10s/day — require NTP (systemd-timesyncd) on all machines, monitor clock offset
-- **Dashboard memory on Pi 2B:** Research says "don't run on workers" but doesn't specify fallback if deployed — add hardware detection, disable dashboard on Pi 2B during startup
+- **msgpackr @ts-ignore removal (STATE-01):** Current code has `@ts-ignore` suggesting confusion about correct import pattern. Research confirms current import is correct — remove the `@ts-ignore` comment during Phase 1.
+- **Database schema exports (STATE-02):** `initializeSchema` and related functions not exported from state/index.ts. Add exports in Phase 1 or Phase 2 (setup module depends on these).
+- **Column count mismatch (STATE-03):** Task queue INSERT has column count mismatch — schema defines columns that INSERT statement doesn't include. Investigate and fix in Phase 2 (setup initialization).
+- **Mosquitto persistence check:** MQTT $SYS topics for checking retained message persistence — referenced in architecture but implementation details not researched. Plan to research during Phase 2 planning.
+- **Systemd service templates:** Not covered in current research but needed for production deployment. Can be deferred to post-v1.2 or addressed in Phase 2 if time permits.
+- **Dashboard stack decision:** Research recommends Vite + Vanilla + Alpine over Next.js due to memory constraints (300MB-10GB vs 50MB target). This decision should be validated before dashboard development.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [MQTT.js Documentation](https://www.npmjs.com/package/mqtt) — v5.0 connection pooling
-- [Mosquitto Documentation](https://mosquitto.org/) — Broker configuration, QoS levels
-- [better-sqlite3 GitHub](https://github.com/WiseLibs/better-sqlite3) — WAL mode, synchronous API
-- [openclaw-mission-control (GitHub)](https://github.com/robsannaa/openclaw-mission-control) — Feature reference (NOT stack reference for Pi 2B)
-- [Next.js Memory Leak #88603](https://github.com/vercel/next.js/issues/88603) — v16.1.0 production leaks (Jan 2026)
-- [HTMX vs React Bundle Size (Sohu, Sept 2025)](https://www.sohu.com/a/937067078_122328931) — 83% JS reduction with lightweight stacks
+- **npm workspaces Documentation** — Official npm docs on workspace configuration
+- **package.json exports (Node.js)** — Official Node.js docs on ESM package boundaries
+- **ESM Module Best Practices (nodejs.org)** — Official ESM documentation
+- **zx Documentation** — Official GitHub repo for ESM-compatible scripting
+- **Mosquitto Documentation** — Official docs for MQTT broker
+- **MQTT.js npm** — Official npm package documentation
+- **better-sqlite3 Documentation** — Official GitHub repo
+- **msgpackr npm** — Official npm package
 
 ### Secondary (MEDIUM confidence)
-- [Weighted Round-Robin Implementation (CSDN, Oct 2025)](https://m.blog.csdn.net/gitblog_01196/article/details/153153490) — Smooth weighted GCD algorithm
-- [Message Batching Pattern (GeeksforGeeks, July 2025)](https://www.geeksforgeeks.org/node-js/top-nodejs-design-patterns/) — DynamicBatcher pattern
-- [Producer Batching Analysis (arXiv, 2025)](https://arxiv.org/html/2512.16146v1) — Batching benchmarks
-- [DroidSpeak: Efficient Context Sharing (Microsoft Research)](https://www.microsoft.com/en-us/research/) — Context reference passing, NSDI 2026
-- [MonoScale: Scaling Multi-Agent Systems (arXiv, Jan 2026)](https://arxiv.org/abs/2501.xxxxx) — Router architecture patterns
-- [TCAR (TencentCloud, Jan 2026)](https://cloud.tencent.com/) — "Reason-then-Select" routing with explainability
+- **MQTT.js Performance Optimization (CSDN, Oct 2025)** — Connection pooling, topic aliases
+- **Message Batching Pattern (GeeksforGeeks, July 2025)** — DynamicBatcher pattern reference
+- **Load Balancing Algorithms (Baidu Cloud, Sept 2025)** — Round-robin vs weighted vs least connections
+- **HTMX vs React Bundle Size (Sohu, Sept 2025)** — 83% JS reduction with lightweight alternatives
+- **Next.js Memory Leak #88603 (GitHub, Jan 2026)** — v16.1.0 production memory issues
+- **UC Berkeley Research on Multi-Agent System Failures** — 41-86.7% failure rate, 14 major failure patterns
+- **Microsoft Azure SRE Team case study** — 100+ tools reduced to 5 core tools
 
-### Tertiary (LOW confidence)
-- [Circuit Breaker Pattern (CSDN, 2026)](https://m.blog.csdn.net/IOIO_/article/details/156490917) — Rejection cascade prevention (generic guidance, needs validation for MQTT)
-- [Clock Skew in Distributed Systems (arXiv, 2025)](https://arxiv.org/html/2510.02991v1) — General theory, needs MQTT-specific validation
+### Tertiary (LOW confidence — needs validation)
+- **Android MQTT Client Batching (CSDN, Nov 2025)** — Application-layer batching benchmarks
+- **Cloud Sky Data MQTT Optimization Patent** — Sharded broker clustering claims
+- **Fuzzy-based distributed load balancing (CSDN, Jan 2025)** — Fuzzy set theory for load balancing
+- **Specific blog posts and patents** — Single sources without independent verification
+
+### Codebase Analysis (v1.0/v1.1 implementation)
+- **Existing coordination package structure** — Verified module organization, exports configuration, health check implementation
+- **Installation issues report** — `.planning/issues/INSTALLATION-ISSUES-griak-brain.md` identified STATE-01, STATE-02, STATE-03
 
 ---
-*Research completed: 2026-02-22*
+*Research completed: 2026-02-23*
 *Ready for roadmap: yes*

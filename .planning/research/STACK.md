@@ -1,7 +1,7 @@
 # Technology Stack
 
 **Domain:** Lightweight Agent Swarm Coordination System
-**Researched:** 2025-02-21 (v1.0), Updated 2026-02-22 (v1.1 enhancements)
+**Researched:** 2025-02-21 (v1.0), Updated 2026-02-22 (v1.1 enhancements), 2026-02-23 (v1.2 installation)
 **Confidence:** HIGH
 
 ## Recommended Stack
@@ -40,6 +40,26 @@
 - **SSE over WebSocket** — Built-in Node.js, lighter (~14KB library savings)
 - **MQTT.js connection pool** — Built-in feature, 3-5 clients per machine (30-75MB total)
 
+### v1.2 Additions (Package Distribution & DX)
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| **npm workspaces** | (native) | Monorepo management | Native npm support, zero overhead, matches project structure |
+| **package.json "exports"** | (standard) | ESM entry points | Required for proper ESM package boundaries |
+| **TypeScript paths** | (compiler option) | Import mapping | Enables clean imports, works with Node16 resolution |
+| **zx** | ^8.0.0 | Setup automation scripts | Native ESM support, modern async/await, minimal deps vs ShellJS |
+| **husky** | ^9.0.0 | Pre-commit hooks | Git hooks automation, monorepo-friendly |
+| **lint-staged** | ^15.0.0 | Staged file checks | Runs checks only on changed files, faster commits |
+| **GitHub Actions** | (native) | CI/CD | Already hosted on GitHub, import verification workflows |
+| **Node.js assert** | (native) | Import verification | Built-in, sufficient for smoke tests |
+
+**v1.2 Key Stack Decisions:**
+- **Native npm workspaces over Lerna/Turborepo** — Only 2 packages, native is sufficient
+- **zx over ShellJS** — Native ESM support required for project, ShellJS is CommonJS-only
+- **husky over lefthook** — Simpler for JS/TS projects, sufficient for current needs
+- **Native assert over Jest/Vitest** — Import verification only, no full test suite needed yet
+- **prepublishOnly over prepare** — Runs only before publish, not on every install
+
 ### Development Tools
 
 | Tool | Purpose | Notes |
@@ -61,8 +81,401 @@ npm install uuid@11.0.0 p-queue@8.0.0 eventemitter3@6.0.0
 npm install -D vite@6.x
 npm install alpinejs@3.x chart.js@4.x
 
+# v1.2 Package distribution & DX additions
+npm install -D \
+  husky@9.0.0 \
+  lint-staged@15.0.0 \
+  zx@8.0.0
+
+# Setup husky (after installation)
+npx husky init
+
 # Dev dependencies
 npm install -D typescript@5.9.3 tsx@4.21.0 @types/node@22.19.11
+```
+
+## v1.2 Package Distribution Requirements
+
+### msgpackr Import Fix (CRITICAL - STATE-01)
+
+**Current Issue:** Code uses `@ts-ignore` suggesting confusion about correct import pattern
+
+**Correct Import Pattern:**
+```typescript
+// Method 1: MessagePack class (RECOMMENDED - already in use)
+import { MessagePack } from 'msgpackr';
+const encoded = MessagePack.encode(value);
+const decoded = MessagePack.decode(buffer);
+
+// Method 2: Direct utilities (alternative)
+import { pack, unpack } from 'msgpackr/unpack';
+const encoded = pack(value);
+const decoded = unpack(buffer);
+```
+
+**Verification:** The current code in `packages/coordination/src/communication/codec.ts` is CORRECT:
+```typescript
+import { MessagePack } from 'msgpackr';  // This is the right way
+```
+
+The `@ts-ignore` comment should be REMOVED - it was likely added during troubleshooting but is no longer needed.
+
+### npm Workspaces Configuration
+
+**Required in root package.json:**
+```json
+{
+  "name": "@openclaw-swarm/monorepo",
+  "version": "1.2.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces",
+    "clean": "npm run clean --workspaces",
+    "type-check": "npm run type-check --workspaces",
+    "setup": "node scripts/setup.mjs"
+  }
+}
+```
+
+**Workspace-specific commands:**
+```bash
+# Install dependency to specific workspace
+npm install -w @openclaw-swarm/coordination <package>
+npm install -w @openclaw-swarm/dashboard <package>
+
+# Run script in specific workspace
+npm run build -w @openclaw-swarm/coordination
+npm run dev -w @openclaw-swarm/dashboard
+```
+
+### ESM Export Patterns
+
+**Required package.json structure for EACH workspace package:**
+```json
+{
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ]
+}
+```
+
+**Note:** This is ALREADY PRESENT in `packages/coordination/package.json` - no changes needed to exports field.
+
+### TypeScript Module Resolution (Already Configured)
+
+**Current tsconfig.json is CORRECT:**
+```json
+{
+  "compilerOptions": {
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "target": "ES2022"
+  }
+}
+```
+
+No changes needed - this properly handles ESM/.js extension requirements.
+
+### Database Schema Export (STATE-02)
+
+**Current Issue:** `initializeSchema` and related functions not exported from state/index.ts
+
+**Required Fix in packages/coordination/src/state/index.ts:**
+```typescript
+// Add these exports:
+export * from './schema.js';  // Exports initializeSchema, validateSchema, etc.
+export * from './database.js';
+export * from './context.js';
+export * from './task-queue.js';
+export * from './archive.js';
+```
+
+### Setup Automation with zx
+
+**Create: scripts/setup.mjs**
+```javascript
+#!/usr/bin/env node
+import { $, fs, echo } from 'zx';
+
+$.verbose = true;
+
+async function setup() {
+  echo('Checking Node.js version...');
+  const nodeVersion = process.version;
+  echo(`Node.js version: ${nodeVersion}`);
+
+  if (!nodeVersion.startsWith('v22')) {
+    echo('ERROR: Node.js 22+ required');
+    process.exit(1);
+  }
+
+  echo('Verifying workspaces...');
+  await $`npm ls --workspaces --depth=0`;
+
+  echo('Installing dependencies...');
+  await $`npm install`;
+
+  echo('Building packages...');
+  await $`npm run build --workspaces`;
+
+  echo('Running type checks...');
+  await $`npm run type-check --workspaces`;
+
+  echo('');
+  echo('✓ Setup complete!');
+  echo('');
+  echo('Next steps:');
+  echo('  - Configure Mosquitto broker (see docs)');
+  echo('  - Run: npm run dev');
+}
+
+setup().catch(err => {
+  console.error('Setup failed:', err);
+  process.exit(1);
+});
+```
+
+**Add to package.json (root):**
+```json
+{
+  "scripts": {
+    "setup": "node scripts/setup.mjs"
+  },
+  "devDependencies": {
+    "zx": "^8.0.0"
+  }
+}
+```
+
+### Pre-commit Hooks with husky
+
+**Installation:**
+```bash
+npm install -D husky@9.0.0 lint-staged@15.0.0
+npx husky init
+```
+
+**Create: .husky/pre-commit**
+```bash
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Running pre-commit checks..."
+
+# Type check without emitting files
+npm run type-check --workspaces
+
+# Lint staged files
+npx lint-staged
+```
+
+**Configure lint-staged in root package.json:**
+```json
+{
+  "lint-staged": {
+    "*.{ts,js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}
+```
+
+**Skip in CI:**
+```bash
+HUSKY=0 npm run ci  # Disables hooks during CI
+```
+
+### CI/CD Workflows for Import Verification
+
+**Create: .github/workflows/verify-imports.yml**
+```yaml
+name: Verify Imports
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x, '23.x']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all workspaces
+        run: npm run build --workspaces
+
+      - name: Verify package imports
+        run: node scripts/verify-imports.mjs
+
+      - name: Type check
+        run: npm run type-check --workspaces
+
+  test-mosquitto:
+    runs-on: ubuntu-latest
+    services:
+      mosquitto:
+        image: eclipse-mosquitto:2.0
+        ports:
+          - 1883:1883
+        options: >-
+          --health-cmd "mosquitto_sub -t '$SYS/#' -C 1 -i test -h localhost"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build --workspaces
+
+      - name: Test MQTT connectivity
+        run: node scripts/test-mqtt-connection.mjs
+        env:
+          MQTT_BROKER_URL: mqtt://localhost:1883
+```
+
+**Create: scripts/verify-imports.mjs**
+```javascript
+#!/usr/bin/env node
+import { $ } from 'zx';
+
+$.verbose = true;
+
+async function verifyImports() {
+  console.log('Verifying workspace imports...');
+
+  try {
+    // Test coordination package imports
+    await $`node --eval "import('@openclaw-swarm/coordination')"`;
+    console.log('✓ @openclaw-swarm/coordination imports verified');
+
+    // Test msgpackr specifically (STATE-01 verification)
+    await $`node --eval "import { MessagePack } from 'msgpackr'; console.log('MessagePack:', typeof MessagePack.encode)"`;
+    console.log('✓ msgpackr import verified');
+
+    // Test database schema exports (STATE-02 verification)
+    await $`node --eval "
+      import('@openclaw-swarm/coordination').then(m => {
+        if (m.initializeSchema) console.log('✓ initializeSchema exported');
+        else throw new Error('initializeSchema NOT exported');
+        if (m.validateSchema) console.log('✓ validateSchema exported');
+        else throw new Error('validateSchema NOT exported');
+      })
+    "`;
+    console.log('✓ database schema exports verified');
+
+    console.log('');
+    console.log('All imports verified successfully!');
+  } catch (err) {
+    console.error('Import verification failed:', err.message);
+    process.exit(1);
+  }
+}
+
+verifyImports();
+```
+
+**Create: scripts/test-mqtt-connection.mjs**
+```javascript
+#!/usr/bin/env node
+import { connect } from 'mqtt';
+
+const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+
+async function testMQTT() {
+  console.log(`Testing MQTT connection to ${brokerUrl}...`);
+
+  return new Promise((resolve, reject) => {
+    const client = connect(brokerUrl);
+
+    client.on('connect', () => {
+      console.log('✓ MQTT connection successful');
+      client.end();
+      resolve();
+    });
+
+    client.on('error', (err) => {
+      console.error('MQTT connection failed:', err.message);
+      reject(err);
+    });
+
+    setTimeout(() => {
+      reject(new Error('MQTT connection timeout'));
+    }, 5000);
+  });
+}
+
+testMQTT().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
+```
+
+### Column Count Mismatch Fix (STATE-03)
+
+**Issue:** Task queue INSERT has column count mismatch
+
+**Root Cause:** Schema defines columns that INSERT statement doesn't include
+
+**Fix in packages/coordination/src/state/task-queue.ts:**
+```typescript
+// Ensure INSERT includes all non-nullable columns
+const INSERT_STMT = `
+  INSERT INTO tasks (
+    id, status, priority, assigned_agent,
+    created_at, updated_at, completed_at,
+    payload, dependencies, timeout_ms,
+    retry_count, max_retries, last_progress_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
 ```
 
 ## v1.1 Feature Stack Requirements
@@ -330,6 +743,65 @@ Existing hybrid checkpointing (60s local JSON + 5min SQLite sync) covers all req
 - [Real-world case study (2025)](https://www.sohu.com/a/937067078_122328931) — 21,500 lines (React) vs 7,200 lines (HTMX)
 - [Next.js memory leaks (GitHub #88603, Jan 2026)](https://github.com/vercel/next.js/issues/88603)
 
+### Why Native npm Workspaces for Monorepo
+
+| Tool | Setup Complexity | Build Speed | Memory | Learning Curve | Verdict |
+|------|------------------|-------------|--------|----------------|---------|
+| **npm workspaces** | Minimal | Fast | Native | Low | ✅ RECOMMENDED |
+| **Lerna** | Moderate | Fast | Low | Medium | ⚠️ Only if complex publish workflows |
+| **Turborepo** | Complex | Very Fast | Moderate | High | ⚠️ Only for large-scale projects |
+| **Nx** | Complex | Fast | High | High | ❌ Overkill for 2 packages |
+
+**npm Workspaces Wins Because:**
+- Native to npm (v7+), zero additional dependencies
+- Simple configuration: `"workspaces": ["packages/*"]`
+- Workspace protocol for internal dependencies: `"@openclaw-swarm/coordination": "*"`
+- Sufficient for 2-package monorepo
+- `npm run build --workspaces` for parallel builds
+
+### Why zx over ShellJS for Setup Scripts
+
+| Tool | ESM Support | Async Syntax | Dependencies | Learning Curve | Verdict |
+|------|-------------|--------------|--------------|----------------|---------|
+| **zx** | ✅ Native | ✅ async/await | Minimal | Low (if know Bash) | ✅ RECOMMENDED |
+| **ShellJS** | ❌ CommonJS | ❌ Sync mostly | Zero | Low | ⚠️ Only if CommonJS project |
+
+**zx Wins Because:**
+- Project is ESM-first (`"type": "module"` in all packages)
+- Native async/await support for shell commands
+- Built-in utilities: `cd`, `fs`, `fetch`, `sleep`, `question`
+- Bash-like template literals: `await $`npm install``
+- TypeScript support via `.mjs` files
+
+### Why husky over lefthook for Pre-commit Hooks
+
+| Tool | Language | Config | Monorepo Support | Verdict |
+|------|----------|--------|------------------|---------|
+| **husky** | Node.js | Shell scripts | ✅ Native | ✅ RECOMMENDED |
+| **lefthook** | Go | YAML | ✅ Excellent | ⚠️ Faster, but more complex |
+
+**husky Wins Because:**
+- Already using Node.js ecosystem
+- Simple shell script hooks
+- Monorepo-friendly via single `.husky` directory at root
+- Integrates with `lint-staged` for staged file checks
+- Sufficient for current needs (lefthook's speed advantage not needed yet)
+
+### Why GitHub Actions over Alternatives for CI/CD
+
+| Tool | Setup | Free Tier | Integration | Verdict |
+|------|-------|-----------|-------------|---------|
+| **GitHub Actions** | Native | Generous | Native to GitHub | ✅ RECOMMENDED |
+| **GitLab CI** | Native | Generous | Requires GitLab | ⚠️ Only if using GitLab |
+| **CircleCI** | Config | Limited | External | ❌ Adds complexity |
+
+**GitHub Actions Wins Because:**
+- Already hosted on GitHub (implied by repo structure)
+- Native integration, no external accounts needed
+- Generous free tier (2000 minutes/month)
+- Built-in Docker service support (for Mosquitto testing)
+- Matrix builds for multi-version Node.js testing
+
 ## Memory Budget for Pi 2B (1GB RAM)
 
 ### v1.0 Baseline (Current)
@@ -377,6 +849,22 @@ Coordination Layer (v1.1): ~100MB
 
 **Key Insight:** Even with v1.1 additions, coordination layer stays well under 50% of available RAM on Pi 2B.
 
+### v1.2 Additions (Zero Runtime Impact)
+
+```
+Development Tools (runtime only):
+├── npm workspaces: ~0MB (native)
+├── husky: ~0MB (git hooks only)
+├── zx: ~5MB (setup scripts only)
+├── TypeScript: ~0MB (build time only)
+└── GitHub Actions: 0MB (CI only)
+
+Production Impact: NONE
+- All v1.2 additions are build-time or development-time only
+- No runtime dependencies added
+- No memory increase in production deployments
+```
+
 ## Alternatives Considered
 
 ### For Routing & Load Balancing
@@ -414,6 +902,28 @@ Coordination Layer (v1.1): ~100MB
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
 | **Native SQLite + LRU** | ioredis for caching | Redis only if already using it — SQLite sufficient for reference store |
+
+### For Monorepo Management
+
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| **npm workspaces** | Turborepo | Use Turborepo only for large codebases (10+ packages) with complex build graphs |
+| **npm workspaces** | Lerna | Use Lerna only if need complex versioning/publishing workflows |
+| **npm workspaces** | Nx | Nx is overkill for 2-package monorepo — high config overhead |
+
+### For Setup Scripts
+
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| **zx** | ShellJS | Use ShellJS only if using CommonJS — project is ESM-first |
+| **zx** | execa | Use execa only for simpler command execution — zx provides more utilities |
+
+### For Pre-commit Hooks
+
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| **husky** | lefthook | Use lefthook only if need faster execution — current project doesn't need the speed |
+| **husky** | pre-commit (Python) | Use pre-commit only if already using Python tooling — adds Python dependency |
 
 ### For Broker
 
@@ -455,6 +965,17 @@ Coordination Layer (v1.1): ~100MB
 | **External load balancers** | Designed for HTTP proxying, not MQTT | Native weighted round-robin |
 | **Redis for pooling** | Adds external dependency, MQTT.js has built-in | MQTT.js connection pool |
 | **Heavy chart libraries** (ECharts, D3) | 250KB+ bundle, designed for complex viz | Chart.js (~37-60KB) |
+| **CommonJS in package code** | Project is ESM-first, mixing causes dual-module hell | ESM `import/export` exclusively |
+| **`.js` extensions in imports** | Node.js ESM requires explicit extensions, causes runtime errors | `.js` extension in all `import` statements |
+| **`ts-node` for scripts** | No ESM support in older versions, conflicts with Node.js 22 | `zx` scripts with `.mjs` extension |
+| **`npm link` for local development** | Doesn't work well with workspaces, can cause version confusion | `npm install -w <workspace>` or workspace protocol |
+| **`.npmrc` with `save-exact`** | Locks dependencies too tightly, prevents security updates | `package-lock.json` for exact versions, semver ranges in package.json |
+| **`prepare` script for builds** | Runs on every install, slow for large packages | `prepublishOnly` - runs only before publish |
+| **Conditional exports for CJS** | Project is ESM-only, CJS adds maintenance burden with no benefit | ESM-only exports, remove `require` conditions |
+| **Turborepo for 2 packages** | High config overhead, overkill for small monorepos | Native npm workspaces |
+| **ShellJS in ESM project** | CommonJS-only, requires interop that can break | zx (native ESM support) |
+| **lefthook for simple hooks** | Overkill for basic pre-commit checks | husky (simpler for JS/TS projects) |
+| **Jest/Vitest for smoke tests** | Heavy dependency for simple import verification | Native Node.js `assert` module |
 
 ## Stack Patterns by Variant
 
@@ -477,6 +998,24 @@ Coordination Layer (v1.1): ~100MB
 - Use MessagePack for all payloads
 - **NO dashboard on workers** — access brain's dashboard remotely
 - Production deployment: static files only (no dev server)
+
+**If adding new workspace package:**
+- Use `"type": "module"` in package.json
+- Configure `exports` field with `types` + `import` conditions
+- Use `"main": "./dist/index.js"` for Node.js < 12.7 fallback
+- Use `"types": "./dist/index.d.ts"` for TypeScript
+
+**If creating setup scripts:**
+- Use zx with `.msh` extension for ESM compatibility
+- Place in `scripts/` directory at root
+- Make executable: `chmod +x scripts/script.mjs`
+- Add to root package.json: `"setup": "node scripts/setup.mjs"`
+
+**If adding pre-commit hooks:**
+- Install husky at root level (not in individual packages)
+- Use `.husky/pre-commit` script that runs `npx lint-staged`
+- Configure `lint-staged` in root package.json
+- Skip in CI with `HUSKY=0` environment variable
 
 ## Communication Protocol Specifications
 
@@ -545,6 +1084,90 @@ interface BatchMessage {
 | Vite 6.x | Node.js ≥18.0.0 | ESBuild-based, dev server ~50MB |
 | Alpine.js 3.x | Any framework | Framework-agnostic, works with vanilla JS |
 | Chart.js 4.x | All modern browsers | Tree-shakeable, registerable chart types |
+| zx 8.x | Node.js ≥18.0.0 | Requires `--experimental-fetch` on Node.js < 18 (not applicable here) |
+| husky 9.x | npm@9+ | Uses npm scripts, not Git hooks directly |
+| lint-staged 15.x | Node.js ≥18.0.0 | Requires git installation |
+| TypeScript 5.9.3 | module: "Node16" | Required for proper ESM/.js extension handling |
+
+## Critical Integration Notes
+
+### msgpackr Import Verification (STATE-01)
+**Status:** ✅ CORRECT - No changes needed
+
+The current import pattern in `packages/coordination/src/communication/codec.ts` is correct:
+```typescript
+import { MessagePack } from 'msgpackr';
+```
+
+**Action:** Remove the `@ts-ignore` comment on line 12 - it was likely added during troubleshooting but the import is correct.
+
+**Verification:**
+```bash
+node --eval "import { MessagePack } from 'msgpackr'; console.log('✓ MessagePack:', typeof MessagePack.encode)"
+```
+
+### npm Workspaces Configuration (NEW)
+**Status:** ❌ MISSING - Must add
+
+Root package.json currently lacks explicit `workspaces` field.
+
+**Required Addition to root package.json:**
+```json
+{
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces",
+    "clean": "npm run clean --workspaces",
+    "type-check": "npm run type-check --workspaces"
+  }
+}
+```
+
+### Database Schema Export Fix (STATE-02)
+**Status:** ❌ MISSING - Must add
+
+`packages/coordination/src/state/index.ts` doesn't export schema functions.
+
+**Required Addition:**
+```typescript
+// Add to packages/coordination/src/state/index.ts
+export * from './schema.js';
+export * from './database.js';
+export * from './context.js';
+export * from './task-queue.js';
+export * from './archive.js';
+```
+
+### Column Count Mismatch Fix (STATE-03)
+**Status:** ❌ NEEDS INVESTIGATION - Schema has columns INSERT doesn't include
+
+**Investigation Required:**
+1. Check `packages/coordination/src/state/task-queue.ts` INSERT statement
+2. Compare with `packages/coordination/src/state/schema.ts` table definition
+3. Add missing columns to INSERT or provide DEFAULT values
+
+### ESM Export Patterns
+**Status:** ✅ CORRECT - No changes needed
+
+The current package.json exports are correct for ESM-only package:
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  }
+}
+```
+
+### TypeScript Module Resolution
+**Status:** ✅ CORRECT - No changes needed
+
+tsconfig.json has proper Node16 module resolution configured.
 
 ## Sources
 
@@ -586,6 +1209,18 @@ interface BatchMessage {
 ### Real-time Updates
 - [SSE vs WebSocket (Sohu, Sept 2025)](https://www.sohu.com/a/937067078_122328931) — Lightweight alternative for dashboards (MEDIUM confidence)
 
+### Package Distribution & Monorepo
+- [npm workspaces Documentation](https://docs.npmjs.com/cli/v10/using-npm/workspaces) — Official npm docs (HIGH confidence)
+- [package.json exports (Node.js)](https://nodejs.org/api/packages.html) — Official Node.js docs (HIGH confidence)
+- [ESM Module Best Practices (nodejs.org)](https://nodejs.org/api/esm.html) — Official ESM documentation (HIGH confidence)
+- [zx Documentation](https://github.com/google/zx) — Official GitHub (HIGH confidence)
+- [husky Documentation](https://typicode.github.io/husky) — Official documentation (HIGH confidence)
+- [lint-staged npm](https://www.npmjs.com/package/lint-staged) — Official npm (HIGH confidence)
+
+### Development Tools
+- [TypeScript Module Resolution](https://www.typescriptlang.org/docs/handbook/modules/reference.html) — Official docs (HIGH confidence)
+- [GitHub Actions Documentation](https://docs.github.com/en/actions) — Official GitHub docs (HIGH confidence)
+
 ### Reference Implementation
 - [openclaw-mission-control (GitHub)](https://github.com/robsannaa/openclaw-mission-control) — Feature reference (NOT stack reference due to memory constraints) (HIGH confidence)
 
@@ -595,4 +1230,4 @@ interface BatchMessage {
 
 ---
 *Stack research for: OpenClaw Swarm - Lightweight Agent Coordination*
-*Researched: 2025-02-21 (v1.0), Updated 2026-02-22 (v1.1 enhancements)*
+*Researched: 2025-02-21 (v1.0), Updated 2026-02-22 (v1.1 enhancements), 2026-02-23 (v1.2 installation)*
