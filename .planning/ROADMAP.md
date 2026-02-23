@@ -92,12 +92,12 @@ Plans:
   3. Checkpoint metadata includes CRC32 checksum validated on recovery
   4. Recovery merges checkpoint state with current state (reconciliation, not overwrite)
   5. Vector clocks track checkpoint ordering to tolerate clock skew across machines
-**Plans:** TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 08-01: Atomic checkpoint writes with CRC32 checksums
-- [ ] 08-02: Multi-checkpoint retention with fallback recovery
-- [ ] 08-03: State reconciliation and vector clock ordering
+- [ ] 08-01-PLAN.md — Atomic checkpoint writes with CRC32 checksums (CHKP-01, CHKP-03)
+- [ ] 08-02-PLAN.md — Multi-checkpoint retention with fallback recovery (CHKP-02)
+- [ ] 08-03-PLAN.md — State reconciliation and vector clock ordering (CHKP-04, CHKP-05)
 
 ### Phase 9: Visualization
 **Goal:** Minerva can view real-time swarm status via lightweight web dashboard
