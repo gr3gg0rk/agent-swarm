@@ -66,7 +66,7 @@ export class TaskQueue {
         id, status, priority, assigned_agent, created_at, updated_at, completed_at, payload,
         dependencies, timeout_ms, retry_count, max_retries, last_progress_at, result_payload, error_type
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     this.selectStmt = db.prepare(`

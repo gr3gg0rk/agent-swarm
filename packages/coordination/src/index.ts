@@ -31,3 +31,6 @@ export * from './checkpoint/index.js';
 
 // Re-export all memory management types and functions
 export * from './memory/index.js';
+
+// Re-export all optimization types and functions
+export * from './optimization/index.js';
