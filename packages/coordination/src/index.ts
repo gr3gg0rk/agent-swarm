@@ -34,3 +34,6 @@ export * from './memory/index.js';
 
 // Re-export all optimization types and functions
 export * from './optimization/index.js';
+
+// Re-export schema functions for convenience
+export { initializeSchema, validateSchema } from './state/schema.js';
