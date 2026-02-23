@@ -36,6 +36,8 @@ export interface CheckpointData {
   timeInvestedMs: number;
   /** CRC32 checksum of checkpoint data (hex string, validated on recovery) */
   checksum?: string;
+  /** Vector clock for cross-machine ordering (serialized VectorClock) */
+  vectorClock?: object;
 }
 
 /**
