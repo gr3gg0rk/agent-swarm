@@ -6,18 +6,53 @@ export function taskProgress() {
 
     async init() {
       try {
-        // Fetch active tasks from REST API
+        // Fetch initial active tasks from REST API
+        const response = await fetch('/api/tasks?status=in_progress');
+        const data = await response.json();
+        this.tasks = data.tasks || [];
+      } catch (err) {
+        this.error = 'Failed to load task progress';
+        console.error('Task progress fetch error:', err);
+      }
+
+      // Connect to SSE for real-time updates
+      this.connectSSE();
+    },
+
+    connectSSE() {
+      const eventSource = new EventSource('/api/events');
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Handle task updates (will be sent when tasks change)
+          // For now, refresh task list on any event
+          if (data.type === 'agents' || data.type === 'connected') {
+            this.refreshTasks();
+          }
+        } catch (err) {
+          console.error('SSE parse error:', err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error('SSE connection error:', err);
+        this.loading = false;
+      };
+
+      this.$cleanup(() => eventSource.close());
+    },
+
+    async refreshTasks() {
+      try {
         const response = await fetch('/api/tasks?status=in_progress');
         const data = await response.json();
         this.tasks = data.tasks || [];
         this.loading = false;
       } catch (err) {
-        this.error = 'Failed to load task progress';
-        this.loading = false;
-        console.error('Task progress fetch error:', err);
+        console.error('Task refresh error:', err);
       }
-
-      // SSE connection will be added in 09-03 for real-time updates
     },
 
     // Get status badge color
