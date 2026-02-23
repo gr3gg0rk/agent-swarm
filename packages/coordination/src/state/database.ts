@@ -73,9 +73,9 @@ export function createDatabase(options: DatabaseOptions): Database.Database {
 
   // Enable WAL mode for concurrent access
   if (walMode) {
-    const result = db.pragma('journal_mode = WAL');
+    const result = db.pragma('journal_mode = WAL', { simple: true });
     if (result !== 'wal') {
-      throw new Error(`Failed to enable WAL mode: got ${result}`);
+      throw new Error(`Pragma journal_mode failed: expected WAL, got ${result}. Fix: Ensure database directory is writable and not on network filesystem.`);
     }
   }
 
