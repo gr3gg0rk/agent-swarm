@@ -61,6 +61,21 @@ export const Topics = {
 
   /** Agent load metrics (ROUT-02) - retained message for current load */
   agentLoad: (agentId: string): string => `agent/${agentId}/load`,
+
+  /** Batched progress messages (07-01) - high-frequency message batching */
+  batchProgress: 'swarm/batch/progress',
+
+  /** Batched heartbeat messages (07-01) - high-frequency message batching */
+  batchHeartbeat: 'swarm/batch/heartbeat',
+
+  /** Batched load metrics messages (07-01) - high-frequency message batching */
+  batchLoadMetrics: 'swarm/batch/load_metrics',
+
+  /** Batched task-related messages (07-01) - results and cancellations */
+  batchTasks: 'swarm/batch/tasks',
+
+  /** Batched status messages (07-01) - generic status updates */
+  batchStatus: 'swarm/batch/status',
 } as const;
 
 /**
@@ -87,6 +102,9 @@ export const Subscriptions = {
 
   /** All agent load metrics (router subscribes here) */
   allAgentLoads: 'agent/+/load',
+
+  /** All batched messages (for batch consumers) - 07-01 */
+  allBatches: 'swarm/batch/#',
 } as const;
 
 /**
