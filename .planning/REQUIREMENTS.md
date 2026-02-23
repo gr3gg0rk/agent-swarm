@@ -85,29 +85,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRIT-04 | Phase 12 | Pending |
 | CRIT-05 | Phase 12 | Pending |
 | CRIT-06 | Phase 12 | Pending |
-| SETUP-01 | Phase 12 | Pending |
-| SETUP-02 | Phase 12 | Pending |
-| SETUP-03 | Phase 12 | Pending |
-| SETUP-04 | Phase 12 | Pending |
-| SETUP-05 | Phase 12 | Pending |
-| SCRIPT-01 | Phase 12 | Pending |
-| SCRIPT-02 | Phase 12 | Pending |
-| SCRIPT-03 | Phase 12 | Pending |
-| SCRIPT-04 | Phase 12 | Pending |
-| SCRIPT-05 | Phase 12 | Pending |
-| DOCS-01 | Phase 12 | Pending |
-| DOCS-02 | Phase 12 | Pending |
-| DOCS-03 | Phase 12 | Pending |
-| DOCS-04 | Phase 12 | Pending |
-| QA-01 | Phase 12 | Pending |
-| QA-02 | Phase 12 | Pending |
-| QA-03 | Phase 12 | Pending |
+| SETUP-01 | Phase 13 | Pending |
+| SETUP-02 | Phase 13 | Pending |
+| SETUP-03 | Phase 13 | Pending |
+| SETUP-04 | Phase 13 | Pending |
+| SETUP-05 | Phase 13 | Pending |
+| SCRIPT-01 | Phase 14 | Pending |
+| SCRIPT-02 | Phase 14 | Pending |
+| SCRIPT-03 | Phase 14 | Pending |
+| SCRIPT-04 | Phase 14 | Pending |
+| SCRIPT-05 | Phase 14 | Pending |
+| DOCS-01 | Phase 15 | Pending |
+| DOCS-02 | Phase 15 | Pending |
+| DOCS-03 | Phase 15 | Pending |
+| DOCS-04 | Phase 15 | Pending |
+| QA-01 | Phase 16 | Pending |
+| QA-02 | Phase 16 | Pending |
+| QA-03 | Phase 16 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23 ⚠️
+- Mapped to phases: 23
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-23*
-*Last updated: 2026-02-23 after initial definition*
+*Last updated: 2026-02-23 after roadmap creation*
