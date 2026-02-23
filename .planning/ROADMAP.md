@@ -45,6 +45,8 @@
 - [x] **Phase 7: Optimization** - Message batching, connection pooling, context references ✓ 2026-02-23
 - [ ] **Phase 8: Checkpointing Gaps** - Atomic writes, corruption recovery, cross-machine ordering (2/3 plans)
 - [x] **Phase 9: Visualization** - Web dashboard for agent status, task progress, metrics ✓ 2026-02-23
+- [ ] **Phase 10: Context Recovery Integration** - Wire ContextManager to CheckpointManager (gap closure)
+- [ ] **Phase 11: Opt-In Feature Activation** - Enable MessageBatcher and ConnectionPool (gap closure)
 
 ## Phase Details
 
@@ -116,10 +118,40 @@ Plans:
 - [x] 09-02-PLAN.md — Agent status, task progress, and metrics views (VIZ-01, VIZ-02, VIZ-03) - Completed 2026-02-23
 - [x] 09-03-PLAN.md — SSE real-time updates with throttling (VIZ-05) - Completed 2026-02-23
 
+### Phase 10: Context Recovery Integration
+**Goal:** Context references are resolved during checkpoint recovery so tasks with large contexts recover properly
+**Depends on:** Phase 7 (ContextManager), Phase 8 (CheckpointManager)
+**Requirements:** OPTI-05, OPTI-06, CHKP-04 (integration)
+**Gap Closure:** Closes CTX-REF-CHECKPOINT and CONTEXT-REF-RECOVERY flow gap from v1.1 audit
+**Success Criteria** (what must be TRUE):
+  1. CheckpointManager has ContextManager reference injected via constructor
+  2. `loadCheckpointWithFallback()` calls `resolveMessagePayload()` on recovered messages
+  3. Tasks with context references (>10KB payloads) recover with actual content, not refs
+  4. Integration tests verify E2E: task with context ref → checkpoint → recovery → resolved
+**Plans:** 1 plan
+
+Plans:
+- [ ] 10-01-PLAN.md — Wire ContextManager to CheckpointManager for context resolution
+
+### Phase 11: Opt-In Feature Activation
+**Goal:** MessageBatcher and ConnectionPool are activated by default for production use
+**Depends on:** Phase 7 (MessageBatcher, ConnectionPool infrastructure)
+**Requirements:** OPTI-01, OPTI-02, OPTI-03, OPTI-04 (activation)
+**Gap Closure:** Closes BATCHER-NOT-ACTIVATED and POOL-NOT-ACTIVATED from v1.1 audit
+**Success Criteria** (what must be TRUE):
+  1. MessageBatcher is wired to MQTT client on coordinator startup
+  2. ConnectionPool is activated in MQTT client initialization
+  3. Feature flags allow toggling batching/pooling for debugging
+  4. Documentation describes opt-in configuration options
+**Plans:** 1 plan
+
+Plans:
+- [ ] 11-01-PLAN.md — Activate MessageBatcher and ConnectionPool with feature flags
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 6 → 7 → 8 → 9
+Phases execute in numeric order: 6 → 7 → 8 → 9 → 10 → 11
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -132,6 +164,8 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 | 7. Optimization | v1.1 | 3/3 | Complete | 2026-02-23 |
 | 8. Checkpointing Gaps | v1.1 | 2/3 | In progress | 2026-02-23 |
 | 9. Visualization | v1.1 | 3/3 | Complete | 2026-02-23 |
+| 10. Context Recovery Integration | v1.1 | 0/1 | Pending | - |
+| 11. Opt-In Feature Activation | v1.1 | 0/1 | Pending | - |
 
 ## Dependencies
 
@@ -149,6 +183,12 @@ Phase 8: Checkpointing Gaps (critical reliability)
     |
     v
 Phase 9: Visualization (consumes routing + optimization data)
+    |
+    v
+Phase 10: Context Recovery Integration (wires Phase 7 + Phase 8)
+    |
+    v
+Phase 11: Opt-In Feature Activation (activates Phase 7 infrastructure)
 ```
 
 ## Coverage Summary

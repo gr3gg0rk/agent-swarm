@@ -10,11 +10,11 @@ Requirements for enhanced coordination capabilities. Each maps to roadmap phases
 ### Advanced Routing (ROUT)
 
 - [x] **ROUT-01**: Router selects least-loaded agent matching required capability using heartbeat CPU/memory data
-- [ ] **ROUT-02**: Workers report load metrics (CPU, memory, active task count) every 5 seconds via MQTT retained messages
+- [x] **ROUT-02**: Workers report load metrics (CPU, memory, active task count) every 5 seconds via MQTT retained messages
 - [x] **ROUT-03**: Router implements weighted scoring (70% load score + 30% historical performance)
-- [ ] **ROUT-04**: Agents can reject tasks when overloaded (CPU or memory above 85% threshold)
-- [ ] **ROUT-05**: Router retries rejected tasks with exponential backoff (2^n × 100ms, max 5s)
-- [ ] **ROUT-06**: Router implements circuit breaker — stops routing to agent after 3 consecutive rejections
+- [x] **ROUT-04**: Agents can reject tasks when overloaded (CPU or memory above 85% threshold)
+- [x] **ROUT-05**: Router retries rejected tasks with exponential backoff (2^n × 100ms, max 5s)
+- [x] **ROUT-06**: Router implements circuit breaker — stops routing to agent after 3 consecutive rejections
 
 ### Optimization (OPTI)
 
@@ -27,9 +27,9 @@ Requirements for enhanced coordination capabilities. Each maps to roadmap phases
 
 ### Checkpointing (CHKP)
 
-- [ ] **CHKP-01**: Checkpoint writes use atomic pattern (temp file + rename) to prevent corruption
-- [ ] **CHKP-02**: System keeps last 3 checkpoints for fallback on corruption
-- [ ] **CHKP-03**: Checkpoint metadata includes CRC32 checksum validated on recovery
+- [x] **CHKP-01**: Checkpoint writes use atomic pattern (temp file + rename) to prevent corruption
+- [x] **CHKP-02**: System keeps last 3 checkpoints for fallback on corruption
+- [x] **CHKP-03**: Checkpoint metadata includes CRC32 checksum validated on recovery
 - [x] **CHKP-04**: Recovery reconciles checkpoint with current state (merge, not overwrite)
 - [x] **CHKP-05**: Vector clocks track checkpoint ordering to tolerate clock skew
 
@@ -91,21 +91,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | ROUT-01 | Phase 6 | Complete |
-| ROUT-02 | Phase 6 | Pending |
+| ROUT-02 | Phase 6 | Complete |
 | ROUT-03 | Phase 6 | Complete |
-| ROUT-04 | Phase 6 | Pending |
-| ROUT-05 | Phase 6 | Pending |
-| ROUT-06 | Phase 6 | Pending |
-| OPTI-01 | Phase 7 | Complete |
-| OPTI-02 | Phase 7 | Complete |
-| OPTI-03 | Phase 7 | Complete |
-| OPTI-04 | Phase 7 | Complete |
-| OPTI-05 | Phase 7 | Complete |
-| OPTI-06 | Phase 7 | Complete |
-| CHKP-01 | Phase 8 | Pending |
-| CHKP-02 | Phase 8 | Pending |
-| CHKP-03 | Phase 8 | Pending |
-| CHKP-04 | Phase 8 | Complete |
+| ROUT-04 | Phase 6 | Complete |
+| ROUT-05 | Phase 6 | Complete |
+| ROUT-06 | Phase 6 | Complete |
+| OPTI-01 | Phase 7, 11 | Complete (activation: Phase 11) |
+| OPTI-02 | Phase 7, 11 | Complete (activation: Phase 11) |
+| OPTI-03 | Phase 7, 11 | Complete (activation: Phase 11) |
+| OPTI-04 | Phase 7, 11 | Complete (activation: Phase 11) |
+| OPTI-05 | Phase 7, 10 | Complete (integration: Phase 10) |
+| OPTI-06 | Phase 7, 10 | Complete (integration: Phase 10) |
+| CHKP-01 | Phase 8 | Complete |
+| CHKP-02 | Phase 8 | Complete |
+| CHKP-03 | Phase 8 | Complete |
+| CHKP-04 | Phase 8, 10 | Complete (integration: Phase 10) |
 | CHKP-05 | Phase 8 | Complete |
 | VIZ-01 | Phase 9 | Complete |
 | VIZ-02 | Phase 9 | Complete |
@@ -124,7 +124,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Phase 7 (Optimization): 6 requirements (OPTI-01 through OPTI-06)
 - Phase 8 (Checkpointing Gaps): 5 requirements (CHKP-01 through CHKP-05)
 - Phase 9 (Visualization): 6 requirements (VIZ-01 through VIZ-06)
+- Phase 10 (Context Recovery Integration): 3 requirements for integration (OPTI-05, OPTI-06, CHKP-04)
+- Phase 11 (Opt-In Feature Activation): 4 requirements for activation (OPTI-01 through OPTI-04)
 
 ---
 *Requirements defined: 2026-02-22*
-*Last updated: 2026-02-22 after roadmap creation*
+*Last updated: 2026-02-23 after gap closure planning*
