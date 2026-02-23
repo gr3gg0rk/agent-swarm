@@ -29,12 +29,49 @@ export function systemMetrics() {
         this.metrics.activeTasks = statusData.agents?.filter(a => a.status === 'busy').length || 0;
         this.metrics.queueDepth = tasksData.count || 0;
 
-        // Initialize CPU/memory chart (populated via SSE in 09-03)
+        // Initialize CPU/memory chart
         this.initChart();
 
       } catch (err) {
         console.error('System metrics fetch error:', err);
       }
+
+      // Connect to SSE for real-time updates
+      this.connectSSE();
+    },
+
+    connectSSE() {
+      const eventSource = new EventSource('/api/events');
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Handle load metrics updates for chart
+          if (data.data && data.data.load_metrics) {
+            const metrics = data.data.load_metrics;
+
+            // Update chart with new data point
+            this.updateChart(metrics.cpuPercent, metrics.memoryPercent);
+          }
+
+          // Update system metrics cards on agent updates
+          if (data.type === 'agents' || data.data?.agents) {
+            const agents = data.data?.agents || [];
+            this.metrics.totalAgents = agents.length;
+            this.metrics.onlineAgents = agents.filter(a => a.status === 'online').length;
+            this.metrics.activeTasks = agents.filter(a => a.status === 'busy').length;
+          }
+        } catch (err) {
+          console.error('SSE parse error:', err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error('SSE connection error:', err);
+      };
+
+      this.$cleanup(() => eventSource.close());
     },
 
     initChart() {
