@@ -45,7 +45,7 @@
 - [x] **Phase 7: Optimization** - Message batching, connection pooling, context references ✓ 2026-02-23
 - [ ] **Phase 8: Checkpointing Gaps** - Atomic writes, corruption recovery, cross-machine ordering (2/3 plans)
 - [x] **Phase 9: Visualization** - Web dashboard for agent status, task progress, metrics ✓ 2026-02-23
-- [ ] **Phase 10: Context Recovery Integration** - Wire ContextManager to CheckpointManager (gap closure)
+- [x] **Phase 10: Context Recovery Integration** - Wire ContextManager to CheckpointManager (gap closure) (completed 2026-02-23)
 - [ ] **Phase 11: Opt-In Feature Activation** - Enable MessageBatcher and ConnectionPool (gap closure)
 
 ## Phase Details
@@ -128,7 +128,7 @@ Plans:
   2. `loadCheckpointWithFallback()` calls `resolveMessagePayload()` on recovered messages
   3. Tasks with context references (>10KB payloads) recover with actual content, not refs
   4. Integration tests verify E2E: task with context ref → checkpoint → recovery → resolved
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 10-01-PLAN.md — Wire ContextManager to CheckpointManager for context resolution
@@ -164,7 +164,7 @@ Phases execute in numeric order: 6 → 7 → 8 → 9 → 10 → 11
 | 7. Optimization | v1.1 | 3/3 | Complete | 2026-02-23 |
 | 8. Checkpointing Gaps | v1.1 | 2/3 | In progress | 2026-02-23 |
 | 9. Visualization | v1.1 | 3/3 | Complete | 2026-02-23 |
-| 10. Context Recovery Integration | v1.1 | 0/1 | Pending | - |
+| 10. Context Recovery Integration | 1/1 | Complete   | 2026-02-23 | - |
 | 11. Opt-In Feature Activation | v1.1 | 0/1 | Pending | - |
 
 ## Dependencies
