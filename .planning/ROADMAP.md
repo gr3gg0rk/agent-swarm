@@ -43,7 +43,7 @@
 
 - [x] **Phase 6: Advanced Routing** - Load-aware routing, dynamic capabilities, task rejection ✓ 2026-02-23
 - [x] **Phase 7: Optimization** - Message batching, connection pooling, context references ✓ 2026-02-23
-- [ ] **Phase 8: Checkpointing Gaps** - Atomic writes, corruption recovery, cross-machine ordering (1/3 plans)
+- [ ] **Phase 8: Checkpointing Gaps** - Atomic writes, corruption recovery, cross-machine ordering (2/3 plans)
 - [ ] **Phase 9: Visualization** - Web dashboard for agent status, task progress, metrics
 
 ## Phase Details
@@ -96,7 +96,7 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — Atomic checkpoint writes with CRC32 checksums (CHKP-01, CHKP-03) - Completed 2026-02-23
-- [ ] 08-02-PLAN.md — Multi-checkpoint retention with fallback recovery (CHKP-02)
+- [x] 08-02-PLAN.md — Multi-checkpoint retention with fallback recovery (CHKP-02) - Completed 2026-02-23
 - [ ] 08-03-PLAN.md — State reconciliation and vector clock ordering (CHKP-04, CHKP-05)
 
 ### Phase 9: Visualization

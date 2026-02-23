@@ -48,6 +48,7 @@ Progress: [█████░░░] 44% (18/18 v1.0 plans complete, 5/15 v1.1 p
 | Phase 08-01 | 2min | 4 tasks | 4 files |
 | Phase 07-optimization P02 | 3min | 3 tasks | 4 files |
 | Phase 07 P03 | 4min | 4 tasks | 5 files |
+| Phase 08-checkpointing-gaps P03 | 15 | 5 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,10 @@ Recent decisions affecting current work:
 - [08-02]: Retention cleanup runs during periodic 5-minute sync interval
 - [08-02]: Corrupted checkpoints deleted immediately after successful fallback
 - [08-02]: Task completion cleanup hook ready for integration with task handlers
+- [Phase 08-checkpointing-gaps]: Vector clocks use hybrid design (wall clock timestamp + per-machine counters) to handle both clock skew and ordering accuracy
+- [Phase 08-checkpointing-gaps]: Vector clock comparison uses standard academic algorithm (before/after/concurrent/equal) for happened-before detection
+- [Phase 08-checkpointing-gaps]: Reconciliation merges checkpoint with current state (not overwrite) - progress uses MAX, partial results merge objects/arrays
+- [Phase 08-checkpointing-gaps]: Older checkpoints rejected based on vector clock comparison, concurrent checkpoints accepted
 
 ### Pending Todos
 
@@ -110,10 +115,10 @@ Critical for Phase 6-9:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 08-01 (Atomic Checkpoint Writes with CRC32 Checksums), Phase 8 Plan 1 complete
+Stopped at: Completed 08-02 (Multi-Checkpoint Retention with Fallback Recovery), Phase 8 Plan 2 complete
 Resume file: None
 
-Next: `/gsd:execute-phase 8` to continue Phase 8 (next plan: 08-02 Multi-Checkpoint Fallback) or `/gsd:execute-plan 8-2` for specific plan
+Next: `/gsd:execute-phase 8` to continue Phase 8 (next plan: 08-03 State Reconciliation) or `/gsd:execute-plan 8-3` for specific plan
 
 ---
-*State updated: 2026-02-23 — Phase 8 Plan 1 complete (1/3 plans)*
+*State updated: 2026-02-23 — Phase 8 Plan 2 complete (2/3 plans)*

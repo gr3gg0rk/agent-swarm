@@ -30,8 +30,8 @@ Requirements for enhanced coordination capabilities. Each maps to roadmap phases
 - [ ] **CHKP-01**: Checkpoint writes use atomic pattern (temp file + rename) to prevent corruption
 - [ ] **CHKP-02**: System keeps last 3 checkpoints for fallback on corruption
 - [ ] **CHKP-03**: Checkpoint metadata includes CRC32 checksum validated on recovery
-- [ ] **CHKP-04**: Recovery reconciles checkpoint with current state (merge, not overwrite)
-- [ ] **CHKP-05**: Vector clocks track checkpoint ordering to tolerate clock skew
+- [x] **CHKP-04**: Recovery reconciles checkpoint with current state (merge, not overwrite)
+- [x] **CHKP-05**: Vector clocks track checkpoint ordering to tolerate clock skew
 
 ### Visualization (VIZ)
 
@@ -105,8 +105,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHKP-01 | Phase 8 | Pending |
 | CHKP-02 | Phase 8 | Pending |
 | CHKP-03 | Phase 8 | Pending |
-| CHKP-04 | Phase 8 | Pending |
-| CHKP-05 | Phase 8 | Pending |
+| CHKP-04 | Phase 8 | Complete |
+| CHKP-05 | Phase 8 | Complete |
 | VIZ-01 | Phase 9 | Pending |
 | VIZ-02 | Phase 9 | Pending |
 | VIZ-03 | Phase 9 | Pending |
