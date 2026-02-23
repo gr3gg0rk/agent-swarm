@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# npm cache
+.cache/
+*.cache/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+
+# State files
+state/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test coverage
+coverage/
+
+# Package locks (keep root package-lock.json)
+packages/*/package-lock.json
+packages/*/**/node_modules/
+
+# Cache directories in packages
+packages/**/.cache/
+packages/coordination/.cache/
+
+# Debug logs
+npm/_logs/

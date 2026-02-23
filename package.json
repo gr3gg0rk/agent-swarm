@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "crc-32": "^1.2.2",
     "eventemitter3": "^5.0.4",
     "mqtt": "^5.15.0",
     "msgpackr": "^0.6.0"

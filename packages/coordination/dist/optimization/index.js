@@ -10,4 +10,6 @@ export { MqttConnectionPool, ConnectionPoolManager, detectHardwareProfile, HARDW
 export { MessageBatcher, DEFAULT_BATCH_CONFIG } from './batcher.js';
 // Context reference passing
 export { ContextManager, prepareMessagePayload, resolveMessagePayload } from './context-manager.js';
+// Configuration
+export { loadOptimizationConfig } from './config.js';
 //# sourceMappingURL=index.js.map

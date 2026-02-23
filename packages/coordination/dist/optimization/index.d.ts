@@ -7,4 +7,5 @@
 export { MqttConnectionPool, ConnectionPoolManager, PoolConfig, HardwareProfile, detectHardwareProfile, HARDWARE_PROFILES } from './connection-pool.js';
 export { MessageBatcher, BatchConfig, DEFAULT_BATCH_CONFIG } from './batcher.js';
 export { ContextManager, ContextReference, ContextOptions, prepareMessagePayload, resolveMessagePayload } from './context-manager.js';
+export { OptimizationConfig, loadOptimizationConfig } from './config.js';
 //# sourceMappingURL=index.d.ts.map
