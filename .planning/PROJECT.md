@@ -21,14 +21,24 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 - ✓ System runs on constrained hardware — v1.0 (Pi 2B with 1GB RAM, <100MB coordination layer)
 - ✓ Crash recovery with checkpointing — v1.0 (60s local + 5min SQLite sync)
 - ✓ Memory-aware task throttling — v1.0 (85% threshold, priority-based pausing)
+- ✓ Load-aware routing with weighted scoring — v1.1 (70% load + 30% performance, circuit breaker)
+- ✓ Task rejection with exponential backoff — v1.1 (2^n × 100ms, max 5s, 3 rejections → circuit open)
+- ✓ Message batching for 10x throughput — v1.1 (dual-trigger flushing, per-type thresholds)
+- ✓ Hardware-aware connection pooling — v1.1 (Pi 2B=3, Pi 5=5, Beelink=10)
+- ✓ Context reference passing for large payloads — v1.1 (>10KB via SHA-256 hash, SQLite deduplication)
+- ✓ Corruption-resilient checkpointing — v1.1 (CRC32 checksums, atomic writes, 3-checkpoint fallback)
+- ✓ Vector clock ordering for cross-machine state — v1.1 (happened-before detection, reconciliation merge)
+- ✓ Real-time web dashboard — v1.1 (Vite + Alpine.js + Chart.js, SSE throttled to 10/second)
 
 ### Active
 
-**Milestone v1.1 Goals:**
-- Advanced routing (dynamic capabilities, load-based routing, multi-capability matching)
-- Optimization (context references, message batching, connection pooling, <50MB coordination)
-- Checkpointing gaps (complete any missing features from Phase 4)
-- Visualization (web dashboard, progress bars, timeline, capability matrix)
+**Milestone v2.0 Goals (Planned):**
+- Multi-capability AND logic for task routing
+- Dynamic capability declaration at runtime
+- Adaptive batching with dynamic window scaling
+- Intelligent context caching (LRU with invalidation)
+- Checkpoint compression and incremental saves
+- Progress timeline (Gantt chart) and capability matrix views
 
 ### Out of Scope
 
@@ -41,20 +51,19 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 
 ### Current State
 
-**Shipped v1.0 (2026-02-22):**
-- 166,441 lines TypeScript code
-- 53 TypeScript modules across 5 phases
-- 42 requirements validated (100% coverage)
-- Tech stack: Node.js 22+, MQTT.js 5.0, Better-SQLite3 11.9, Mosquitto 2.0
-- MQTT broker: <10MB RAM on Pi 2B
-- SQLite state store: <15MB RAM on Pi 2B
-- Coordination layer: <100MB RAM total per machine
+**Shipped v1.1 (2026-02-23):**
+- 13,469 lines TypeScript in coordination package (plus dashboard package)
+- 6 phases (6-11), 14 plans, 23 requirements validated
+- Tech stack: Node.js 22+, MQTT.js 5.0, Better-SQLite3 11.9, Mosquitto 2.0, Vite 5.x, Alpine.js, Chart.js 4.x
+- Coordination layer: <100MB RAM per machine (Pi 2B validated)
+- Dashboard: <50MB RAM (griak-brain only)
+- Optimization: 10x throughput improvement via batching + connection pooling
 
 **Hardware validated:**
-- griak-brain (Beelink T4, 4GB) — Minerva orchestrator
+- griak-brain (Beelink T4, 4GB) — Minerva orchestrator + dashboard
 - griak-server (Pi 5, 8GB) — Vulcan builder
 - griak-worker-1 (Pi 3B, 1GB) — Multi-role worker
-- griak-worker-2 (Pi 2B, 1GB) — Multi-role worker with memory throttling
+- griak-worker-2 (Pi 2B, 1GB) — Multi-role worker with memory throttling (validated)
 
 ### Machine Inventory
 
@@ -104,6 +113,16 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 | Hybrid checkpointing (local + SQLite) | Fast recovery + cross-machine durability | ✓ Good — 60s/5min intervals |
 | Memory-aware throttling (85% threshold) | Prevents OOM on Pi 2B | ✓ Good — priority-based pausing |
 | Fixed roles on brain/server, flexible on workers | Specialization where valuable | ✓ Good — Minerva/Vulcan + flexible workers |
+| Weighted scoring (70% load + 30% performance) | Balances current load with historical success | ✓ Good — intelligent routing |
+| Circuit breaker (3 rejections → open, 60s half-open) | Prevents cascading failures | ✓ Good — fault tolerance |
+| Dual-trigger batching (time OR size) | Prevents unbounded buffer growth | ✓ Good — predictable latency |
+| Hardware-aware connection pools | Respects memory constraints | ✓ Good — Pi 2B validated |
+| Context references for >10KB payloads | Reduces memory/transfer overhead | ✓ Good — SQLite deduplication |
+| CRC32 checksums for checkpoints | Catches corruption, <1ms for 1MB | ✓ Good — corruption recovery |
+| Vector clocks for cross-machine ordering | Tolerates clock skew | ✓ Good — happened-before detection |
+| SSE over WebSocket for dashboard | Lighter (~14KB savings), sufficient for read-only | ✓ Good — 10 updates/second |
+| Vite + Alpine.js + Chart.js for dashboard | <50MB total footprint | ✓ Good — griak-brain only |
+| Feature flags for optimization | Debugging flexibility | ✓ Good — environment variables |
 
 ---
-*Last updated: 2026-02-22 after v1.1 milestone started*
+*Last updated: 2026-02-23 after v1.1 milestone completion*
