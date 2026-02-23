@@ -72,7 +72,7 @@ Future phases for advanced features:
 | 9. Visualization | v1.1 | 3/3 | Complete | 2026-02-23 |
 | 10. Context Recovery Integration | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 11. Opt-In Feature Activation | v1.1 | 1/1 | Complete | 2026-02-23 |
-| 12. Critical Fixes | v1.2 | 0/4 | Not started | - |
+| 12. Critical Fixes | 2/6 | In Progress|  | - |
 | 13. Setup & Validation | v1.2 | 0/3 | Not started | - |
 | 14. Run Scripts & Services | v1.2 | 0/3 | Not started | - |
 | 15. Documentation | v1.2 | 0/2 | Not started | - |
@@ -98,7 +98,7 @@ Future phases for advanced features:
 5. Database pragma calls return string values (not Database objects) via `{ simple: true }` option
 6. Task queue INSERT statement has correct number of placeholders (15 columns, 15 placeholders)
 
-**Plans:** 6 plans
+**Plans:** 2/6 plans executed
 - [ ] 12-01-PLAN.md — Fix msgpackr imports to use pack/unpack functions
 - [ ] 12-02-PLAN.md — Add optimization module exports to main index
 - [ ] 12-03-PLAN.md — Add schema function exports to main index
