@@ -15,6 +15,7 @@ import type { TaskQueue, Task } from '../state/task-queue.js';
 import type { Logger } from '../errors/logger.js';
 import type { CheckpointData } from './types.js';
 import type { ResumeResult } from './types.js';
+import { validateChecksum } from './checksum.js';
 
 /**
  * Resume validation result for checkpoint integrity.
@@ -161,6 +162,9 @@ export class ResumeLogic {
    * - Timestamp not in future (clock skew detection)
    * - Progress between 0-100
    * - timeInvestedMs >= 0
+   * - CRC32 checksum if present (after field validation)
+   *
+   * Per 08-CONTEXT.md: Checksum validation happens after field validation.
    *
    * @param checkpoint - Checkpoint data to validate
    * @returns Validation result
@@ -202,6 +206,22 @@ export class ResumeLogic {
         valid: false,
         error: `Invalid timeInvestedMs: ${checkpoint.timeInvestedMs} (must be >= 0)`,
       };
+    }
+
+    // Validate CRC32 checksum if present (after field validation per 08-CONTEXT.md)
+    const checkpointWithChecksum = checkpoint as CheckpointData & { checksum?: string };
+    if (checkpointWithChecksum.checksum) {
+      // Recompute checksum from checkpoint data (excluding checksum field itself)
+      const dataWithoutChecksum = { ...checkpointWithChecksum };
+      delete dataWithoutChecksum.checksum;
+
+      const jsonData = JSON.stringify(dataWithoutChecksum);
+      if (!validateChecksum(jsonData, checkpointWithChecksum.checksum)) {
+        return {
+          valid: false,
+          error: 'CRC32 checksum mismatch - data may be corrupted',
+        };
+      }
     }
 
     // All checks passed
