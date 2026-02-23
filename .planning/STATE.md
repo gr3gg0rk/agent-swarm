@@ -7,23 +7,23 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Minerva can assign a task to any agent in the swarm and get a result back
-**Current focus:** Phase 7 - Optimization
+**Current focus:** Phase 8 - Checkpointing Gaps
 
 ## Current Position
 
-Phase: 7 of 9 (Optimization) — COMPLETE
-Plan: 3 of 3 in current phase
-Status: Completed 07-03 (Context Reference Passing), Phase 7 complete
-Last activity: 2026-02-23 — Completed 07-03: SHA-256 hash-based context reference passing with deduplication
+Phase: 8 of 9 (Checkpointing Gaps) — IN PROGRESS
+Plan: 2 of 3 in current phase
+Status: Completed 08-02 (Multi-Checkpoint Retention with Fallback Recovery)
+Last activity: 2026-02-23 — Completed 08-02: 3-checkpoint retention policy with automatic fallback on corruption, MQTT alerting, and task completion cleanup
 
-Progress: [█████░░░] 39% (18/18 v1.0 plans complete, 3/12 v1.1 plans)
+Progress: [█████░░░] 44% (18/18 v1.0 plans complete, 5/15 v1.1 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18 (v1.0: 18, v1.1: 3)
+- Total plans completed: 20 (v1.0: 18, v1.1: 5)
 - Average duration: ~16 min
-- Total execution time: ~5 hours
+- Total execution time: ~5.3 hours
 
 **By Phase:**
 
@@ -36,16 +36,18 @@ Progress: [█████░░░] 39% (18/18 v1.0 plans complete, 3/12 v1.1 p
 | 5 | 1 | ~20min | ~20min |
 | 6 | 3 | ~15min | ~5min |
 | 7 | 3 | ~12min | ~4min |
-| 8 | 0 | - | - |
+| 8 | 2 | ~10min | ~5min |
 | 9 | 0 | - | - |
 
 **Recent Trend:**
-- Last 5 plans: ~8min each
-- Trend: Faster (Phase 6 was efficient)
+- Last 5 plans: ~7min each
+- Trend: Faster (Phase 6-7 were efficient)
 
 *Updated after each plan completion*
+| Phase 08-02 | 8min | 3 tasks | 2 files |
+| Phase 08-01 | 2min | 4 tasks | 4 files |
 | Phase 07-optimization P02 | 3min | 3 tasks | 4 files |
-| Phase 07 P03 | 240 | 4 tasks | 5 files |
+| Phase 07 P03 | 4min | 4 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -79,6 +81,16 @@ Recent decisions affecting current work:
 - [07-03]: 7-day retention policy for unused contexts, 3-day for low-access contexts
 - [07-03]: Automatic deduplication via SHA-256 hash collision detection
 - [07-03]: Access tracking (access_count, last_accessed) for garbage collection heuristics
+- [08-01]: Checksum computed before write (before fsync) to catch write-time corruption (CHKP-01)
+- [08-01]: Checksum validation on local files only (SQLite has built-in WAL integrity)
+- [08-01]: Optional checksum field for backward compatibility with existing checkpoints
+- [08-01]: Checksum mismatch triggers corruption recovery flow (request_guidance action)
+- [08-01]: CRC32 computed using crc-32 library (SheetJS, C-optimized, <1ms for 1MB)
+- [08-02]: Keep 3 most recent checkpoints per task for fallback on corruption (CHKP-02)
+- [08-02]: MQTT alert topic 'swarm/alerts/checkpoint' for corruption monitoring
+- [08-02]: Retention cleanup runs during periodic 5-minute sync interval
+- [08-02]: Corrupted checkpoints deleted immediately after successful fallback
+- [08-02]: Task completion cleanup hook ready for integration with task handlers
 
 ### Pending Todos
 
@@ -98,10 +110,10 @@ Critical for Phase 6-9:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 07-03 (Context Reference Passing), Phase 7 complete
+Stopped at: Completed 08-01 (Atomic Checkpoint Writes with CRC32 Checksums), Phase 8 Plan 1 complete
 Resume file: None
 
-Next: `/gsd:execute-phase 8` to begin Phase 8 (Dashboard) or `/gsd:execute-phase 9` for Phase 9 (Polish/Documentation)
+Next: `/gsd:execute-phase 8` to continue Phase 8 (next plan: 08-02 Multi-Checkpoint Fallback) or `/gsd:execute-plan 8-2` for specific plan
 
 ---
-*State updated: 2026-02-23 — Phase 7 complete (all 3 plans)*
+*State updated: 2026-02-23 — Phase 8 Plan 1 complete (1/3 plans)*
