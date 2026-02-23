@@ -22,4 +22,8 @@ export * from './delegation/index.js';
 export * from './checkpoint/index.js';
 // Re-export all memory management types and functions
 export * from './memory/index.js';
+// Re-export all optimization types and functions
+export * from './optimization/index.js';
+// Re-export schema functions for convenience
+export { initializeSchema, validateSchema } from './state/schema.js';
 //# sourceMappingURL=index.js.map

@@ -7,8 +7,7 @@
  * This codec automatically selects the best serialization format based on
  * payload size, encoding envelope metadata to indicate which format was used.
  */
-// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
-import { MessagePack } from 'msgpackr';
+import { pack, unpack } from 'msgpackr';
 /**
  * Determines if MessagePack should be used for payload.
  *
@@ -48,7 +47,7 @@ export function encodeMessage(envelope) {
     if (shouldUseMessagePack(envelope.payload)) {
         codecEnvelope.codec = 'msgpack';
         // Encode full envelope with MessagePack
-        return Buffer.from(MessagePack.encode(codecEnvelope));
+        return Buffer.from(pack(codecEnvelope));
     }
     else {
         codecEnvelope.codec = 'json';
@@ -74,7 +73,7 @@ export function decodeMessage(buffer) {
         const asJson = JSON.parse(buffer.toString());
         if (asJson.codec === 'msgpack') {
             // Re-decode with MessagePack
-            const decoded = MessagePack.decode(buffer);
+            const decoded = unpack(buffer);
             // Remove codec field before returning (it's metadata, not part of envelope)
             const { codec, ...envelope } = decoded;
             return envelope;
@@ -88,7 +87,7 @@ export function decodeMessage(buffer) {
     catch (error) {
         // JSON parse failed, try MessagePack
         try {
-            const decoded = MessagePack.decode(buffer);
+            const decoded = unpack(buffer);
             const { codec, ...envelope } = decoded;
             return envelope;
         }

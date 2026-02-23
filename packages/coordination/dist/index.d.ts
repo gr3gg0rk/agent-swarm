@@ -13,4 +13,6 @@ export * from './api/index.js';
 export * from './delegation/index.js';
 export * from './checkpoint/index.js';
 export * from './memory/index.js';
+export * from './optimization/index.js';
+export { initializeSchema, validateSchema } from './state/schema.js';
 //# sourceMappingURL=index.d.ts.map

@@ -9,8 +9,7 @@
  */
 
 import type { MessageEnvelope } from './message.js';
-// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
-import { MessagePack } from 'msgpackr';
+import { pack, unpack } from 'msgpackr';
 
 /**
  * Codec type indicator in message envelope.
@@ -66,7 +65,7 @@ export function encodeMessage(envelope: MessageEnvelope): Buffer {
   if (shouldUseMessagePack(envelope.payload)) {
     codecEnvelope.codec = 'msgpack';
     // Encode full envelope with MessagePack
-    return Buffer.from(MessagePack.encode(codecEnvelope));
+    return Buffer.from(pack(codecEnvelope));
   } else {
     codecEnvelope.codec = 'json';
     // Encode full envelope as JSON
@@ -93,7 +92,7 @@ export function decodeMessage(buffer: Buffer): MessageEnvelope {
 
     if (asJson.codec === 'msgpack') {
       // Re-decode with MessagePack
-      const decoded = MessagePack.decode(buffer) as CodecEnvelope;
+      const decoded = unpack(buffer) as CodecEnvelope;
       // Remove codec field before returning (it's metadata, not part of envelope)
       const { codec, ...envelope } = decoded;
       return envelope;
@@ -105,7 +104,7 @@ export function decodeMessage(buffer: Buffer): MessageEnvelope {
   } catch (error) {
     // JSON parse failed, try MessagePack
     try {
-      const decoded = MessagePack.decode(buffer) as CodecEnvelope;
+      const decoded = unpack(buffer) as CodecEnvelope;
       const { codec, ...envelope } = decoded;
       return envelope;
     } catch (msgpackError) {
