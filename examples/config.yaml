@@ -1,5 +1,6 @@
 # Example Agent Configuration
 # Demonstrates Phase 1 features: discovery, messaging, idempotency, error logging
+# Phase 11: Opt-In Feature Activation - optimizations enabled by default
 
 # Agent identification
 agentId: minerva
@@ -17,3 +18,21 @@ capabilities:
 
 # Heartbeat settings
 heartbeatInterval: 30000  # 30 seconds per COMM-07
+
+# Optimization Features (Phase 11)
+# The following environment variables control optimization features:
+#
+# SWARM_BATCHING_ENABLED=true|false (default: true)
+#   - Enables message batching for high-frequency messages (progress, status, heartbeats)
+#   - Batching improves throughput by 10x for high-volume message scenarios
+#   - Set to 'false' to disable for debugging
+#
+# SWARM_POOLING_ENABLED=true|false (default: true)
+#   - Enables MQTT connection pooling to reduce TCP handshake overhead
+#   - Pool sizes are hardware-aware: Pi 2B=3, Pi 5=5, Beelink=10 connections
+#   - Set to 'false' to disable for debugging
+#
+# Example: Disable batching for debugging
+# export SWARM_BATCHING_ENABLED=false
+# tsx examples/basic-agent.ts
+

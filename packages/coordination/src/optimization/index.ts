@@ -30,3 +30,9 @@ export {
   prepareMessagePayload,
   resolveMessagePayload
 } from './context-manager.js';
+
+// Configuration
+export {
+  OptimizationConfig,
+  loadOptimizationConfig
+} from './config.js';

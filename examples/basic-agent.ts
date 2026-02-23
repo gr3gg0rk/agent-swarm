@@ -27,6 +27,9 @@ import {
   IdempotencyTracker,
   getLogger,
   createErrorContext,
+  MessageBatcher,
+  ConnectionPoolManager,
+  loadOptimizationConfig,
 } from '@openclaw-swarm/coordination';
 
 /**
@@ -93,10 +96,12 @@ class BasicAgent {
   private idempotency: IdempotencyTracker;
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private logger = getLogger();
+  private connectionPool?: ConnectionPoolManager;
 
-  constructor(config: AgentConfig, mqttClient: Awaited<ReturnType<typeof connectToBroker>>) {
+  constructor(config: AgentConfig, mqttClient: Awaited<ReturnType<typeof connectToBroker>>, connectionPool?: ConnectionPoolManager) {
     this.config = config;
     this.mqttClient = mqttClient;
+    this.connectionPool = connectionPool;
     this.discovery = new AgentDiscovery(mqttClient);
     this.idempotency = new IdempotencyTracker();
 
@@ -319,6 +324,12 @@ class BasicAgent {
     // Stop idempotency tracker
     this.idempotency.stop();
 
+    // Stop connection pool if using
+    if (this.connectionPool) {
+      await this.connectionPool.stop();
+      this.logger.info('Connection pool stopped');
+    }
+
     // Disconnect from broker
     await this.mqttClient.end();
     this.logger.info('Agent stopped');
@@ -338,7 +349,33 @@ async function main(): Promise<void> {
   };
 
   const mqttClient = await connectToBroker(brokerConfig);
-  const agent = new BasicAgent(config, mqttClient);
+
+  // Load optimization configuration (Phase 11: Opt-In Feature Activation)
+  const optConfig = loadOptimizationConfig();
+  let connectionPool: ConnectionPoolManager | undefined;
+
+  // Activate connection pooling if enabled
+  if (optConfig.poolingEnabled) {
+    connectionPool = new ConnectionPoolManager({
+      brokerUrl: config.brokerUrl,
+      options: { clientId: config.agentId }
+    });
+    mqttClient.setConnectionPool(connectionPool);
+    console.log('[Optimization] Connection pooling enabled');
+  } else {
+    console.log('[Optimization] Connection pooling disabled');
+  }
+
+  // Activate message batching if enabled
+  if (optConfig.batchingEnabled) {
+    const batcher = new MessageBatcher(mqttClient);
+    mqttClient.setBatchPublisher(batcher);
+    console.log('[Optimization] Message batching enabled');
+  } else {
+    console.log('[Optimization] Message batching disabled');
+  }
+
+  const agent = new BasicAgent(config, mqttClient, connectionPool);
 
   // Handle graceful shutdown
   process.on('SIGTERM', async () => {
