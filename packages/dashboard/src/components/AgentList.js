@@ -10,14 +10,50 @@ export function agentList() {
         const response = await fetch('/api/status');
         const data = await response.json();
         this.agents = data.agents || [];
-        this.loading = false;
       } catch (err) {
         this.error = 'Failed to load agent status';
-        this.loading = false;
         console.error('Agent list fetch error:', err);
       }
 
-      // SSE connection will be added in 09-03 for real-time updates
+      // Connect to SSE for real-time updates
+      this.connectSSE();
+    },
+
+    connectSSE() {
+      const eventSource = new EventSource('/api/events');
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Handle agent status updates
+          if (data.type === 'agents' || (data.data && data.data.agents)) {
+            this.agents = data.data.agents || data.agents || [];
+            this.loading = false;
+          }
+
+          // Handle load metrics updates (update CPU/memory for specific agent)
+          if (data.data && data.data.load_metrics) {
+            const metrics = data.data.load_metrics;
+            const agentIndex = this.agents.findIndex(a => a.agentId === metrics.agentId);
+            if (agentIndex !== -1) {
+              this.agents[agentIndex].cpuPercent = metrics.cpuPercent;
+              this.agents[agentIndex].memoryPercent = metrics.memoryPercent;
+            }
+          }
+        } catch (err) {
+          console.error('SSE parse error:', err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error('SSE connection error:', err);
+        this.loading = false;
+        // Browser auto-reconnects by default
+      };
+
+      // Cleanup on component destroy
+      this.$cleanup(() => eventSource.close());
     },
 
     // Format timestamp to relative time
