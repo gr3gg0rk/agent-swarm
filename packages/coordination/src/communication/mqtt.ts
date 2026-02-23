@@ -9,6 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 // @ts-ignore - msgpackr types exist but package.json exports are misconfigured
 import { MessagePack } from 'msgpackr';
 import type { MessageEnvelope, MessageType } from './message.js';
+import type { MessageBatcher } from '../optimization/batcher.js';
+import type { ConnectionPoolManager } from '../optimization/connection-pool.js';
 
 // Type for MQTT Client instance
 type MqttClientInstance = ReturnType<typeof mqtt.connect>;
@@ -25,6 +27,8 @@ export interface BrokerConfig {
   username?: string;
   /** Optional password for authentication */
   password?: string;
+  /** Optional connection pool for reusing MQTT connections (07-02) */
+  connectionPool?: ConnectionPoolManager;
 }
 
 /**
@@ -51,6 +55,12 @@ export class MqttClient {
   private client: MqttClientInstance;
   private config: BrokerConfig;
   private emitter: EventEmitter;
+  /** Optional message batcher for high-frequency messages (07-01) */
+  private batchPublisher?: MessageBatcher;
+  /** Optional connection pool for reusing connections (07-02) */
+  private connectionPool?: ConnectionPoolManager;
+  /** Operation ID for connection pool tracking (07-02) */
+  private poolOperationId?: string;
 
   /**
    * Creates a new MQTT client wrapper.
@@ -139,13 +149,39 @@ export class MqttClient {
   }
 
   /**
+   * Sets the message batcher for high-frequency message batching (07-01).
+   * When set, the batcher will buffer progress, status, and heartbeat messages
+   * and publish them in batches for improved throughput.
+   *
+   * @param batcher - MessageBatcher instance (optional)
+   */
+  setBatchPublisher(batcher: MessageBatcher | undefined): void {
+    this.batchPublisher = batcher;
+  }
+
+  /**
+   * Gets the current message batcher if set.
+   * @returns MessageBatcher instance or undefined
+   */
+  getBatchPublisher(): MessageBatcher | undefined {
+    return this.batchPublisher;
+  }
+
+  /**
    * Publishes a message to a topic.
    * Uses MessagePack encoding for payloads per HARD-05.
+   * When batchPublisher is set, high-frequency messages are batched for throughput (07-01).
    * @param topic - MQTT topic to publish to
    * @param envelope - Message envelope to publish
    * @returns Promise that resolves when published
    */
   async publish(topic: string, envelope: MessageEnvelope): Promise<void> {
+    // Use batcher if available for high-frequency messages (07-01)
+    if (this.batchPublisher) {
+      return this.batchPublisher.publish(topic, envelope);
+    }
+
+    // Direct publish path (original behavior)
     return new Promise((resolve, reject) => {
       try {
         // Ensure timestamp is set
@@ -218,9 +254,15 @@ export class MqttClient {
 
   /**
    * Gracefully disconnects from the broker.
+   * Flushes batcher if set before disconnecting (07-01).
    * @returns Promise that resolves when disconnected
    */
   async end(): Promise<void> {
+    // Flush batcher before disconnect to avoid losing messages
+    if (this.batchPublisher) {
+      await this.batchPublisher.stop();
+    }
+
     return new Promise((resolve, reject) => {
       this.client.end(false, {}, (error: Error | undefined) => {
         if (error) {
