@@ -109,12 +109,12 @@ Plans:
   3. Dashboard displays system metrics overview (total agents, active tasks, queue depth)
   4. Dashboard receives real-time updates via SSE throttled to 10 updates/second
   5. Dashboard runs on griak-brain only (NOT on Pi 2B workers) using Vite + Alpine.js + Chart.js (~50MB)
-**Plans:** TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 09-01: Dashboard foundation with Vite + Alpine.js + Chart.js stack
-- [ ] 09-02: Agent status, task progress, and metrics views
-- [ ] 09-03: SSE real-time updates with throttling
+- [ ] 09-01-PLAN.md — Dashboard foundation with Vite + Alpine.js + Chart.js stack (VIZ-04, VIZ-06)
+- [ ] 09-02-PLAN.md — Agent status, task progress, and metrics views (VIZ-01, VIZ-02, VIZ-03)
+- [ ] 09-03-PLAN.md — SSE real-time updates with throttling (VIZ-05)
 
 ## Progress
 
@@ -130,8 +130,8 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 | 5. Integration Wiring | v1.0 | 1/1 | Complete | 2026-02-22 |
 | 6. Advanced Routing | v1.1 | 3/3 | Complete | 2026-02-23 |
 | 7. Optimization | v1.1 | 3/3 | Complete | 2026-02-23 |
-| 8. Checkpointing Gaps | v1.1 | 1/3 | In progress | 2026-02-23 |
-| 9. Visualization | v1.1 | 0/3 | Not started | - |
+| 8. Checkpointing Gaps | v1.1 | 2/3 | In progress | 2026-02-23 |
+| 9. Visualization | v1.1 | 3/3 | Planned | 2026-02-23 |
 
 ## Dependencies
 
