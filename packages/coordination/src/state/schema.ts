@@ -213,6 +213,27 @@ export function initializeSchema(db: Database.Database): void {
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_checkpoints_created ON checkpoints(created_at)
   `);
+
+  // Create context_refs table for hash-based deduplication (Phase 7)
+  // Per 07-RESEARCH.md Pattern 3: WITHOUT ROWID optimization for hash primary key
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS context_refs (
+      hash BLOB NOT NULL PRIMARY KEY,
+      size INTEGER NOT NULL,
+      content BLOB NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+      access_count INTEGER DEFAULT 1,
+      last_accessed INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+    ) WITHOUT ROWID
+  `);
+
+  // Create indexes for garbage collection queries
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_context_refs_accessed ON context_refs(last_accessed)
+  `);
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_context_refs_created ON context_refs(created_at)
+  `);
 }
 
 /**
@@ -229,6 +250,7 @@ export function validateSchema(db: Database.Database): boolean {
     'tasks_archive',
     'status_archive',
     'checkpoints',
+    'context_refs',
   ];
 
   const result = db
@@ -255,6 +277,7 @@ export function getTableCounts(db: Database.Database): {
   tasks_archive: number;
   status_archive: number;
   checkpoints: number;
+  context_refs: number;
 } {
   const count = (table: string): number => {
     const result = db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as {
@@ -270,6 +293,7 @@ export function getTableCounts(db: Database.Database): {
     tasks_archive: count('tasks_archive'),
     status_archive: count('status_archive'),
     checkpoints: count('checkpoints'),
+    context_refs: count('context_refs'),
   };
 }
 
@@ -284,7 +308,33 @@ export function dropAllTables(db: Database.Database): void {
   db.exec('DROP TABLE IF EXISTS tasks_archive');
   db.exec('DROP TABLE IF EXISTS status_archive');
   db.exec('DROP TABLE IF EXISTS checkpoints');
+  db.exec('DROP TABLE IF EXISTS context_refs');
   db.exec('DROP TABLE IF EXISTS tasks');
   db.exec('DROP TABLE IF EXISTS agent_status');
   db.exec('DROP TABLE IF EXISTS project_context');
+}
+
+/**
+ * Creates a prepared statement for context reference garbage collection.
+ *
+ * Per 07-RESEARCH.md: Delete contexts unused > 7 days OR with low access count.
+ * Policy: Keep frequently-used contexts while cleaning up old/unused ones.
+ *
+ * @param db - Database instance
+ * @returns Prepared statement for garbage collection
+ *
+ * @example
+ * ```ts
+ * const gcQuery = createGarbageCollectionQuery(db);
+ * const result = gcQuery.run();
+ * console.log(`Deleted ${result.changes} old contexts`);
+ * ```
+ */
+export function createGarbageCollectionQuery(db: Database.Database): any {
+  // Delete contexts unused > 7 days OR with low access count
+  return db.prepare(`
+    DELETE FROM context_refs
+    WHERE last_accessed < strftime('%s', 'now', '-7 days')
+       OR (access_count < 3 AND created_at < strftime('%s', 'now', '-3 days'))
+  `);
 }
