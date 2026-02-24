@@ -14,9 +14,10 @@ describe('Critical Fixes Regression Tests', () => {
     it('should use pack/unpack functions not MessagePack class', () => {
       const envelope = {
         messageId: 'test-123',
+        idempotencyKey: 'test-key-123',
         from: 'test-agent',
         to: 'target-agent',
-        type: 'task',
+        type: 'task' as const,
         timestamp: Date.now(),
         payload: { data: 'test' }
       };
@@ -82,7 +83,7 @@ describe('Critical Fixes Regression Tests', () => {
     it('should return string from journal_mode pragma with simple option', () => {
       const dbPath = join(tmpdir(), `test-pragma-${Date.now()}.db`);
       const db = new Database(dbPath);
-      const result = db.pragma('journal_mode = WAL', { simple: true });
+      const result = db.pragma('journal_mode = WAL', { simple: true }) as string;
       expect(typeof result).toBe('string');
       expect(result.toLowerCase()).toBe('wal');
       db.close();
@@ -94,7 +95,8 @@ describe('Critical Fixes Regression Tests', () => {
       const dbPath = join(tmpdir(), `test-pragma-fail-${Date.now()}.db`);
       const db = new Database(dbPath);
       // Enable WAL first
-      db.pragma('journal_mode = WAL', { simple: true });
+      const walResult = db.pragma('journal_mode = WAL', { simple: true }) as string;
+      expect(walResult.toLowerCase()).toBe('wal');
 
       // Create database with createDatabase function
       const db2 = createDatabase({ dbPath: dbPath, walMode: true });
