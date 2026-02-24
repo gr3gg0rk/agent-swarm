@@ -104,7 +104,20 @@ export class MqttClient {
       });
 
       client.on('error', (error: Error) => {
-        reject(new Error('MQTT connection failed: ' + error.message));
+        const message = `MQTT connection failed: ${error.message}
+
+Fix: Start Mosquitto broker:
+  systemctl: sudo systemctl start mosquitto
+  Docker:     docker run -p 1883:1883 eclipse-mosquitto
+
+Verify: mosquitto_sub -h localhost -t '$SYS/#' -v
+
+Common causes:
+  - Broker not running on ${config.brokerUrl}
+  - Wrong hostname or port in brokerUrl
+  - Firewall blocking connection
+`;
+        reject(new Error(message));
       });
     });
   }
@@ -234,7 +247,13 @@ export class MqttClient {
 
         this.client.publish(topic, payload, { qos, retain }, (error: Error | undefined) => {
           if (error) {
-            reject(new Error('Publish failed: ' + error.message));
+            reject(new Error(`MQTT publish failed to ${topic}: ${error.message}
+
+Fix: Check broker connection:
+  1. Verify broker is running: mosquitto_sub -h ${this.config.brokerUrl.split('://')[1]?.split(':')[0] || 'localhost'} -t '$SYS/broker/version' -v
+  2. Check topic permissions: Topic may not allow publish
+  3. Verify QoS level: Some brokers restrict QoS 2
+`));
           } else {
             resolve();
           }
@@ -255,7 +274,13 @@ export class MqttClient {
     return new Promise((resolve, reject) => {
       this.client.subscribe(topic, { qos }, (error: Error | null) => {
         if (error) {
-          reject(new Error('Subscription failed: ' + error.message));
+          reject(new Error(`MQTT subscribe failed for ${topic}: ${error.message}
+
+Fix: Check broker connection:
+  1. Verify broker is running: mosquitto_sub -h localhost -t '$SYS/#' -v
+  2. Check topic permissions: Topic may require authentication
+  3. Verify topic name format: Use wildcards like agent/# for multi-level
+`));
         } else {
           resolve();
         }
