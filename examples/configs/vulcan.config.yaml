@@ -1,0 +1,44 @@
+# =============================================================================
+# Vulcan Agent Configuration (Builder Role)
+# =============================================================================
+# Role: Builder - executes code, runs tests, builds projects
+# Machine: griak-server (or any machine running a builder)
+# =============================================================================
+
+# Agent identification (required)
+agentId: vulcan
+
+# Agent role determines routing behavior (required)
+# Options: orchestrator | worker
+role: worker
+
+# MQTT broker connection (required)
+# Update hostname to match your orchestrator machine
+brokerUrl: mqtt://griak-brain:1883
+
+# Agent capabilities for task routing (required)
+# Builder agents focus on code execution and testing
+capabilities:
+  - code      # Write and modify code
+  - test      # Run test suites
+  - build     # Build projects and compile code
+
+# Heartbeat interval in milliseconds (optional, default: 30000)
+# Builders can use shorter intervals for faster task assignment
+heartbeatInterval: 30000
+
+# =============================================================================
+# Mosquitto Persistence Warning
+# =============================================================================
+# If using snap installation: persistence is disabled by default
+# Fix: Add to /var/snap/mosquitto/current/mosquitto.conf:
+#   persistence true
+#   autosave_interval 1800
+# Or install via apt: sudo apt install mosquitto mosquitto-clients
+# =============================================================================
+
+# =============================================================================
+# Optimization Feature Flags (Environment Variables)
+# =============================================================================
+# See minerva.config.yaml for full documentation of feature flags.
+# =============================================================================

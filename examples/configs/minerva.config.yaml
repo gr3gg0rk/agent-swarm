@@ -1,0 +1,64 @@
+# =============================================================================
+# Minerva Agent Configuration (Orchestrator Role)
+# =============================================================================
+# Role: Orchestrator - delegates tasks to workers, manages project context
+# Machine: griak-brain (or any machine running the orchestrator)
+# =============================================================================
+
+# Agent identification (required)
+agentId: minerva
+
+# Agent role determines routing behavior (required)
+# Options: orchestrator | worker
+role: orchestrator
+
+# MQTT broker connection (required)
+# Format: mqtt://hostname:port or mqtts://hostname:port for TLS
+# For local broker: mqtt://localhost:1883
+# For remote broker: mqtt://griak-brain:1883
+brokerUrl: mqtt://griak-brain:1883
+
+# Agent capabilities for task routing (required)
+# Orchestrators typically have all capabilities for delegation purposes
+# Workers receive tasks matching these capabilities
+capabilities:
+  - code      # Write and modify code
+  - test      # Run test suites
+  - debug     # Debug failures
+  - plan      # Plan and break down tasks
+
+# Heartbeat interval in milliseconds (optional, default: 30000)
+# Lower = faster failure detection but more network traffic
+# Recommended: 30000 (30 seconds) for edge networks
+# Range: 10000-60000 (10s-60s)
+heartbeatInterval: 30000
+
+# =============================================================================
+# Mosquitto Persistence Warning
+# =============================================================================
+# If using snap installation: persistence is disabled by default
+# Fix: Add to /var/snap/mosquitto/current/mosquitto.conf:
+#   persistence true
+#   autosave_interval 1800
+# Or install via apt: sudo apt install mosquitto mosquitto-clients
+# =============================================================================
+
+# =============================================================================
+# Optimization Feature Flags (Environment Variables)
+# =============================================================================
+# The following environment variables control optimization features:
+#
+# SWARM_BATCHING_ENABLED=true|false (default: true)
+#   - Enables message batching for high-frequency messages
+#   - Batching improves throughput by 10x
+#   - Set to 'false' to disable for debugging
+#
+# SWARM_POOLING_ENABLED=true|false (default: true)
+#   - Enables MQTT connection pooling to reduce TCP overhead
+#   - Pool sizes are hardware-aware (Pi 2B=3, Pi 5=5, Beelink=10)
+#   - Set to 'false' to disable for debugging
+#
+# Example: Disable batching for debugging
+# export SWARM_BATCHING_ENABLED=false
+# CONFIG_PATH=./minerva.config.yaml tsx examples/basic-agent.ts
+# =============================================================================

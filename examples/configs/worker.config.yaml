@@ -1,0 +1,46 @@
+# =============================================================================
+# Flexible Worker Agent Configuration
+# =============================================================================
+# Role: Flexible worker - handles various tasks based on capabilities
+# Machine: griak-worker-1, griak-worker-2, or any worker machine
+# =============================================================================
+
+# Agent identification (required)
+# Each worker must have a unique ID (worker-1, worker-2, etc.)
+agentId: worker-1
+
+# Agent role determines routing behavior (required)
+# Options: orchestrator | worker
+role: worker
+
+# MQTT broker connection (required)
+# Update hostname to match your orchestrator machine
+brokerUrl: mqtt://griak-brain:1883
+
+# Agent capabilities for task routing (required)
+# Flexible workers can have varied capabilities based on machine strengths
+capabilities:
+  - code      # Write and modify code
+  - test      # Run test suites
+  - debug     # Debug failures
+
+# Heartbeat interval in milliseconds (optional, default: 30000)
+# Workers on edge networks may benefit from longer intervals
+# Range: 30000-60000 (30s-60s) for unstable connections
+heartbeatInterval: 30000
+
+# =============================================================================
+# Mosquitto Persistence Warning
+# =============================================================================
+# If using snap installation: persistence is disabled by default
+# Fix: Add to /var/snap/mosquitto/current/mosquitto.conf:
+#   persistence true
+#   autosave_interval 1800
+# Or install via apt: sudo apt install mosquitto mosquitto-clients
+# =============================================================================
+
+# =============================================================================
+# Optimization Feature Flags (Environment Variables)
+# =============================================================================
+# See minerva.config.yaml for full documentation of feature flags.
+# =============================================================================
