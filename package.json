@@ -1,4 +1,17 @@
 {
+  "name": "openclaw-swarm",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Lightweight multi-agent coordination system for edge computing",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces",
+    "test": "npm run test --workspaces"
+  },
   "dependencies": {
     "crc-32": "^1.2.2",
     "eventemitter3": "^5.0.4",
