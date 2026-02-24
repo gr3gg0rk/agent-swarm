@@ -40,7 +40,7 @@
 <summary>📋 v1.2 Installation Fixes (Phases 12-16) — CURRENT</summary>
 
 - [x] Phase 12: Critical Fixes (0/4 plans) — Import errors, schema exports, database bugs (completed 2026-02-24)
-- [ ] Phase 13: Setup & Validation (0/3 plans) — Workspaces, setup scripts, health checks
+- [x] Phase 13: Setup & Validation (0/3 plans) — Workspaces, setup scripts, health checks (completed 2026-02-24)
 - [ ] Phase 14: Run Scripts & Services (0/3 plans) — npm scripts, systemd integration
 - [ ] Phase 15: Documentation (0/2 plans) — Quick start, config examples
 - [ ] Phase 16: Quality Gates (0/2 plans) — CI verification, pre-commit hooks
@@ -73,7 +73,7 @@ Future phases for advanced features:
 | 10. Context Recovery Integration | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 11. Opt-In Feature Activation | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 12. Critical Fixes | 5/6 | Complete    | 2026-02-24 | - |
-| 13. Setup & Validation | 2/3 | In Progress|  | - |
+| 13. Setup & Validation | 3/3 | Complete   | 2026-02-24 | - |
 | 14. Run Scripts & Services | v1.2 | 0/3 | Not started | - |
 | 15. Documentation | v1.2 | 0/2 | Not started | - |
 | 16. Quality Gates | v1.2 | 0/2 | Not started | - |
@@ -121,7 +121,7 @@ Future phases for advanced features:
 4. Setup script warns developer if Mosquitto persistence is disabled (snap compatibility issue)
 5. Agent registry loads automatically on first use with sensible default configuration
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 - [ ] 13-01-PLAN.md — Add npm workspaces configuration to root package.json
 - [ ] 13-02-PLAN.md — Extend health check endpoint and auto-load agent registry with defaults
 - [ ] 13-03-PLAN.md — Create setup script with environment validation and Mosquitto persistence check
