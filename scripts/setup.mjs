@@ -15,11 +15,11 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const utilsPath = path.join(__dirname, 'utils');
 
-// Import utility functions
-import { checkNodeVersion, checkWorkspaces, checkDatabase } from `${utilsPath}/env-check.mjs`;
-import { checkMosquittoPersistence } from `${utilsPath}/mqtt-check.mjs`;
-
 $.verbose = false;
+
+// Import utility functions dynamically
+const envCheckPath = path.join(utilsPath, 'env-check.mjs');
+const mqttCheckPath = path.join(utilsPath, 'mqtt-check.mjs');
 
 // Create table for output
 const table = new Table({
@@ -29,6 +29,10 @@ const table = new Table({
 
 async function runSetup() {
   console.log(chalk.bold('\n=== OpenClaw Swarm Setup ===\n'));
+
+  // Import utility functions
+  const { checkNodeVersion, checkWorkspaces, checkDatabase } = await import(envCheckPath);
+  const { checkMosquittoPersistence } = await import(mqttCheckPath);
 
   // Check 1: Node.js version
   const nodeCheck = await checkNodeVersion();
