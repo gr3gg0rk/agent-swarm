@@ -58,7 +58,10 @@ curl http://localhost:3000/health
 
 - Start an agent: `npm run agent` (requires config file)
 - View dashboard: `npm run dashboard` (opens at http://localhost:5173)
-- See [Configuration](#configuration) for config file examples
+- Role-specific configs: `examples/configs/minerva.config.yaml` (orchestrator), `examples/configs/vulcan.config.yaml` (builder), `examples/configs/worker.config.yaml` (flexible worker)
+- See [Configuration](#configuration) for full config reference
+
+The role-specific configs are fully documented with inline comments. Copy the one matching your role and update only the `brokerUrl` hostname.
 
 ## ⚠️ Mosquitto Configuration
 
