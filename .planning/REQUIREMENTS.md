@@ -18,7 +18,7 @@ Requirements for installation reliability and developer experience improvements.
 
 ### Setup & Validation
 
-- [ ] **SETUP-01**: Root package.json has workspaces configuration for packages/*
+- [x] **SETUP-01**: Root package.json has workspaces configuration for packages/*
 - [ ] **SETUP-02**: Developer can run `npm run setup` to validate environment and initialize database
 - [ ] **SETUP-03**: Health check endpoint verifies: imports work, database accessible, MQTT connected
 - [ ] **SETUP-04**: Setup script checks Mosquitto persistence and warns if disabled (snap compatibility)
@@ -85,7 +85,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRIT-04 | Phase 12 | Complete |
 | CRIT-05 | Phase 12 | Complete |
 | CRIT-06 | Phase 12 | Complete |
-| SETUP-01 | Phase 13 | Pending |
+| SETUP-01 | Phase 13 | Complete |
 | SETUP-02 | Phase 13 | Pending |
 | SETUP-03 | Phase 13 | Pending |
 | SETUP-04 | Phase 13 | Pending |
