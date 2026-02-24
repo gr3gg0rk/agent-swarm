@@ -107,9 +107,10 @@ export function createHealthRoute(db: Database.Database): Router {
 async function checkImports(): Promise<ComponentHealth> {
   try {
     // Dynamic import test - verify built dist/index.js exists and loads
-    const coordination = await import('../index.js');
-    // Verify key exports exist
-    if (coordination.initializeSchema && coordination.validateSchema) {
+    // Import from root index.ts (../../index.js), not api/index.ts
+    const coordination = await import('../../index.js');
+    // Verify key exports exist by checking if they are functions
+    if (typeof coordination.initializeSchema === 'function' && typeof coordination.validateSchema === 'function') {
       return { status: 'pass' };
     }
     return { status: 'fail', message: 'Missing expected exports' };
