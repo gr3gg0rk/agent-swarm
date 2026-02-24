@@ -73,7 +73,7 @@ Future phases for advanced features:
 | 10. Context Recovery Integration | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 11. Opt-In Feature Activation | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 12. Critical Fixes | 5/6 | Complete    | 2026-02-24 | - |
-| 13. Setup & Validation | 1/3 | In Progress|  | - |
+| 13. Setup & Validation | 2/3 | In Progress|  | - |
 | 14. Run Scripts & Services | v1.2 | 0/3 | Not started | - |
 | 15. Documentation | v1.2 | 0/2 | Not started | - |
 | 16. Quality Gates | v1.2 | 0/2 | Not started | - |
@@ -121,7 +121,7 @@ Future phases for advanced features:
 4. Setup script warns developer if Mosquitto persistence is disabled (snap compatibility issue)
 5. Agent registry loads automatically on first use with sensible default configuration
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 - [ ] 13-01-PLAN.md — Add npm workspaces configuration to root package.json
 - [ ] 13-02-PLAN.md — Extend health check endpoint and auto-load agent registry with defaults
 - [ ] 13-03-PLAN.md — Create setup script with environment validation and Mosquitto persistence check
