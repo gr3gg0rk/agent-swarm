@@ -34,8 +34,8 @@ Requirements for installation reliability and developer experience improvements.
 
 ### Documentation
 
-- [ ] **DOCS-01**: README includes quick start section with 3 commands to running system
-- [ ] **DOCS-02**: Mosquitto persistence requirements documented prominently
+- [x] **DOCS-01**: README includes quick start section with 3 commands to running system
+- [x] **DOCS-02**: Mosquitto persistence requirements documented prominently
 - [ ] **DOCS-03**: Example configs provided for each agent role (minerva, vulcan, worker)
 - [ ] **DOCS-04**: Error messages include actionable "Fix:" suggestions
 
@@ -95,8 +95,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCRIPT-03 | Phase 14 | Pending |
 | SCRIPT-04 | Phase 14 | Pending |
 | SCRIPT-05 | Phase 14 | Pending |
-| DOCS-01 | Phase 15 | Pending |
-| DOCS-02 | Phase 15 | Pending |
+| DOCS-01 | Phase 15 | Complete |
+| DOCS-02 | Phase 15 | Complete |
 | DOCS-03 | Phase 15 | Pending |
 | DOCS-04 | Phase 15 | Pending |
 | QA-01 | Phase 16 | Pending |
