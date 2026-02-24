@@ -88,9 +88,10 @@ async function runSetup() {
 
   // Check 5: Initialize database schema
   try {
-    const { initializeSchema } = await import('../packages/coordination/dist/state/schema.js');
+    const { createDatabase, initializeSchema } = await import('../packages/coordination/dist/state/index.js');
     const dbPath = path.join(__dirname, '..', 'packages', 'coordination', 'swarm.db');
-    await initializeSchema(dbPath);
+    const db = createDatabase({ dbPath });
+    initializeSchema(db);
     table.push([
       'Database schema',
       chalk.green('✓'),
