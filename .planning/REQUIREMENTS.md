@@ -36,8 +36,8 @@ Requirements for installation reliability and developer experience improvements.
 
 - [x] **DOCS-01**: README includes quick start section with 3 commands to running system
 - [x] **DOCS-02**: Mosquitto persistence requirements documented prominently
-- [ ] **DOCS-03**: Example configs provided for each agent role (minerva, vulcan, worker)
-- [ ] **DOCS-04**: Error messages include actionable "Fix:" suggestions
+- [x] **DOCS-03**: Example configs provided for each agent role (minerva, vulcan, worker)
+- [x] **DOCS-04**: Error messages include actionable "Fix:" suggestions
 
 ### Quality Gates
 
@@ -97,8 +97,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCRIPT-05 | Phase 14 | Pending |
 | DOCS-01 | Phase 15 | Complete |
 | DOCS-02 | Phase 15 | Complete |
-| DOCS-03 | Phase 15 | Pending |
-| DOCS-04 | Phase 15 | Pending |
+| DOCS-03 | Phase 15 | Complete |
+| DOCS-04 | Phase 15 | Complete |
 | QA-01 | Phase 16 | Pending |
 | QA-02 | Phase 16 | Pending |
 | QA-03 | Phase 16 | Pending |
