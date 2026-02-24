@@ -11,8 +11,7 @@
 
 import type { MessageEnvelope, MessageType } from '../communication/message.js';
 
-// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
-import { MessagePack } from 'msgpackr';
+import { pack } from 'msgpackr';
 
 /**
  * Batch configuration per message type.
@@ -136,7 +135,7 @@ export class MessageBatcher {
     const envelopes = buffered.map(b => b.envelope);
 
     // Publish batch as single MessagePack array
-    const payload = MessagePack.encode(envelopes);
+    const payload = pack(envelopes);
 
     // Create batch envelope with status type (valid MessageType)
     const fromAgent = buffered[0].envelope.from || 'unknown';

@@ -6,8 +6,7 @@
 import mqtt, { type IClientOptions } from 'mqtt';
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
-// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
-import { MessagePack } from 'msgpackr';
+import { pack, unpack } from 'msgpackr';
 import type { MessageEnvelope, MessageType } from './message.js';
 import type { MessageBatcher } from '../optimization/batcher.js';
 import type { ConnectionPoolManager } from '../optimization/connection-pool.js';
@@ -128,7 +127,7 @@ export class MqttClient {
 
     this.client.on('message', (topic: string, message: Buffer) => {
       try {
-        const envelope = MessagePack.decode(message) as MessageEnvelope;
+        const envelope = unpack(message) as MessageEnvelope;
         this.emitter.emit('message', envelope, topic);
       } catch (error) {
         this.emitter.emit('error', error as Error);
@@ -227,7 +226,7 @@ export class MqttClient {
         }
 
         // Serialize with MessagePack
-        const payload = MessagePack.encode(envelope);
+        const payload = pack(envelope);
 
         // Determine QoS level (default 1, allow 0 for heartbeats per COMM-07)
         const qos = envelope.qos ?? 1;
