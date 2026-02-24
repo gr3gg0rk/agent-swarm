@@ -61,10 +61,22 @@ export function createDatabase(options: DatabaseOptions): Database.Database {
   fs.mkdirSync(dir, { recursive: true });
 
   // Open database connection
-  const db = new Database(dbPath, {
-    // Enable verbose logging in development
-    verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
-  });
+  let db: Database.Database;
+  try {
+    db = new Database(dbPath, {
+      // Enable verbose logging in development
+      verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
+    });
+  } catch (error) {
+    throw new Error(`Failed to open database at ${dbPath}: ${error instanceof Error ? error.message : String(error)}
+
+Fix: Check database file and directory:
+  1. Verify directory exists: ls -la ${dir}
+  2. Check file permissions: chmod 755 ${dir}
+  3. Ensure sufficient disk space: df -h
+  4. Check for database lock: lsof ${dbPath} (remove .wal and .shm files if needed)
+`);
+  }
 
   // Set performance pragmas
   db.pragma('synchronous = NORMAL'); // Balance between safety and performance
@@ -75,7 +87,16 @@ export function createDatabase(options: DatabaseOptions): Database.Database {
   if (walMode) {
     const result = db.pragma('journal_mode = WAL', { simple: true });
     if (result !== 'wal') {
-      throw new Error(`Pragma journal_mode failed: expected WAL, got ${result}. Fix: Ensure database directory is writable and not on network filesystem.`);
+      throw new Error(`Pragma journal_mode failed: expected WAL, got ${result}
+
+Fix: Ensure database directory is writable:
+  1. Check directory permissions: ls -ld ${dir}
+  2. Fix permissions: chmod 755 ${dir}
+  3. Avoid network filesystems: WAL requires file locking
+  4. Check filesystem: df -T ${dir} (NFS/CIFS may not support WAL)
+
+Alternative: Disable WAL mode by passing { walMode: false } to createDatabase()
+`);
     }
   }
 
@@ -116,7 +137,14 @@ export function getDatabase(): Database.Database | null {
 export function closeDatabase(db?: Database.Database): void {
   const database = db || dbInstance;
   if (!database) {
-    throw new Error('Database is not open');
+    throw new Error(`Database is not open
+
+Fix: Call createDatabase() before closeDatabase()
+Example:
+  const db = createDatabase({ dbPath: '/path/to/state.db' });
+  // ... use database ...
+  closeDatabase(db);
+`);
   }
 
   database.close();
