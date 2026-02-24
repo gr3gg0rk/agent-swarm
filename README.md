@@ -374,6 +374,40 @@ capabilities:
 heartbeatInterval: 30000  # 30 seconds
 ```
 
+### Role-Specific Configs (`examples/configs/`)
+
+Fully annotated configuration files for each agent role. Copy the file matching your role and update only the `brokerUrl` hostname.
+
+**Available configs:**
+
+- **minerva.config.yaml** - Orchestrator role (delegates tasks, manages context)
+  - Capabilities: code, test, debug, plan
+  - Use on: griak-brain or any orchestrator machine
+
+- **vulcan.config.yaml** - Builder role (builds, tests, code execution)
+  - Capabilities: code, test, build
+  - Use on: griak-server or any dedicated builder
+
+- **worker.config.yaml** - Flexible worker role (general-purpose)
+  - Capabilities: code, test, debug
+  - Use on: griak-worker-1, griak-worker-2, or any worker machine
+
+Each config file includes:
+- Inline comments explaining every option
+- Mosquitto persistence warning
+- Optimization feature flags documentation
+- No placeholder values (copy-paste ready)
+
+Example usage:
+```bash
+# Copy the orchestrator config
+cp examples/configs/minerva.config.yaml ./my-config.yaml
+
+# Edit only the brokerUrl hostname if needed
+# Then start the agent
+CONFIG_PATH=./my-config.yaml npm run agent
+```
+
 ### Optimization Feature Flags
 
 ```bash
