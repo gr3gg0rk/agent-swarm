@@ -158,7 +158,9 @@ Future phases for advanced features:
 3. Example config files are provided for each agent role: minerva, vulcan, worker
 4. Error messages include actionable "Fix:" suggestions with specific commands or config changes
 
-**Plans:** TBD
+**Plans:** 2 plans
+- [ ] 15-01-PLAN.md — Restructure README Quick Start with 3-command flow and Mosquitto warning
+- [ ] 15-02-PLAN.md — Create role-specific config files and add Fix: suggestions to errors
 
 ### Phase 16: Quality Gates
 
