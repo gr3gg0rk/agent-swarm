@@ -75,7 +75,7 @@ Future phases for advanced features:
 | 12. Critical Fixes | 5/6 | Complete    | 2026-02-24 | - |
 | 13. Setup & Validation | 4/4 | Complete    | 2026-02-24 | - |
 | 14. Run Scripts & Services | v1.2 | 0/3 | Not started | - |
-| 15. Documentation | 2/2 | Complete   | 2026-02-24 | - |
+| 15. Documentation | 3/3 | Complete   | 2026-02-24 | - |
 | 16. Quality Gates | v1.2 | 0/2 | Not started | - |
 
 **Overall:** 27/44 plans complete (61%)
@@ -158,7 +158,7 @@ Future phases for advanced features:
 3. Example config files are provided for each agent role: minerva, vulcan, worker
 4. Error messages include actionable "Fix:" suggestions with specific commands or config changes
 
-**Plans:** 2/2 plans complete
+**Plans:** 3/3 plans complete
 - [ ] 15-01-PLAN.md — Restructure README Quick Start with 3-command flow and Mosquitto warning
 - [ ] 15-02-PLAN.md — Create role-specific config files and add Fix: suggestions to errors
 
