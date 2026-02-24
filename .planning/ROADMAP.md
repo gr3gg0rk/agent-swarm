@@ -39,7 +39,7 @@
 <details>
 <summary>📋 v1.2 Installation Fixes (Phases 12-16) — CURRENT</summary>
 
-- [ ] Phase 12: Critical Fixes (0/4 plans) — Import errors, schema exports, database bugs
+- [x] Phase 12: Critical Fixes (0/4 plans) — Import errors, schema exports, database bugs (completed 2026-02-24)
 - [ ] Phase 13: Setup & Validation (0/3 plans) — Workspaces, setup scripts, health checks
 - [ ] Phase 14: Run Scripts & Services (0/3 plans) — npm scripts, systemd integration
 - [ ] Phase 15: Documentation (0/2 plans) — Quick start, config examples
@@ -72,7 +72,7 @@ Future phases for advanced features:
 | 9. Visualization | v1.1 | 3/3 | Complete | 2026-02-23 |
 | 10. Context Recovery Integration | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 11. Opt-In Feature Activation | v1.1 | 1/1 | Complete | 2026-02-23 |
-| 12. Critical Fixes | 5/6 | In Progress|  | - |
+| 12. Critical Fixes | 5/6 | Complete    | 2026-02-24 | - |
 | 13. Setup & Validation | v1.2 | 0/3 | Not started | - |
 | 14. Run Scripts & Services | v1.2 | 0/3 | Not started | - |
 | 15. Documentation | v1.2 | 0/2 | Not started | - |
@@ -98,7 +98,7 @@ Future phases for advanced features:
 5. Database pragma calls return string values (not Database objects) via `{ simple: true }` option
 6. Task queue INSERT statement has correct number of placeholders (15 columns, 15 placeholders)
 
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 - [ ] 12-01-PLAN.md — Fix msgpackr imports to use pack/unpack functions
 - [ ] 12-02-PLAN.md — Add optimization module exports to main index
 - [ ] 12-03-PLAN.md — Add schema function exports to main index
