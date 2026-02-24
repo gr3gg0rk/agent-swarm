@@ -121,7 +121,10 @@ Future phases for advanced features:
 4. Setup script warns developer if Mosquitto persistence is disabled (snap compatibility issue)
 5. Agent registry loads automatically on first use with sensible default configuration
 
-**Plans:** TBD
+**Plans:** 3 plans
+- [ ] 13-01-PLAN.md — Add npm workspaces configuration to root package.json
+- [ ] 13-02-PLAN.md — Extend health check endpoint and auto-load agent registry with defaults
+- [ ] 13-03-PLAN.md — Create setup script with environment validation and Mosquitto persistence check
 
 ### Phase 14: Run Scripts & Services
 
