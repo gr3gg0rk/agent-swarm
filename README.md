@@ -8,6 +8,121 @@ OpenClaw Swarm allows Minerva (the brain agent) to delegate tasks to specialized
 
 **Core Capability:** Minerva can assign a task to any agent in the swarm and get a result back.
 
+## Quick Start
+
+Get OpenClaw Swarm running in 3 commands (~5 minutes).
+
+### Prerequisites
+
+- Node.js >= 22.0.0
+- Mosquitto MQTT broker (typically on port 1883)
+- Linux/macOS (Windows may require WSL)
+
+### 1. Install and Build
+
+```bash
+npm install && npm run build
+```
+
+**If you see:** `Cannot find module '@openclaw-swarm/coordination'`
+**Fix:** Run `npm run build` to compile TypeScript to `dist/` before running agents.
+
+**If you see:** `EACCES` permission errors
+**Fix:** Don't use `sudo` with npm. Fix npm permissions: https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally
+
+### 2. Run Setup and Start API
+
+```bash
+npm run setup && npm run api
+```
+
+**If you see:** `Mosquitto persistence disabled`
+**Warning:** Messages will be lost on broker restart. See [Mosquitto Configuration](#-mosquitto-configuration) below.
+
+**If you see:** `Error: connect ECONNREFUSED`
+**Fix:** Start Mosquitto: `sudo systemctl start mosquitto` or `docker run -p 1883:1883 eclipse-mosquitto`
+
+### 3. Verify System
+
+```bash
+curl http://localhost:3000/health
+```
+
+**Expected output:** `{"status":"healthy","checks":{...}}`
+**If you see:** `Connection refused`
+**Fix:** Ensure API server is running on port 3000. Check logs for startup errors.
+
+**If setup succeeds:** You'll see `✓ Setup complete! System is ready.` and API server starts on port 3000.
+
+### What's Next?
+
+- Start an agent: `npm run agent` (requires config file)
+- View dashboard: `npm run dashboard` (opens at http://localhost:5173)
+- See [Configuration](#configuration) for config file examples
+
+## ⚠️ Mosquitto Configuration
+
+**IMPORTANT:** Mosquitto persistence must be enabled for agent discovery to work correctly.
+
+### Check Your Installation
+
+Run the setup script to detect persistence issues:
+```bash
+npm run setup
+```
+
+If you see `⚠ Mosquitto persistence disabled`, messages will be lost on broker restart and agents won't persist across reboots.
+
+### Snap Installation Issue
+
+If you installed Mosquitto via snap, persistence is **disabled by default** due to snap sandboxing.
+
+**Fix 1: Enable persistence in snap config**
+```bash
+# Edit snap config
+sudo nano /var/snap/mosquitto/current/mosquitto.conf
+
+# Add these lines:
+persistence true
+autosave_interval 1800
+persistence_file_location /var/snap/mosquitto/current/
+
+# Restart mosquitto
+sudo systemctl restart snap.mosquitto.mosquitto
+```
+
+**Fix 2: Install via apt (recommended)**
+```bash
+# Remove snap version
+sudo snap remove mosquitto
+
+# Install via apt
+sudo apt update
+sudo apt install mosquitto mosquitto-clients
+
+# Persistence is enabled by default
+sudo systemctl start mosquitto
+```
+
+### Verify Persistence
+
+```bash
+# Check if persistence is running
+mosquitto_sub -h localhost -t '$SYS/broker/version' -v -C 1
+
+# Start mosquitto if needed
+sudo systemctl start mosquitto
+```
+
+For Docker deployments, mount a volume for persistence:
+```bash
+docker run -d -p 1883:1883 \
+  -v /path/to/mosquitto/data:/mosquitto/data \
+  -v /path/to/mosquitto/logs:/mosquitto/log \
+  eclipse-mosquitto \
+  mosquitto -c /mosquitto/config/mosquitto.conf
+```
+
 ## Architecture
 
 ```
@@ -51,7 +166,9 @@ OpenClaw Swarm allows Minerva (the brain agent) to delegate tasks to specialized
 | **Worker-2** | griak-worker-1 | Flexible multi-role worker |
 | **Worker-3** | griak-worker-2 | Flexible multi-role worker |
 
-## Quick Start
+## Detailed Setup Guide
+
+> **Note:** For a faster 3-command quick start, see the [Quick Start](#quick-start) section above. This section provides detailed setup instructions.
 
 ### Prerequisites
 
