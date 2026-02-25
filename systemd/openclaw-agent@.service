@@ -1,0 +1,24 @@
+[Unit]
+Description=OpenClaw Swarm Agent (%i)
+Documentation=https://github.com/your-repo/openclaw-swarm
+After=network-online.target openclaw-mqtt.service
+Wants=network-online.target
+Requires=openclaw-mqtt.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/openclaw/agent@.env
+ExecStart=/usr/bin/node /opt/openclaw-swarm/scripts/start-agent.mjs --config /etc/openclaw/%i.json
+WorkingDirectory=/opt/openclaw-swarm
+Restart=always
+RestartSec=5s
+StartLimitInterval=10s
+StartLimitBurst=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openclaw-agent-%i
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
