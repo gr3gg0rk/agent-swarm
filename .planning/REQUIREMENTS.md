@@ -42,8 +42,8 @@ Requirements for installation reliability and developer experience improvements.
 ### Quality Gates
 
 - [x] **QA-01**: CI workflow verifies all exports can be imported from built dist/
-- [ ] **QA-02**: Pre-commit hooks run: lint, typecheck, import verification
-- [ ] **QA-03**: Integration tests verify database operations (INSERT, schema init, pragma)
+- [x] **QA-02**: Pre-commit hooks run: lint, typecheck, import verification
+- [x] **QA-03**: Integration tests verify database operations (INSERT, schema init, pragma)
 
 ## v2.0 Requirements
 
@@ -100,8 +100,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCS-03 | Phase 15 | Complete |
 | DOCS-04 | Phase 15 | Complete |
 | QA-01 | Phase 16 | Complete |
-| QA-02 | Phase 16 | Pending |
-| QA-03 | Phase 16 | Pending |
+| QA-02 | Phase 16 | Complete |
+| QA-03 | Phase 16 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 23 total
