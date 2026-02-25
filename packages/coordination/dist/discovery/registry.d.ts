@@ -86,6 +86,13 @@ export declare class AgentDiscovery {
 /**
  * Convenience function to create AgentDiscovery instance.
  * Loads config and initializes registry.
+ *
+ * Per SETUP-05: Agent registry loads automatically with sensible defaults
+ * when no config provided, avoiding required configuration files.
+ *
+ * @param mqttClient - MQTT client instance
+ * @param configPath - Optional path to agent configuration file
+ * @returns AgentDiscovery instance
  */
 export declare function createAgentDiscovery(mqttClient: MqttClientMinimal, configPath?: string): Promise<AgentDiscovery>;
 //# sourceMappingURL=registry.d.ts.map

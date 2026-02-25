@@ -8,8 +8,7 @@
  * Dual-trigger: Flush on EITHER time threshold OR buffer size limit (whichever first).
  * Per 07-RESEARCH.md Pitfall 1: maxSize limits prevent unbounded buffer growth on Pi 2B.
  */
-// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
-import { MessagePack } from 'msgpackr';
+import { pack } from 'msgpackr';
 /**
  * Default batch configuration per OPTI-02 requirements.
  * Tasks: 10ms window, 50 max
@@ -90,7 +89,7 @@ export class MessageBatcher {
         // Extract envelopes for batch
         const envelopes = buffered.map(b => b.envelope);
         // Publish batch as single MessagePack array
-        const payload = MessagePack.encode(envelopes);
+        const payload = pack(envelopes);
         // Create batch envelope with status type (valid MessageType)
         const fromAgent = buffered[0].envelope.from || 'unknown';
         const batchEnvelope = {

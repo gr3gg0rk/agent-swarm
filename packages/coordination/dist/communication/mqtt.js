@@ -5,8 +5,7 @@
 import mqtt from 'mqtt';
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
-// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
-import { MessagePack } from 'msgpackr';
+import { pack, unpack } from 'msgpackr';
 /**
  * MQTT client wrapper with auto-reconnect and MessagePack serialization.
  * Wraps MQTT.js client instance with typed events and serialization.
@@ -59,7 +58,20 @@ export class MqttClient {
                 resolve(mqttClient);
             });
             client.on('error', (error) => {
-                reject(new Error('MQTT connection failed: ' + error.message));
+                const message = `MQTT connection failed: ${error.message}
+
+Fix: Start Mosquitto broker:
+  systemctl: sudo systemctl start mosquitto
+  Docker:     docker run -p 1883:1883 eclipse-mosquitto
+
+Verify: mosquitto_sub -h localhost -t '$SYS/#' -v
+
+Common causes:
+  - Broker not running on ${config.brokerUrl}
+  - Wrong hostname or port in brokerUrl
+  - Firewall blocking connection
+`;
+                reject(new Error(message));
             });
         });
     }
@@ -78,7 +90,7 @@ export class MqttClient {
         });
         this.client.on('message', (topic, message) => {
             try {
-                const envelope = MessagePack.decode(message);
+                const envelope = unpack(message);
                 this.emitter.emit('message', envelope, topic);
             }
             catch (error) {
@@ -168,13 +180,19 @@ export class MqttClient {
                     envelope.idempotencyKey = uuidv4();
                 }
                 // Serialize with MessagePack
-                const payload = MessagePack.encode(envelope);
+                const payload = pack(envelope);
                 // Determine QoS level (default 1, allow 0 for heartbeats per COMM-07)
                 const qos = envelope.qos ?? 1;
                 const retain = envelope.retain ?? false;
                 this.client.publish(topic, payload, { qos, retain }, (error) => {
                     if (error) {
-                        reject(new Error('Publish failed: ' + error.message));
+                        reject(new Error(`MQTT publish failed to ${topic}: ${error.message}
+
+Fix: Check broker connection:
+  1. Verify broker is running: mosquitto_sub -h ${this.config.brokerUrl.split('://')[1]?.split(':')[0] || 'localhost'} -t '$SYS/broker/version' -v
+  2. Check topic permissions: Topic may not allow publish
+  3. Verify QoS level: Some brokers restrict QoS 2
+`));
                     }
                     else {
                         resolve();
@@ -196,7 +214,13 @@ export class MqttClient {
         return new Promise((resolve, reject) => {
             this.client.subscribe(topic, { qos }, (error) => {
                 if (error) {
-                    reject(new Error('Subscription failed: ' + error.message));
+                    reject(new Error(`MQTT subscribe failed for ${topic}: ${error.message}
+
+Fix: Check broker connection:
+  1. Verify broker is running: mosquitto_sub -h localhost -t '$SYS/#' -v
+  2. Check topic permissions: Topic may require authentication
+  3. Verify topic name format: Use wildcards like agent/# for multi-level
+`));
                 }
                 else {
                     resolve();

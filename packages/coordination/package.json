@@ -10,7 +10,11 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./dist/*": "./dist/*.js"
+    "./dist/communication/*": "./dist/communication/*.js",
+    "./dist/state/*": "./dist/state/*.js",
+    "./dist/discovery/*": "./dist/discovery/*.js",
+    "./dist/optimization/*": "./dist/optimization/*.js",
+    "./dist/api/*": "./dist/api/*.js"
   },
   "scripts": {
     "build": "tsc",

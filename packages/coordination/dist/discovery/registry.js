@@ -62,8 +62,13 @@ export async function loadAgentConfig(configPath) {
 /**
  * Validate agent ID against static configuration (DISC-05).
  * Throws error if agent ID is not in known agents list.
+ * Skips validation if no known agents configured (defaults mode).
  */
 function validateAgentId(agentId) {
+    // Skip validation if no known agents configured (defaults mode)
+    if (knownAgents.length === 0) {
+        return;
+    }
     const known = knownAgents.find(a => a.agentId === agentId);
     if (!known) {
         throw new Error(`Unknown agent ID "${agentId}". Must be one of: ${knownAgents.map(a => a.agentId).join(', ')}`);
@@ -134,8 +139,22 @@ export class AgentDiscovery {
 /**
  * Convenience function to create AgentDiscovery instance.
  * Loads config and initializes registry.
+ *
+ * Per SETUP-05: Agent registry loads automatically with sensible defaults
+ * when no config provided, avoiding required configuration files.
+ *
+ * @param mqttClient - MQTT client instance
+ * @param configPath - Optional path to agent configuration file
+ * @returns AgentDiscovery instance
  */
-export async function createAgentDiscovery(mqttClient, configPath = '/home/gr3gg0rk/openclaw-swarm/config/agents.yaml') {
+export async function createAgentDiscovery(mqttClient, configPath) {
+    // If no config path, use defaults instead of loading file
+    if (!configPath) {
+        console.log('[AgentDiscovery] No agent config provided, using default registry behavior');
+        knownAgents = []; // Empty list disables validation
+        return new AgentDiscovery(mqttClient);
+    }
+    // Existing behavior: load config file
     await loadAgentConfig(configPath);
     return new AgentDiscovery(mqttClient);
 }

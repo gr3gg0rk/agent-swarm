@@ -10,6 +10,10 @@ import { type Application } from 'express';
 import http from 'http';
 import Database from 'better-sqlite3';
 import type { MqttClient } from '../communication/mqtt.js';
+interface RawMqttClient {
+    connected: boolean;
+}
+type MqttClientWithStatus = RawMqttClient | undefined;
 /**
  * Server configuration options.
  */
@@ -24,12 +28,14 @@ export interface ServerConfig {
     corsOrigins?: string[];
     /** MQTT client for SSE load metrics subscription (optional) */
     mqttClient?: MqttClient;
+    /** Raw MQTT client for health check connection status (optional) */
+    rawMqttClient?: RawMqttClient;
 }
 /**
  * Creates the Express application with all routes registered.
  *
  * @param db - Database instance
- * @param mqttClient - Optional MQTT client for SSE load metrics subscription
+ * @param rawMqttClient - Optional raw MQTT client for health check (from getRawClient())
  * @returns Configured Express application
  *
  * @example
@@ -38,7 +44,7 @@ export interface ServerConfig {
  * const app = createStateApi(db);
  * ```
  */
-export declare function createStateApi(db: Database.Database, mqttClient?: MqttClient): Application;
+export declare function createStateApi(db: Database.Database, rawMqttClient?: MqttClientWithStatus): Application;
 /**
  * Starts the HTTP server.
  *
@@ -60,4 +66,5 @@ export declare function startServer(app: Application, port: number): http.Server
  * @returns Promise that resolves when server is closed
  */
 export declare function stopServer(server: http.Server): Promise<void>;
+export {};
 //# sourceMappingURL=server.d.ts.map

@@ -73,4 +73,110 @@ export function createHealthRoute(db) {
     });
     return router;
 }
+/**
+ * Check imports - verify coordination module can be dynamically imported.
+ */
+async function checkImports() {
+    try {
+        // Dynamic import test - verify built dist/index.js exists and loads
+        // Import from root index.ts (../../index.js), not api/index.ts
+        const coordination = await import('../../index.js');
+        // Verify key exports exist by checking if they are functions
+        if (typeof coordination.initializeSchema === 'function' && typeof coordination.validateSchema === 'function') {
+            return { status: 'pass' };
+        }
+        return { status: 'fail', message: 'Missing expected exports' };
+    }
+    catch (error) {
+        return { status: 'fail', message: error instanceof Error ? error.message : 'Import failed' };
+    }
+}
+/**
+ * Check database - verify SQLite connectivity.
+ */
+function checkDatabase(db) {
+    try {
+        const result = db.prepare('SELECT 1 AS test').get();
+        if (!result || result.test !== 1) {
+            return { status: 'fail', message: 'Database query returned unexpected result' };
+        }
+        return { status: 'pass', message: 'Connected' };
+    }
+    catch (error) {
+        return { status: 'fail', message: error instanceof Error ? error.message : 'Database error' };
+    }
+}
+/**
+ * Check MQTT - verify connection status.
+ */
+function checkMqtt(mqttClient) {
+    if (!mqttClient) {
+        return { status: 'skip', message: 'No MQTT client provided' };
+    }
+    return mqttClient.connected
+        ? { status: 'pass', message: 'Connected' }
+        : { status: 'fail', message: 'Not connected' };
+}
+/**
+ * Creates extended health check route with multi-component verification.
+ *
+ * Endpoint:
+ * - GET /health - Multi-component health check (imports, database, mqtt)
+ *
+ * Per SETUP-03: Health check verifies imports work, database accessible, MQTT connected.
+ *
+ * @param db - Database instance
+ * @param mqttClient - Optional MQTT client with connection status
+ * @returns Express router with extended health route
+ */
+export function createExtendedHealthRoute(db, mqttClient) {
+    const router = Router();
+    /**
+     * GET /health
+     *
+     * Extended health check endpoint.
+     * Verifies imports, database connectivity, and MQTT connection status.
+     *
+     * Returns:
+     * - 200 OK: All checks pass (healthy) or degraded (skips but no failures)
+     * - 503 Service Unavailable: One or more checks failed
+     *
+     * Response structure:
+     * {
+     *   "status": "healthy" | "degraded" | "unhealthy",
+     *   "checks": {
+     *     "imports": { "status": "pass" | "fail" | "skip", "message"?: string },
+     *     "database": { "status": "pass" | "fail" | "skip", "message"?: string },
+     *     "mqtt": { "status": "pass" | "fail" | "skip", "message"?: string }
+     *   },
+     *   "timestamp": "2026-02-21T20:00:00.000Z"
+     * }
+     */
+    router.get('/health', async (req, res) => {
+        const checks = {
+            imports: await checkImports(),
+            database: checkDatabase(db),
+            mqtt: checkMqtt(mqttClient)
+        };
+        const allPass = Object.values(checks).every(c => c.status === 'pass');
+        const hasFailures = Object.values(checks).some(c => c.status === 'fail');
+        let status;
+        if (allPass) {
+            status = 'healthy';
+        }
+        else if (hasFailures) {
+            status = 'unhealthy';
+        }
+        else {
+            status = 'degraded'; // Has skips but no failures
+        }
+        const statusCode = status === 'healthy' ? 200 : 503;
+        res.status(statusCode).json({
+            status,
+            checks,
+            timestamp: new Date().toISOString()
+        });
+    });
+    return router;
+}
 //# sourceMappingURL=health.js.map

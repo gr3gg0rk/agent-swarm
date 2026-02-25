@@ -1,0 +1,8 @@
+Agent,Category,Role & Responsibility
+Terminus,Security,Boundary protection, access control, prompt injection defense, skill auditor.
+Diana,Research,"The Hunter; tracks down documentation, Reddit threads, and obscure data."
+Moneta,Memory,The Archivist; manages long-term memory (LTM) and the vector database.
+Saturn,Timing,"The Clock; monitors process heartbeats, timeouts, and project ""sprints."""
+Consus,Resources,"The Optimizer; manages hardware health, CPU/RAM allocation, and storage."
+Vesta,Interface,The Liaison; translates swarm activity into a concise brief for me.
+Fortuna,Testing,"The Red Team; introduces ""chaos"" to stress-test logic and find vulnerabilities."
