@@ -210,7 +210,12 @@ Future phases for advanced features:
 3. `npm run dashboard` starts the dashboard dev server on expected port
 4. Example agent code uses relative imports that work correctly with npm workspaces
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+- [ ] 17-01-PLAN.md — Create npm run agent script with config loading and graceful shutdown
+- [ ] 17-02-PLAN.md — Create npm run api script with database initialization
+- [ ] 17-03-PLAN.md — Create npm run dashboard script with Vite dev server
+- [ ] 17-04-PLAN.md — Create agent-runner.ts example with role-specific configs
 
 ### Phase 18: Production Deployment
 
