@@ -1,0 +1,23 @@
+[Unit]
+Description=OpenClaw Swarm API
+Documentation=https://github.com/your-repo/openclaw-swarm
+After=network-online.target openclaw-mqtt.service
+Wants=network-online.target
+Requires=openclaw-mqtt.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/openclaw/api.env
+ExecStart=/usr/bin/node /opt/openclaw-swarm/scripts/start-api.mjs
+WorkingDirectory=/opt/openclaw-swarm
+Restart=always
+RestartSec=5s
+StartLimitInterval=10s
+StartLimitBurst=5
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
