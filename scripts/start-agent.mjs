@@ -70,7 +70,7 @@ async function main() {
 
   // Import from coordination package (SCRIPT-04: workspace imports)
   const { connectToBroker } = await import(
-    '@openclaw-swarm/coordination/dist/communication/mqtt'
+    '../packages/coordination/dist/communication/mqtt.js'
   );
   const { BasicAgent } = await import('../examples/basic-agent.ts');
 
