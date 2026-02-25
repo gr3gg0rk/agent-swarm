@@ -1,11 +1,12 @@
 {
   "agentId": "minerva",
   "role": "orchestrator",
-  "brokerUrl": "mqtt://localhost:1883",
+  "brokerUrl": "mqtt://127.0.0.1:1883",
   "capabilities": [
     "orchestration",
     "delegation",
     "coordination"
   ],
-  "heartbeatInterval": 30000
+  "heartbeatInterval": 30000,
+  "description": "Primary coordinator agent - delegates tasks and manages swarm context"
 }
