@@ -13,7 +13,7 @@ import Database from 'better-sqlite3';
 import { createTaskRoutes } from './routes/tasks.js';
 import { createStatusRoutes } from './routes/status.js';
 import { createContextRoutes } from './routes/context.js';
-import { createHealthRoute } from './routes/health.js';
+import { createExtendedHealthRoute } from './routes/health.js';
 import { createEventRoutes } from './routes/events.js';
 import { createTaskQueue } from '../state/task-queue.js';
 import { createContextStore } from '../state/context.js';
@@ -59,7 +59,7 @@ export function createStateApi(db: Database.Database, mqttClient?: MqttClient): 
   const contextStore = createContextStore(db);
 
   // Register routes
-  app.use('/', createHealthRoute(db));
+  app.use('/', createExtendedHealthRoute(db, mqttClient));
   app.use('/api', createTaskRoutes(taskQueue));
   app.use('/api', createStatusRoutes(db));
   app.use('/api', createContextRoutes(contextStore));
