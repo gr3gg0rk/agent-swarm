@@ -1,0 +1,11 @@
+{
+  "agentId": "minerva",
+  "role": "orchestrator",
+  "brokerUrl": "mqtt://localhost:1883",
+  "capabilities": [
+    "orchestration",
+    "delegation",
+    "coordination"
+  ],
+  "heartbeatInterval": 30000
+}

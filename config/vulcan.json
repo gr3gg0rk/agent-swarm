@@ -1,0 +1,11 @@
+{
+  "agentId": "vulcan",
+  "role": "worker",
+  "brokerUrl": "mqtt://localhost:1883",
+  "capabilities": [
+    "build",
+    "compile",
+    "package"
+  ],
+  "heartbeatInterval": 30000
+}
