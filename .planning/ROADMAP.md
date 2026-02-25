@@ -62,26 +62,26 @@ Future phases for advanced features:
 
 ## Progress
 
-| Phase                            | Milestone | Plans Complete | Status      | Completed  |
-| -------------------------------- | --------- | -------------- | ----------- | ---------- | --- |
-| 1. Communication & Discovery     | v1.0      | 3/3            | Complete    | 2026-02-21 |
-| 2. Shared State & Lifecycle      | v1.0      | 3/3            | Complete    | 2026-02-21 |
-| 3. Task Delegation               | v1.0      | 3/3            | Complete    | 2026-02-21 |
-| 4. Error Handling & Recovery     | v1.0      | 2/2            | Complete    | 2026-02-22 |
-| 5. Integration Wiring            | v1.0      | 1/1            | Complete    | 2026-02-22 |
-| 6. Advanced Routing              | v1.1      | 3/3            | Complete    | 2026-02-23 |
-| 7. Optimization                  | v1.1      | 3/3            | Complete    | 2026-02-23 |
-| 8. Checkpointing Gaps            | v1.1      | 3/3            | Complete    | 2026-02-23 |
-| 9. Visualization                 | v1.1      | 3/3            | Complete    | 2026-02-23 |
-| 10. Context Recovery Integration | v1.1      | 1/1            | Complete    | 2026-02-23 |
-| 11. Opt-In Feature Activation    | v1.1      | 1/1            | Complete    | 2026-02-23 |
-| 12. Critical Fixes               | 5/6       | Complete       | 2026-02-24  | -          |
-| 13. Setup & Validation           | 4/4       | Complete       | 2026-02-24  | -          |
-| 14. Run Scripts & Services       | v1.2      | 0/3            | Archived    | -          | -   |
-| 15. Documentation                | 3/3       | Complete       | 2026-02-24  | -          |
-| 16. Quality Gates                | 2/2       | Complete       | 2026-02-25  | -          |
-| 17. NPM Run Scripts              | 6/6       | Complete       | 2026-02-25  | -          | -   |
-| 18. Production Deployment        | v1.2      | 0/2            | Gap closure | -          | -   |
+| Phase                            | Milestone | Plans Complete | Status     | Completed  |
+| -------------------------------- | --------- | -------------- | ---------- | ---------- | --- |
+| 1. Communication & Discovery     | v1.0      | 3/3            | Complete   | 2026-02-21 |
+| 2. Shared State & Lifecycle      | v1.0      | 3/3            | Complete   | 2026-02-21 |
+| 3. Task Delegation               | v1.0      | 3/3            | Complete   | 2026-02-21 |
+| 4. Error Handling & Recovery     | v1.0      | 2/2            | Complete   | 2026-02-22 |
+| 5. Integration Wiring            | v1.0      | 1/1            | Complete   | 2026-02-22 |
+| 6. Advanced Routing              | v1.1      | 3/3            | Complete   | 2026-02-23 |
+| 7. Optimization                  | v1.1      | 3/3            | Complete   | 2026-02-23 |
+| 8. Checkpointing Gaps            | v1.1      | 3/3            | Complete   | 2026-02-23 |
+| 9. Visualization                 | v1.1      | 3/3            | Complete   | 2026-02-23 |
+| 10. Context Recovery Integration | v1.1      | 1/1            | Complete   | 2026-02-23 |
+| 11. Opt-In Feature Activation    | v1.1      | 1/1            | Complete   | 2026-02-23 |
+| 12. Critical Fixes               | 5/6       | Complete       | 2026-02-24 | -          |
+| 13. Setup & Validation           | 4/4       | Complete       | 2026-02-24 | -          |
+| 14. Run Scripts & Services       | v1.2      | 0/3            | Archived   | -          | -   |
+| 15. Documentation                | 3/3       | Complete       | 2026-02-24 | -          |
+| 16. Quality Gates                | 2/2       | Complete       | 2026-02-25 | -          |
+| 17. NPM Run Scripts              | 6/6       | Complete       | 2026-02-25 | -          | -   |
+| 18. Production Deployment        | 1/2       | In Progress    |            | -          | -   |
 
 **Overall:** 27/50 plans complete (54%)
 
@@ -232,7 +232,7 @@ Future phases for advanced features:
 1. Systemd service files are provided for: mqtt, api, dashboard, agent@role template
 2. README documents how to install and enable the systemd services
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 - [ ] 18-01-PLAN.md — Create four systemd service files (mqtt, api, dashboard, agent@.service)
 - [ ] 18-02-PLAN.md — Add Production Deployment section to README.md

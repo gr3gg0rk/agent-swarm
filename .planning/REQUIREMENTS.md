@@ -30,7 +30,7 @@ Requirements for installation reliability and developer experience improvements.
 - [x] **SCRIPT-02**: `npm run api` starts the API server with database initialization
 - [x] **SCRIPT-03**: `npm run dashboard` starts the dashboard dev server
 - [x] **SCRIPT-04**: Example agent uses relative imports that work with npm workspaces
-- [ ] **SCRIPT-05**: Systemd service files provided for: mqtt, api, dashboard, agent@role
+- [x] **SCRIPT-05**: Systemd service files provided for: mqtt, api, dashboard, agent@role
 
 ### Documentation
 
@@ -94,7 +94,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCRIPT-02   | Phase 17 | Complete |
 | SCRIPT-03   | Phase 17 | Complete |
 | SCRIPT-04   | Phase 17 | Complete |
-| SCRIPT-05   | Phase 18 | Pending  |
+| SCRIPT-05   | Phase 18 | Complete |
 | DOCS-01     | Phase 15 | Complete |
 | DOCS-02     | Phase 15 | Complete |
 | DOCS-03     | Phase 15 | Complete |
