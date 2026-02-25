@@ -20,7 +20,7 @@ Requirements for installation reliability and developer experience improvements.
 
 - [x] **SETUP-01**: Root package.json has workspaces configuration for packages/\*
 - [x] **SETUP-02**: Developer can run `npm run setup` to validate environment and initialize database
-- [x] **SETUP-03**: Health check endpoint verifies: imports work, database accessible, MQTT connected
+- [ ] **SETUP-03**: Health check endpoint verifies: imports work, database accessible, MQTT connected (gap closure - Phase 19)
 - [x] **SETUP-04**: Setup script checks Mosquitto persistence and warns if disabled (snap compatibility)
 - [x] **SETUP-05**: Agent registry loads automatically on first use with sensible defaults
 
@@ -87,7 +87,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRIT-06     | Phase 12 | Complete |
 | SETUP-01    | Phase 13 | Complete |
 | SETUP-02    | Phase 13 | Complete |
-| SETUP-03    | Phase 13 | Complete |
+| SETUP-03    | Phase 19 | Pending  |
 | SETUP-04    | Phase 13 | Complete |
 | SETUP-05    | Phase 13 | Complete |
 | SCRIPT-01   | Phase 17 | Complete |
@@ -112,4 +112,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-23_
-_Last updated: 2026-02-23 after roadmap creation_
+_Last updated: 2026-02-25 after v1.2 audit gap closure_

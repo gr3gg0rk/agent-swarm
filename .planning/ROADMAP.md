@@ -37,7 +37,7 @@
 </details>
 
 <details>
-<summary>📋 v1.2 Installation Fixes (Phases 12-18) — CURRENT</summary>
+<summary>📋 v1.2 Installation Fixes (Phases 12-19) — CURRENT</summary>
 
 - [x] Phase 12: Critical Fixes (0/4 plans) — Import errors, schema exports, database bugs (completed 2026-02-24)
 - [x] Phase 13: Setup & Validation (0/3 plans) — Workspaces, setup scripts, health checks (completed 2026-02-24)
@@ -46,6 +46,7 @@
 - [x] Phase 16: Quality Gates (0/2 plans) — CI verification, pre-commit hooks (completed 2026-02-25)
 - [x] Phase 17: NPM Run Scripts (0/4 plans) — npm run agent, api, dashboard (gap closure) (completed 2026-02-25)
 - [x] Phase 18: Production Deployment (0/2 plans) — systemd service files (gap closure) (completed 2026-02-25)
+- [ ] Phase 19: Wire Extended Health Check (gap closure) — Wire createExtendedHealthRoute into API server
 
 </details>
 
@@ -237,6 +238,24 @@ Future phases for advanced features:
 - [ ] 18-01-PLAN.md — Create four systemd service files (mqtt, api, dashboard, agent@.service)
 - [ ] 18-02-PLAN.md — Add Production Deployment section to README.md
 
+### Phase 19: Wire Extended Health Check
+
+**Goal:** Health check endpoint verifies 3 components as required by SETUP-03
+
+**Depends on:** Phase 13 (createExtendedHealthRoute exists), Phase 17 (API server startup)
+
+**Requirements:** SETUP-03
+
+**Gap Closure:** Closes integration gap from v1.2 audit - wires extended health check into API server
+
+**Success Criteria** (what must be TRUE):
+
+1. API server uses `createExtendedHealthRoute` instead of `createHealthRoute`
+2. MQTT client is passed to `createStateApi` from start-api script
+3. Health check at /health returns status for: imports, database, MQTT
+
+**Plans:** TBD
+
 ## v1.2 Dependency Graph
 
 ```
@@ -286,6 +305,7 @@ Note: Phase 14 archived, replaced by phases 17-18
 | QA-01       | 16    | CI verifies dist exports                          |
 | QA-02       | 16    | Pre-commit hooks: lint, typecheck, imports        |
 | QA-03       | 16    | Integration tests verify database ops             |
+| SETUP-03    | 19    | Health check verifies 3 components (gap closure)  |
 
 ## Milestone Context
 
