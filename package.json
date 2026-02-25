@@ -7,11 +7,16 @@
     "packages/*"
   ],
   "scripts": {
+    "prepare": "husky",
     "setup": "node scripts/setup.mjs",
     "build": "npm run build --workspaces",
     "dev": "npm run dev --workspaces",
     "test": "npm run test --workspaces",
-    "verify-exports": "node scripts/verify-exports.mjs"
+    "verify-exports": "node scripts/verify-exports.mjs",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "crc-32": "^1.2.2",
@@ -21,10 +26,27 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
     "ora": "^9.3.0",
+    "prettier": "^3.0.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.0.0",
     "zx": "^8.8.5"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   }
 }
