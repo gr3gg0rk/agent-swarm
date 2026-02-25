@@ -188,9 +188,9 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-02-25T01:58:43.588Z
-**Stopped at:** Completed 16-02-PLAN.md
-**Resume file:** None
+**Last session:** 2026-02-25T02:50:19.850Z
+**Stopped at:** Phase 17 context gathered
+**Resume file:** .planning/phases/17-npm-run-scripts/17-CONTEXT.md
 
 **What changed:**
 
