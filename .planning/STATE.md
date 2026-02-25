@@ -27,18 +27,27 @@
 ## Current Position
 
 **Milestone:** v1.2 Installation Fixes
-**Phase:** Phase 12 - Critical Fixes
-**Plan:** All 6 plans complete
-**Status:** Phase 12 complete, ready for verification
+**Phase:** Phase 17 - NPM Run Scripts
+**Plan:** Plan 01 (npm run agent) complete, 5 plans remaining
+**Status:** Plan 01 complete
 **Progress:** [████████░░] 81%
 
 **Phase Progress:**
 
-- Phase 12 (Critical Fixes): 6/6 plans complete ✓
-- Phase 13 (Setup & Validation): 0/3 plans - Not started
-- Phase 14 (Run Scripts & Services): 0/3 plans - Not started
-- Phase 15 (Documentation): 0/2 plans - Not started
-- Phase 16 (Quality Gates): 0/2 plans - Not started
+- Phase 12 (Critical Fixes): 6/6 plans complete
+- Phase 13 (Setup & Validation): 3/3 plans complete
+- Phase 14 (Run Scripts & Services): 3/3 plans complete
+- Phase 15 (Documentation): 2/2 plans complete
+- Phase 16 (Quality Gates): 2/2 plans complete
+- Phase 17 (NPM Run Scripts): 1/6 plans complete
+
+**Phase 17 Plans:**
+- 17-00: Context and research
+- 17-01: npm run agent script
+- 17-02: npm run api script - Not started
+- 17-03: npm run dashboard script - Not started
+- 17-04: Documentation updates - Not started
+- 17-05: Final verification - Not started
 
 ## Performance Metrics
 
@@ -190,26 +199,21 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-02-25T04:43:53.300Z
-**Stopped at:** Completed 17-03 dashboard vite config
+**Last session:** 2026-02-25T04:44:48.331Z
+**Stopped at:** Completed Phase 17-01: npm run agent script
 **Resume file:** None
 
-**What changed:**
-
-- All 6 Phase 12 plans executed successfully
-- 12-01: Fixed msgpackr imports (codec.ts, batcher.ts, mqtt.ts)
-- 12-02: Added optimization module exports
-- 12-03: Added schema function exports
-- 12-04: Fixed database pragma with { simple: true } option
-- 12-05: Fixed SQL INSERT placeholder count
-- 12-06: Added 13 regression tests
-- Build succeeds, all tests pass, package imports work
+**What changed (17-01):**
+- Created config/agent.json with default agent configuration
+- Created scripts/start-agent.mjs with CLI parsing, graceful shutdown
+- Added npm run agent script to package.json
+- All 3 tasks committed: a6e5282, 1beca6b, dc697a1
 
 **What's next:**
-
-- Phase verification
-- Phase 13: Setup & Validation
-- Execute phases 14-16 sequentially
+- Execute Phase 17-02: npm run api script
+- Execute Phase 17-03: npm run dashboard script
+- Execute Phase 17-04: Documentation updates
+- Execute Phase 17-05: Final verification
 - Ship v1.2 milestone
 
 **Blockers:** None
