@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-02-25
 **Current Milestone:** v1.2 Installation Fixes
-**Current Phase:** 18
+**Current Phase:** 19
 **Status:** Milestone complete
 
 ## Project Reference
@@ -214,6 +214,7 @@ None.
 - All 4 tasks committed: 1f5d787, 858b2d1, 31dd48a, 5eb84d1
 
 **Decisions made:**
+
 - Use raw MQTT.js client for health check (wrapper lacks connected property)
 - Remove SSE event routes from createStateApi (depend on wrapper)
 
