@@ -101,8 +101,29 @@ async function main() {
     process.exit(1);
   }
 
+  // Optional MQTT client for extended health check
+  let mqttClient;
+  if (config.mqttBrokerUrl && config.mqttClientId) {
+    try {
+      const { connectToBroker } = await import(
+        path.join(repoRoot, 'packages', 'coordination', 'dist', 'communication', 'mqtt.js')
+      );
+      mqttClient = await connectToBroker({
+        brokerUrl: config.mqttBrokerUrl,
+        clientId: config.mqttClientId,
+        username: config.mqttUsername,
+        password: config.mqttPassword,
+      });
+      log(chalk.green('MQTT client connected'), 'info');
+    } catch (error) {
+      log(chalk.yellow(`MQTT connection failed: ${error.message}`), 'info');
+      log(chalk.yellow('Continuing without MQTT health check'), 'info');
+      // Continue without MQTT - health check will show degraded status
+    }
+  }
+
   // Create Express app
-  const app = createStateApi(db);
+  const app = createStateApi(db, mqttClient?.getRawClient ? mqttClient.getRawClient() : undefined);
 
   // Start server
   let server;
@@ -149,6 +170,9 @@ async function main() {
   const shutdown = async (signal) => {
     log(chalk.yellow(`\nReceived ${signal}, shutting down gracefully...`));
     await stopServer(server);
+    if (mqttClient) {
+      await mqttClient.end();
+    }
     db.close();
     log(chalk.green('API server stopped'));
     process.exit(0);
