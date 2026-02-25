@@ -45,7 +45,7 @@
 - [x] Phase 15: Documentation (0/2 plans) — Quick start, config examples (completed 2026-02-24)
 - [x] Phase 16: Quality Gates (0/2 plans) — CI verification, pre-commit hooks (completed 2026-02-25)
 - [x] Phase 17: NPM Run Scripts (0/4 plans) — npm run agent, api, dashboard (gap closure) (completed 2026-02-25)
-- [ ] Phase 18: Production Deployment (0/2 plans) — systemd service files (gap closure)
+- [x] Phase 18: Production Deployment (0/2 plans) — systemd service files (gap closure) (completed 2026-02-25)
 
 </details>
 
@@ -81,7 +81,7 @@ Future phases for advanced features:
 | 15. Documentation                | 3/3       | Complete       | 2026-02-24 | -          |
 | 16. Quality Gates                | 2/2       | Complete       | 2026-02-25 | -          |
 | 17. NPM Run Scripts              | 6/6       | Complete       | 2026-02-25 | -          | -   |
-| 18. Production Deployment        | 1/2       | In Progress    |            | -          | -   |
+| 18. Production Deployment        | 2/2       | Complete       | 2026-02-25 | -          | -   |
 
 **Overall:** 27/50 plans complete (54%)
 
@@ -232,7 +232,7 @@ Future phases for advanced features:
 1. Systemd service files are provided for: mqtt, api, dashboard, agent@role template
 2. README documents how to install and enable the systemd services
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 - [ ] 18-01-PLAN.md — Create four systemd service files (mqtt, api, dashboard, agent@.service)
 - [ ] 18-02-PLAN.md — Add Production Deployment section to README.md
