@@ -44,7 +44,7 @@
 - [ ] Phase 14: Run Scripts & Services (0/3 plans) — npm scripts, systemd integration (archived - replaced by phases 17-18)
 - [x] Phase 15: Documentation (0/2 plans) — Quick start, config examples (completed 2026-02-24)
 - [x] Phase 16: Quality Gates (0/2 plans) — CI verification, pre-commit hooks (completed 2026-02-25)
-- [ ] Phase 17: NPM Run Scripts (0/4 plans) — npm run agent, api, dashboard (gap closure)
+- [x] Phase 17: NPM Run Scripts (0/4 plans) — npm run agent, api, dashboard (gap closure) (completed 2026-02-25)
 - [ ] Phase 18: Production Deployment (0/2 plans) — systemd service files (gap closure)
 
 </details>
@@ -80,7 +80,7 @@ Future phases for advanced features:
 | 14. Run Scripts & Services       | v1.2      | 0/3            | Archived    | -          | -   |
 | 15. Documentation                | 3/3       | Complete       | 2026-02-24  | -          |
 | 16. Quality Gates                | 2/2       | Complete       | 2026-02-25  | -          |
-| 17. NPM Run Scripts              | 3/6 | In Progress|  | -          | -   |
+| 17. NPM Run Scripts              | 6/6 | Complete   | 2026-02-25 | -          | -   |
 | 18. Production Deployment        | v1.2      | 0/2            | Gap closure | -          | -   |
 
 **Overall:** 27/50 plans complete (54%)
@@ -210,7 +210,7 @@ Future phases for advanced features:
 3. `npm run dashboard` starts the dashboard dev server on expected port
 4. Example agent code uses relative imports that work correctly with npm workspaces
 
-**Plans:** 3/6 plans executed
+**Plans:** 6/6 plans complete
 
 - [ ] 17-01-PLAN.md — Create npm run agent script with config loading and graceful shutdown
 - [ ] 17-02-PLAN.md — Create npm run api script with database initialization
