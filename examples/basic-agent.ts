@@ -397,7 +397,11 @@ async function main(): Promise<void> {
   });
 }
 
-main().catch((error) => {
-  console.error('Failed to start agent:', error);
-  process.exit(1);
-});
+// Only run main() when this file is executed directly, not when imported
+// This allows the BasicAgent class to be imported by other modules
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((error) => {
+    console.error('Failed to start agent:', error);
+    process.exit(1);
+  });
+}
