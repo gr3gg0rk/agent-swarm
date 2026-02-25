@@ -28,9 +28,9 @@
 
 **Milestone:** v1.2 Installation Fixes
 **Phase:** Phase 17 - NPM Run Scripts
-**Plan:** Plan 00 (Test Scaffolding) complete, 6 plans remaining
+**Plan:** Plan 00 (Test Scaffolding) complete, 5 plans remaining
 **Status:** Plan 00 complete
-**Progress:** [██████████] 100%
+**Progress:** [█░░░░░░░░░] 17%
 
 **Phase Progress:**
 
@@ -39,9 +39,10 @@
 - Phase 14 (Run Scripts & Services): 3/3 plans complete
 - Phase 15 (Documentation): 2/2 plans complete
 - Phase 16 (Quality Gates): 2/2 plans complete
-- Phase 17 (NPM Run Scripts): 0/6 plans complete
+- Phase 17 (NPM Run Scripts): 1/6 plans complete
 
 **Phase 17 Plans:**
+
 - 17-00: Test Scaffolding - Complete
 - 17-01: npm run agent script - Not started
 - 17-02: npm run api script - Not started
@@ -184,7 +185,9 @@
 | Phase 16 P02                                         | 4min                                              | 3 tasks                            | 8 files |
 | Phase 17-npm-run-scripts P03                         | 88                                                | 2 tasks                            | 2 files |
 | Phase 17-npm-run-scripts P01                         | 124                                               | 3 tasks                            | 3 files |
-| Phase 17-npm-run-scripts P02 | 6min | 3 tasks | 2 files |
+| Phase 17-npm-run-scripts P02                         | 6min                                              | 3 tasks                            | 2 files |
+| Phase 17-npm-run-scripts P05                         | 5min                                              | 2 tasks                            | 2 files |
+| Phase 17-npm-run-scripts P00                         | 4min                                              | 5 tasks                            | 5 files |
 
 ### Pending Todos
 
@@ -200,17 +203,19 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-02-25T04:48:18.689Z
-**Stopped at:** Completed 17-02-PLAN.md
+**Last session:** 2026-02-25T04:48:51.518Z
+**Stopped at:** Completed 17-05-PLAN.md
 **Resume file:** None
 
 **What changed (17-01):**
+
 - Created config/agent.json with default agent configuration
 - Created scripts/start-agent.mjs with CLI parsing, graceful shutdown
 - Added npm run agent script to package.json
 - All 3 tasks committed: a6e5282, 1beca6b, dc697a1
 
 **What's next:**
+
 - Execute Phase 17-02: npm run api script
 - Execute Phase 17-03: npm run dashboard script
 - Execute Phase 17-04: Documentation updates
