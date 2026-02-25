@@ -10,11 +10,30 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./dist/communication/*": "./dist/communication/*.js",
-    "./dist/state/*": "./dist/state/*.js",
-    "./dist/discovery/*": "./dist/discovery/*.js",
-    "./dist/optimization/*": "./dist/optimization/*.js",
-    "./dist/api/*": "./dist/api/*.js"
+    "./dist/communication/mqtt": {
+      "import": "./dist/communication/mqtt.js",
+      "types": "./dist/communication/mqtt.d.ts"
+    },
+    "./dist/communication/*": {
+      "import": "./dist/communication/*.js",
+      "types": "./dist/communication/*.d.ts"
+    },
+    "./dist/state/*": {
+      "import": "./dist/state/*.js",
+      "types": "./dist/state/*.d.ts"
+    },
+    "./dist/discovery/*": {
+      "import": "./dist/discovery/*.js",
+      "types": "./dist/discovery/*.d.ts"
+    },
+    "./dist/optimization/*": {
+      "import": "./dist/optimization/*.js",
+      "types": "./dist/optimization/*.d.ts"
+    },
+    "./dist/api/*": {
+      "import": "./dist/api/*.js",
+      "types": "./dist/api/*.d.ts"
+    }
   },
   "scripts": {
     "build": "tsc",
