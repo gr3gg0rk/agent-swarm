@@ -18,7 +18,7 @@ Requirements for installation reliability and developer experience improvements.
 
 ### Setup & Validation
 
-- [x] **SETUP-01**: Root package.json has workspaces configuration for packages/*
+- [x] **SETUP-01**: Root package.json has workspaces configuration for packages/\*
 - [x] **SETUP-02**: Developer can run `npm run setup` to validate environment and initialize database
 - [x] **SETUP-03**: Health check endpoint verifies: imports work, database accessible, MQTT connected
 - [x] **SETUP-04**: Setup script checks Mosquitto persistence and warns if disabled (snap compatibility)
@@ -63,51 +63,53 @@ Deferred to future release. Tracked but not in current roadmap.
 
 Explicitly excluded. Documented to prevent scope creep.
 
-| Feature | Reason |
-|---------|--------|
-| Interactive setup wizard | Overkill for current needs, CLI sufficient |
-| Docker/pnpm migration | Current npm workspaces approach is sufficient |
-| Cloud-based services | Must be fully self-hosted |
-| Real-time collaboration features | Not core to coordination |
-| Web UI for swarm management | Future enhancement |
-| Agent marketplace or plugin system | Out of scope for v1.x |
-| Binary packaging (pkg/nexe) | npm distribution sufficient |
+| Feature                            | Reason                                        |
+| ---------------------------------- | --------------------------------------------- |
+| Interactive setup wizard           | Overkill for current needs, CLI sufficient    |
+| Docker/pnpm migration              | Current npm workspaces approach is sufficient |
+| Cloud-based services               | Must be fully self-hosted                     |
+| Real-time collaboration features   | Not core to coordination                      |
+| Web UI for swarm management        | Future enhancement                            |
+| Agent marketplace or plugin system | Out of scope for v1.x                         |
+| Binary packaging (pkg/nexe)        | npm distribution sufficient                   |
 
 ## Traceability
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| CRIT-01 | Phase 12 | Complete |
-| CRIT-02 | Phase 12 | Complete |
-| CRIT-03 | Phase 12 | Complete |
-| CRIT-04 | Phase 12 | Complete |
-| CRIT-05 | Phase 12 | Complete |
-| CRIT-06 | Phase 12 | Complete |
-| SETUP-01 | Phase 13 | Complete |
-| SETUP-02 | Phase 13 | Complete |
-| SETUP-03 | Phase 13 | Complete |
-| SETUP-04 | Phase 13 | Complete |
-| SETUP-05 | Phase 13 | Complete |
-| SCRIPT-01 | Phase 14 | Pending |
-| SCRIPT-02 | Phase 14 | Pending |
-| SCRIPT-03 | Phase 14 | Pending |
-| SCRIPT-04 | Phase 14 | Pending |
-| SCRIPT-05 | Phase 14 | Pending |
-| DOCS-01 | Phase 15 | Complete |
-| DOCS-02 | Phase 15 | Complete |
-| DOCS-03 | Phase 15 | Complete |
-| DOCS-04 | Phase 15 | Complete |
-| QA-01 | Phase 16 | Complete |
-| QA-02 | Phase 16 | Complete |
-| QA-03 | Phase 16 | Complete |
+| Requirement | Phase    | Status   |
+| ----------- | -------- | -------- |
+| CRIT-01     | Phase 12 | Complete |
+| CRIT-02     | Phase 12 | Complete |
+| CRIT-03     | Phase 12 | Complete |
+| CRIT-04     | Phase 12 | Complete |
+| CRIT-05     | Phase 12 | Complete |
+| CRIT-06     | Phase 12 | Complete |
+| SETUP-01    | Phase 13 | Complete |
+| SETUP-02    | Phase 13 | Complete |
+| SETUP-03    | Phase 13 | Complete |
+| SETUP-04    | Phase 13 | Complete |
+| SETUP-05    | Phase 13 | Complete |
+| SCRIPT-01   | Phase 17 | Pending  |
+| SCRIPT-02   | Phase 17 | Pending  |
+| SCRIPT-03   | Phase 17 | Pending  |
+| SCRIPT-04   | Phase 17 | Pending  |
+| SCRIPT-05   | Phase 18 | Pending  |
+| DOCS-01     | Phase 15 | Complete |
+| DOCS-02     | Phase 15 | Complete |
+| DOCS-03     | Phase 15 | Complete |
+| DOCS-04     | Phase 15 | Complete |
+| QA-01       | Phase 16 | Complete |
+| QA-02       | Phase 16 | Complete |
+| QA-03       | Phase 16 | Complete |
 
 **Coverage:**
+
 - v1.2 requirements: 23 total
 - Mapped to phases: 23
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-02-23*
-*Last updated: 2026-02-23 after roadmap creation*
+
+_Requirements defined: 2026-02-23_
+_Last updated: 2026-02-23 after roadmap creation_

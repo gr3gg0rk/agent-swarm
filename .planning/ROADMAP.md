@@ -37,13 +37,15 @@
 </details>
 
 <details>
-<summary>📋 v1.2 Installation Fixes (Phases 12-16) — CURRENT</summary>
+<summary>📋 v1.2 Installation Fixes (Phases 12-18) — CURRENT</summary>
 
 - [x] Phase 12: Critical Fixes (0/4 plans) — Import errors, schema exports, database bugs (completed 2026-02-24)
 - [x] Phase 13: Setup & Validation (0/3 plans) — Workspaces, setup scripts, health checks (completed 2026-02-24)
-- [ ] Phase 14: Run Scripts & Services (0/3 plans) — npm scripts, systemd integration
+- [ ] Phase 14: Run Scripts & Services (0/3 plans) — npm scripts, systemd integration (archived - replaced by phases 17-18)
 - [x] Phase 15: Documentation (0/2 plans) — Quick start, config examples (completed 2026-02-24)
 - [x] Phase 16: Quality Gates (0/2 plans) — CI verification, pre-commit hooks (completed 2026-02-25)
+- [ ] Phase 17: NPM Run Scripts (0/4 plans) — npm run agent, api, dashboard (gap closure)
+- [ ] Phase 18: Production Deployment (0/2 plans) — systemd service files (gap closure)
 
 </details>
 
@@ -61,7 +63,7 @@ Future phases for advanced features:
 ## Progress
 
 | Phase                            | Milestone | Plans Complete | Status      | Completed  |
-| -------------------------------- | --------- | -------------- | ----------- | ---------- |
+| -------------------------------- | --------- | -------------- | ----------- | ---------- | --- |
 | 1. Communication & Discovery     | v1.0      | 3/3            | Complete    | 2026-02-21 |
 | 2. Shared State & Lifecycle      | v1.0      | 3/3            | Complete    | 2026-02-21 |
 | 3. Task Delegation               | v1.0      | 3/3            | Complete    | 2026-02-21 |
@@ -75,11 +77,13 @@ Future phases for advanced features:
 | 11. Opt-In Feature Activation    | v1.1      | 1/1            | Complete    | 2026-02-23 |
 | 12. Critical Fixes               | 5/6       | Complete       | 2026-02-24  | -          |
 | 13. Setup & Validation           | 4/4       | Complete       | 2026-02-24  | -          |
-| 14. Run Scripts & Services       | v1.2      | 0/3            | Not started | -          |
+| 14. Run Scripts & Services       | v1.2      | 0/3            | Archived    | -          | -   |
 | 15. Documentation                | 3/3       | Complete       | 2026-02-24  | -          |
 | 16. Quality Gates                | 2/2       | Complete       | 2026-02-25  | -          |
+| 17. NPM Run Scripts              | v1.2      | 0/4            | Gap closure | -          | -   |
+| 18. Production Deployment        | v1.2      | 0/2            | Gap closure | -          | -   |
 
-**Overall:** 27/44 plans complete (61%)
+**Overall:** 27/50 plans complete (54%)
 
 ## v1.2 Phase Details
 
@@ -189,6 +193,42 @@ Future phases for advanced features:
 - [ ] 16-01-PLAN.md — Create GitHub Actions CI workflow with export verification (QA-01)
 - [ ] 16-02-PLAN.md — Implement pre-commit hooks and integration tests (QA-02, QA-03)
 
+### Phase 17: NPM Run Scripts
+
+**Goal:** Developer can start all system components with single npm commands
+
+**Depends on:** Phase 13 (requires setup validation and working imports)
+
+**Requirements:** SCRIPT-01, SCRIPT-02, SCRIPT-03, SCRIPT-04
+
+**Gap Closure:** Closes gaps from v1.2 audit - replaces Phase 14
+
+**Success Criteria** (what must be TRUE):
+
+1. `npm run agent` starts an agent using example config file
+2. `npm run api` starts the API server with automatic database initialization
+3. `npm run dashboard` starts the dashboard dev server on expected port
+4. Example agent code uses relative imports that work correctly with npm workspaces
+
+**Plans:** TBD
+
+### Phase 18: Production Deployment
+
+**Goal:** System can be deployed as systemd services for production use
+
+**Depends on:** Phase 17 (requires npm scripts to be tested first)
+
+**Requirements:** SCRIPT-05
+
+**Gap Closure:** Closes gaps from v1.2 audit - replaces Phase 14
+
+**Success Criteria** (what must be TRUE):
+
+1. Systemd service files are provided for: mqtt, api, dashboard, agent@role template
+2. README documents how to install and enable the systemd services
+
+**Plans:** TBD
+
 ## v1.2 Dependency Graph
 
 ```
@@ -196,11 +236,15 @@ Phase 12 (Critical Fixes)
     ↓
 Phase 13 (Setup & Validation)
     ↓
-Phase 14 (Run Scripts & Services)
+Phase 17 (NPM Run Scripts) ← Gap Closure
+    ↓
+Phase 18 (Production Deployment) ← Gap Closure
     ↓
 Phase 15 (Documentation)
     ↓
 Phase 16 (Quality Gates)
+
+Note: Phase 14 archived, replaced by phases 17-18
 ```
 
 ## v1.2 Requirements Coverage
@@ -222,11 +266,11 @@ Phase 16 (Quality Gates)
 | SETUP-03    | 13    | Health check endpoint verifies 3 things           |
 | SETUP-04    | 13    | Setup checks Mosquitto persistence                |
 | SETUP-05    | 13    | Agent registry auto-loads with defaults           |
-| SCRIPT-01   | 14    | npm run agent starts agent                        |
-| SCRIPT-02   | 14    | npm run api starts API server                     |
-| SCRIPT-03   | 14    | npm run dashboard starts dashboard                |
-| SCRIPT-04   | 14    | Example agent uses workspaces imports             |
-| SCRIPT-05   | 14    | Systemd service files provided                    |
+| SCRIPT-01   | 17    | npm run agent starts agent                        |
+| SCRIPT-02   | 17    | npm run api starts API server                     |
+| SCRIPT-03   | 17    | npm run dashboard starts dashboard                |
+| SCRIPT-04   | 17    | Example agent uses workspaces imports             |
+| SCRIPT-05   | 18    | Systemd service files provided                    |
 | DOCS-01     | 15    | README quick start with 3 commands                |
 | DOCS-02     | 15    | Mosquitto persistence documented                  |
 | DOCS-03     | 15    | Example configs for each role                     |
