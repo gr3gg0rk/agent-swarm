@@ -109,13 +109,14 @@ function validateAgentId(agentId: string): void {
 export interface MqttClientMinimal {
   /**
    * Publish a message to a topic.
+   * Supports MessageEnvelope objects (auto-serialized), Buffer, or string payloads.
    * @param topic - MQTT topic
-   * @param payload - Message payload (Buffer or string)
+   * @param payload - Message payload (envelope, Buffer, or string)
    * @param options - Publish options (qos, retain)
    */
   publish(
     topic: string,
-    payload: Buffer | string,
+    payload: MessageEnvelope | Buffer | string,
     options?: { qos: 0 | 1; retain: boolean }
   ): Promise<void>;
 
@@ -195,11 +196,9 @@ export class AgentDiscovery {
       payload: registration,
     };
 
-    // Serialize payload as JSON (MessagePack for >1KB per HARD-05)
-    const payload = JSON.stringify(envelope);
-
     // Publish with retain: true for crash recovery (DISC-03)
-    await this.mqtt.publish(topic, payload, { qos: 1, retain: true });
+    // mqtt.publish will serialize the envelope using MessagePack
+    await this.mqtt.publish(topic, envelope, { qos: 1, retain: true });
   }
 
   /**

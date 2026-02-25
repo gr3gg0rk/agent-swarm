@@ -15,6 +15,20 @@ import type { ConnectionPoolManager } from '../optimization/connection-pool.js';
 type MqttClientInstance = ReturnType<typeof mqtt.connect>;
 
 /**
+ * Type guard to check if a payload is a MessageEnvelope.
+ */
+function isMessageEnvelope(payload: unknown): payload is MessageEnvelope {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'messageId' in payload &&
+    'idempotencyKey' in payload &&
+    'from' in payload &&
+    'type' in payload
+  );
+}
+
+/**
  * Configuration for connecting to the MQTT broker.
  */
 export interface BrokerConfig {
@@ -213,39 +227,50 @@ Common causes:
    * Uses MessagePack encoding for payloads per HARD-05.
    * When batchPublisher is set, high-frequency messages are batched for throughput (07-01).
    * @param topic - MQTT topic to publish to
-   * @param envelope - Message envelope to publish
+   * @param payload - Message envelope, Buffer, or string to publish
    * @returns Promise that resolves when published
    */
-  async publish(topic: string, envelope: MessageEnvelope): Promise<void> {
+  async publish(topic: string, payload: MessageEnvelope | Buffer | string): Promise<void> {
     // Use batcher if available for high-frequency messages (07-01)
-    if (this.batchPublisher) {
-      return this.batchPublisher.publish(topic, envelope);
+    // Note: batcher only works with MessageEnvelope, not raw Buffer/string
+    if (this.batchPublisher && isMessageEnvelope(payload)) {
+      return this.batchPublisher.publish(topic, payload);
     }
 
     // Direct publish path (original behavior)
     return new Promise((resolve, reject) => {
       try {
-        // Ensure timestamp is set
-        if (!envelope.timestamp) {
-          envelope.timestamp = Date.now();
-        }
+        let dataToSend: Buffer;
 
-        // Ensure messageId and idempotencyKey are set
-        if (!envelope.messageId) {
-          envelope.messageId = uuidv4();
-        }
-        if (!envelope.idempotencyKey) {
-          envelope.idempotencyKey = uuidv4();
-        }
+        // Handle different payload types
+        if (isMessageEnvelope(payload)) {
+          // Ensure timestamp is set
+          if (!payload.timestamp) {
+            payload.timestamp = Date.now();
+          }
 
-        // Serialize with MessagePack
-        const payload = pack(envelope);
+          // Ensure messageId and idempotencyKey are set
+          if (!payload.messageId) {
+            payload.messageId = uuidv4();
+          }
+          if (!payload.idempotencyKey) {
+            payload.idempotencyKey = uuidv4();
+          }
+
+          // Serialize with MessagePack
+          dataToSend = pack(payload);
+        } else if (Buffer.isBuffer(payload)) {
+          dataToSend = payload;
+        } else {
+          // String payload
+          dataToSend = Buffer.from(payload);
+        }
 
         // Determine QoS level (default 1, allow 0 for heartbeats per COMM-07)
-        const qos = envelope.qos ?? 1;
-        const retain = envelope.retain ?? false;
+        const qos = (isMessageEnvelope(payload) && payload.qos) ? payload.qos : 1;
+        const retain = (isMessageEnvelope(payload) && payload.retain) ? payload.retain : false;
 
-        this.client.publish(topic, payload, { qos, retain }, (error: Error | undefined) => {
+        this.client.publish(topic, dataToSend, { qos, retain }, (error: Error | undefined) => {
           if (error) {
             reject(new Error(`MQTT publish failed to ${topic}: ${error.message}
 

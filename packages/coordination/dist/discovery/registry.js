@@ -117,10 +117,9 @@ export class AgentDiscovery {
             timestamp: Date.now(),
             payload: registration,
         };
-        // Serialize payload as JSON (MessagePack for >1KB per HARD-05)
-        const payload = JSON.stringify(envelope);
         // Publish with retain: true for crash recovery (DISC-03)
-        await this.mqtt.publish(topic, payload, { qos: 1, retain: true });
+        // mqtt.publish will serialize the envelope using MessagePack
+        await this.mqtt.publish(topic, envelope, { qos: 1, retain: true });
     }
     /**
      * Unregister an agent from the swarm.

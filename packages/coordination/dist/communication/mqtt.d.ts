@@ -109,10 +109,10 @@ export declare class MqttClient {
      * Uses MessagePack encoding for payloads per HARD-05.
      * When batchPublisher is set, high-frequency messages are batched for throughput (07-01).
      * @param topic - MQTT topic to publish to
-     * @param envelope - Message envelope to publish
+     * @param payload - Message envelope, Buffer, or string to publish
      * @returns Promise that resolves when published
      */
-    publish(topic: string, envelope: MessageEnvelope): Promise<void>;
+    publish(topic: string, payload: MessageEnvelope | Buffer | string): Promise<void>;
     /**
      * Subscribes to a topic.
      * @param topic - MQTT topic to subscribe to

@@ -7,6 +7,7 @@
  * Duplicate agent IDs are rejected - new agent fails to start (CONTEXT.md locked decision).
  */
 import type { AgentRegistration } from './types.js';
+import type { MessageEnvelope } from '../communication/message.js';
 /**
  * Load static agent configuration.
  * Called during initialization to populate known agents list.
@@ -22,11 +23,12 @@ export declare function loadAgentConfig(configPath: string): Promise<void>;
 export interface MqttClientMinimal {
     /**
      * Publish a message to a topic.
+     * Supports MessageEnvelope objects (auto-serialized), Buffer, or string payloads.
      * @param topic - MQTT topic
-     * @param payload - Message payload (Buffer or string)
+     * @param payload - Message payload (envelope, Buffer, or string)
      * @param options - Publish options (qos, retain)
      */
-    publish(topic: string, payload: Buffer | string, options?: {
+    publish(topic: string, payload: MessageEnvelope | Buffer | string, options?: {
         qos: 0 | 1;
         retain: boolean;
     }): Promise<void>;
