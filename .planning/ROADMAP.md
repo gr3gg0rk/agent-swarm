@@ -80,7 +80,7 @@ Future phases for advanced features:
 | 14. Run Scripts & Services       | v1.2      | 0/3            | Archived    | -          | -   |
 | 15. Documentation                | 3/3       | Complete       | 2026-02-24  | -          |
 | 16. Quality Gates                | 2/2       | Complete       | 2026-02-25  | -          |
-| 17. NPM Run Scripts              | 6/6 | Complete   | 2026-02-25 | -          | -   |
+| 17. NPM Run Scripts              | 6/6       | Complete       | 2026-02-25  | -          | -   |
 | 18. Production Deployment        | v1.2      | 0/2            | Gap closure | -          | -   |
 
 **Overall:** 27/50 plans complete (54%)
