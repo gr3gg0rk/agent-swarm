@@ -18,7 +18,7 @@ import type {
   BrokerConfig,
   MessageEnvelope,
   AgentRegistration,
-} from '@openclaw-swarm/coordination';
+} from '../packages/coordination/dist/index.js';
 import {
   connectToBroker,
   Topics,
@@ -30,7 +30,7 @@ import {
   MessageBatcher,
   ConnectionPoolManager,
   loadOptimizationConfig,
-} from '@openclaw-swarm/coordination';
+} from '../packages/coordination/dist/index.js';
 
 /**
  * Simple YAML config parser for example purposes.
