@@ -63,6 +63,273 @@ curl http://localhost:3000/health
 
 The role-specific configs are fully documented with inline comments. Copy the one matching your role and update only the `brokerUrl` hostname.
 
+## Production Deployment
+
+Run OpenClaw Swarm as production systemd services with automatic restart, dependency management, and centralized logging.
+
+### Prerequisites
+
+1. OpenClaw Swarm installed at `/opt/openclaw-swarm`
+2. Node.js >= 22.0.0
+3. Mosquitto MQTT broker installed
+4. Systemd available (Linux)
+
+### Installation
+
+1. **Copy service files to systemd directory:**
+
+   ```bash
+   sudo cp systemd/openclaw-*.service /etc/systemd/system/
+   ```
+
+2. **Reload systemd daemon:**
+
+   ```bash
+   sudo systemctl daemon-reload
+   ```
+
+   **If you see:** Changes to service files not taking effect
+   **Fix:** Always run `daemon-reload` after copying service files
+
+3. **Create environment directories:**
+
+   ```bash
+   sudo mkdir -p /etc/openclaw
+   ```
+
+4. **Create environment files** (per-service configuration):
+
+   **/etc/openclaw/api.env:**
+
+   ```bash
+   NODE_ENV=production
+   LOG_LEVEL=info
+   PORT=3000
+   DB_PATH=/var/lib/openclaw/state.db
+   ```
+
+   **/etc/openclaw/dashboard.env:**
+
+   ```bash
+   NODE_ENV=production
+   LOG_LEVEL=info
+   ```
+
+   **/etc/openclaw/agent@.env:**
+
+   ```bash
+   NODE_ENV=production
+   LOG_LEVEL=info
+   BROKER_URL=mqtt://localhost:1883
+   ```
+
+5. **Create agent config files** (one per agent instance):
+
+   **/etc/openclaw/minerva.json** (orchestrator):
+
+   ```json
+   {
+     "agentId": "minerva",
+     "role": "orchestrator",
+     "brokerUrl": "mqtt://localhost:1883",
+     "capabilities": ["code", "test", "debug", "plan"],
+     "heartbeatInterval": 30000
+   }
+   ```
+
+   **/etc/openclaw/worker-1.json** (worker):
+
+   ```json
+   {
+     "agentId": "worker-1",
+     "role": "worker",
+     "brokerUrl": "mqtt://localhost:1883",
+     "capabilities": ["code", "test", "debug"],
+     "heartbeatInterval": 30000
+   }
+   ```
+
+   Create additional config files for each agent instance (vulcan.json, worker-2.json, etc.).
+
+### Starting Services
+
+1. **Enable services to start on boot:**
+
+   ```bash
+   sudo systemctl enable openclaw-mqtt
+   sudo systemctl enable openclaw-api
+   sudo systemctl enable openclaw-dashboard
+   ```
+
+2. **Start services now:**
+
+   ```bash
+   sudo systemctl start openclaw-mqtt
+   sudo systemctl start openclaw-api
+   sudo systemctl start openclaw-dashboard
+   ```
+
+3. **Start agent instances** (using template service):
+
+   ```bash
+   # Start minerva orchestrator
+   sudo systemctl start openclaw-agent@minerva
+   sudo systemctl enable openclaw-agent@minerva
+
+   # Start worker-1
+   sudo systemctl start openclaw-agent@worker-1
+   sudo systemctl enable openclaw-agent@worker-1
+   ```
+
+   The `%i` in the template service file becomes the instance name (minerva, worker-1, etc.).
+
+### Verification
+
+1. **Check service status:**
+
+   ```bash
+   sudo systemctl status openclaw-api
+   sudo systemctl status openclaw-agent@minerva
+   ```
+
+   **Expected output:** `Active: active (running)` with green indicator
+
+2. **View logs:**
+
+   ```bash
+   # Follow logs in real-time
+   sudo journalctl -f -u openclaw-api
+
+   # View logs since boot
+   sudo journalctl -u openclaw-api -b
+
+   # View logs for all openclaw services
+   sudo journalctl -u openclaw-* -b
+   ```
+
+3. **Verify API health:**
+
+   ```bash
+   curl http://localhost:3000/health
+   ```
+
+   **Expected output:** `{"status":"healthy","checks":{...}}`
+
+### Managing Services
+
+**Stop a service:**
+
+```bash
+sudo systemctl stop openclaw-api
+sudo systemctl stop openclaw-agent@worker-1
+```
+
+**Restart a service:**
+
+```bash
+sudo systemctl restart openclaw-api
+```
+
+**Disable a service (prevent boot start):**
+
+```bash
+sudo systemctl disable openclaw-dashboard
+```
+
+**Reload service configuration** (after editing service files):
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart openclaw-api
+```
+
+### Troubleshooting
+
+**Service fails to start:**
+
+```bash
+# Check service status for error details
+sudo systemctl status openclaw-api
+
+# View recent logs
+sudo journalctl -u openclaw-api -n 50
+```
+
+**Service restarting repeatedly:**
+
+```bash
+# Check crash frequency
+sudo journalctl -u openclaw-api | grep -i "start request repeated"
+
+# Check for errors in logs
+sudo journalctl -u openclaw-api -p err
+```
+
+**Agent not connecting to broker:**
+
+```bash
+# Verify Mosquitto is running
+sudo systemctl status openclaw-mqtt
+
+# Check broker connectivity
+mosquitto_sub -h localhost -t 'swarm/agents/#' -v
+```
+
+**Executable not found errors:**
+Ensure paths in service files match your installation:
+
+- `/opt/openclaw-swarm` for project root
+- `/usr/bin/node` for Node.js binary
+- `/usr/bin/npm` for npm
+
+Edit service files if needed:
+
+```bash
+sudo nano /etc/systemd/system/openclaw-api.service
+sudo systemctl daemon-reload
+sudo systemctl restart openclaw-api
+```
+
+**Environment file not found:**
+Services use `EnvironmentFile=-/etc/openclaw/service.env` (with `-` prefix), so missing files don't prevent startup. To configure:
+
+```bash
+sudo nano /etc/openclaw/api.env
+# Add variables, then restart
+sudo systemctl restart openclaw-api
+```
+
+### Service Dependencies
+
+The systemd services have the following dependencies:
+
+- **openclaw-mqtt**: No dependencies (starts after network)
+- **openclaw-api**: Requires openclaw-mqtt (fails if MQTT stops)
+- **openclaw-dashboard**: Wants openclaw-mqtt (runs independently but prefers MQTT)
+- **openclaw-agent@**: Requires openclaw-mqtt (fails if MQTT stops)
+
+If MQTT crashes, dependent services (API, agents) will also stop automatically.
+
+### Log Management
+
+Logs are handled by systemd journal with automatic rotation. To manage disk usage:
+
+```bash
+# Check journal disk usage
+sudo journalctl --disk-usage
+
+# Rotate logs now
+sudo journalctl --rotate
+
+# Vacuum old logs (keep last 7 days)
+sudo journalctl --vacuum-time=7d
+
+# Vacuum to size limit (500M)
+sudo journalctl --vacuum-size=500M
+```
+
+For persistent logging across reboots, ensure `/etc/systemd/journald.conf` has `Storage=auto` or `Storage=persistent`.
+
 ## ⚠️ Mosquitto Configuration
 
 **IMPORTANT:** Mosquitto persistence must be enabled for agent discovery to work correctly.
@@ -70,6 +337,7 @@ The role-specific configs are fully documented with inline comments. Copy the on
 ### Check Your Installation
 
 Run the setup script to detect persistence issues:
+
 ```bash
 npm run setup
 ```
@@ -81,6 +349,7 @@ If you see `⚠ Mosquitto persistence disabled`, messages will be lost on broker
 If you installed Mosquitto via snap, persistence is **disabled by default** due to snap sandboxing.
 
 **Fix 1: Enable persistence in snap config**
+
 ```bash
 # Edit snap config
 sudo nano /var/snap/mosquitto/current/mosquitto.conf
@@ -95,6 +364,7 @@ sudo systemctl restart snap.mosquitto.mosquitto
 ```
 
 **Fix 2: Install via apt (recommended)**
+
 ```bash
 # Remove snap version
 sudo snap remove mosquitto
@@ -118,6 +388,7 @@ sudo systemctl start mosquitto
 ```
 
 For Docker deployments, mount a volume for persistence:
+
 ```bash
 docker run -d -p 1883:1883 \
   -v /path/to/mosquitto/data:/mosquitto/data \
@@ -155,19 +426,19 @@ docker run -d -p 1883:1883 \
 
 ### Packages
 
-| Package | Purpose |
-|---------|---------|
+| Package                        | Purpose                                                       |
+| ------------------------------ | ------------------------------------------------------------- |
 | `@openclaw-swarm/coordination` | Core library - MQTT messaging, state management, task routing |
-| `@openclaw-swarm/dashboard` | Web UI for monitoring swarm status |
+| `@openclaw-swarm/dashboard`    | Web UI for monitoring swarm status                            |
 
 ### Agent Roles
 
-| Role | Machine | Responsibilities |
-|------|---------|------------------|
-| **Minerva** | griak-brain | Orchestrator, task delegation, project context |
-| **Vulcan** | griak-server | Builder, code execution, testing |
-| **Worker-2** | griak-worker-1 | Flexible multi-role worker |
-| **Worker-3** | griak-worker-2 | Flexible multi-role worker |
+| Role         | Machine        | Responsibilities                               |
+| ------------ | -------------- | ---------------------------------------------- |
+| **Minerva**  | griak-brain    | Orchestrator, task delegation, project context |
+| **Vulcan**   | griak-server   | Builder, code execution, testing               |
+| **Worker-2** | griak-worker-1 | Flexible multi-role worker                     |
+| **Worker-3** | griak-worker-2 | Flexible multi-role worker                     |
 
 ## Detailed Setup Guide
 
@@ -222,6 +493,7 @@ npm run preview
 ```
 
 The dashboard shows:
+
 - Agent status (online/offline, CPU, memory)
 - Active tasks with progress
 - System metrics overview
@@ -239,6 +511,7 @@ startServer(app, 3000);
 ```
 
 API Endpoints:
+
 - `GET /api/status` - Agent status
 - `GET /api/tasks` - Task queue
 - `POST /api/tasks` - Create task
@@ -257,7 +530,7 @@ import { connectToBroker, AgentDiscovery, Topics } from '@openclaw-swarm/coordin
 // 1. Connect to MQTT broker
 const mqttClient = await connectToBroker({
   brokerUrl: 'mqtt://griak-brain:1883',
-  clientId: 'worker-1'
+  clientId: 'worker-1',
 });
 
 // 2. Subscribe to command channel
@@ -271,7 +544,7 @@ await discovery.registerAgent({
   capabilities: ['code', 'test'],
   hostname: 'griak-server',
   version: '0.1.0',
-  startedAt: Date.now()
+  startedAt: Date.now(),
 });
 
 // 4. Start sending heartbeats (every 30 seconds)
@@ -332,10 +605,10 @@ swarm/status                 → System-wide status
 
 ### QoS Levels
 
-| QoS | Use Case | Example |
-|-----|----------|---------|
-| 0 | Fire-and-forget | Heartbeats, status updates |
-| 1 | At-least-once delivery | Tasks, results |
+| QoS | Use Case               | Example                    |
+| --- | ---------------------- | -------------------------- |
+| 0   | Fire-and-forget        | Heartbeats, status updates |
+| 1   | At-least-once delivery | Tasks, results             |
 
 ## Configuration
 
@@ -371,7 +644,7 @@ capabilities:
   - test
   - debug
   - plan
-heartbeatInterval: 30000  # 30 seconds
+heartbeatInterval: 30000 # 30 seconds
 ```
 
 ### Role-Specific Configs (`examples/configs/`)
@@ -393,12 +666,14 @@ Fully annotated configuration files for each agent role. Copy the file matching 
   - Use on: griak-worker-1, griak-worker-2, or any worker machine
 
 Each config file includes:
+
 - Inline comments explaining every option
 - Mosquitto persistence warning
 - Optimization feature flags documentation
 - No placeholder values (copy-paste ready)
 
 Example usage:
+
 ```bash
 # Copy the orchestrator config
 cp examples/configs/minerva.config.yaml ./my-config.yaml
@@ -477,6 +752,7 @@ Check the dashboard at `http://griak-brain:5173` - you should see `worker-4` in 
 Access the web dashboard at `http://griak-brain:5173`
 
 Features:
+
 - Real-time agent status (online/offline, CPU, memory)
 - Active task progress with completion percentage
 - System metrics (total agents, active tasks, queue depth)
@@ -513,11 +789,11 @@ mosquitto_sub -h griak-brain -t 'agent/worker-1/#' -v
 
 ## Memory Footprint
 
-| Component | Memory Usage |
-|-----------|--------------|
-| Coordination layer | < 100MB |
-| Dashboard | < 50MB (griak-brain only) |
-| SQLite database | < 15MB |
+| Component          | Memory Usage              |
+| ------------------ | ------------------------- |
+| Coordination layer | < 100MB                   |
+| Dashboard          | < 50MB (griak-brain only) |
+| SQLite database    | < 15MB                    |
 
 The system is validated to run on Raspberry Pi 2B (1GB RAM).
 
@@ -577,23 +853,27 @@ openclaw-swarm/
 ## Key Technical Details
 
 ### Serialization
+
 - **MessagePack** for payloads > 1KB (3.5x faster than JSON)
 - **JSON** for smaller messages
 
 ### State Persistence
+
 - **SQLite** with WAL mode for concurrent access
 - Checkpoints every 60 seconds (local) + 5 minutes (sync)
 
 ### Load Balancing
+
 - Weighted scoring: 70% current load + 30% historical performance
 - Circuit breaker: 3 rejections → 60s cooldown
 - Exponential backoff: 2^n × 100ms, max 5s
 
 ### Optimization
+
 - Message batching with dual triggers (time OR size)
 - Hardware-aware connection pools (Pi 2B=3, Pi 5=5, Beelink=10)
 - Context references for payloads > 10KB
 
 ---
 
-*Last updated: 2026-02-23 (v1.1)*
+_Last updated: 2026-02-23 (v1.1)_
