@@ -19,6 +19,15 @@ import { createTaskQueue } from '../state/task-queue.js';
 import { createContextStore } from '../state/context.js';
 import type { MqttClient } from '../communication/mqtt.js';
 
+// Type for raw MQTT client with connected property (from getRawClient())
+interface RawMqttClient {
+  connected: boolean;
+  // ... other properties of mqtt.Client
+}
+
+// Union type for MQTT client - either wrapper or raw client
+type MqttClientWithStatus = RawMqttClient | undefined;
+
 /**
  * Server configuration options.
  */
@@ -33,13 +42,15 @@ export interface ServerConfig {
   corsOrigins?: string[];
   /** MQTT client for SSE load metrics subscription (optional) */
   mqttClient?: MqttClient;
+  /** Raw MQTT client for health check connection status (optional) */
+  rawMqttClient?: RawMqttClient;
 }
 
 /**
  * Creates the Express application with all routes registered.
  *
  * @param db - Database instance
- * @param mqttClient - Optional MQTT client for SSE load metrics subscription
+ * @param rawMqttClient - Optional raw MQTT client for health check (from getRawClient())
  * @returns Configured Express application
  *
  * @example
@@ -48,7 +59,7 @@ export interface ServerConfig {
  * const app = createStateApi(db);
  * ```
  */
-export function createStateApi(db: Database.Database, mqttClient?: MqttClient): Application {
+export function createStateApi(db: Database.Database, rawMqttClient?: MqttClientWithStatus): Application {
   const app = express();
 
   // JSON middleware for request body parsing
@@ -59,16 +70,10 @@ export function createStateApi(db: Database.Database, mqttClient?: MqttClient): 
   const contextStore = createContextStore(db);
 
   // Register routes
-  app.use('/', createExtendedHealthRoute(db, mqttClient));
+  app.use('/', createExtendedHealthRoute(db, rawMqttClient));
   app.use('/api', createTaskRoutes(taskQueue));
   app.use('/api', createStatusRoutes(db));
   app.use('/api', createContextRoutes(contextStore));
-
-  // Register SSE event routes if mqttClient provided
-  if (mqttClient) {
-    const { router: eventRoutes } = createEventRoutes(db, mqttClient);
-    app.use('/api', eventRoutes);
-  }
 
   // 404 handler
   app.use((req, res) => {
