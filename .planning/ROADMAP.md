@@ -254,7 +254,9 @@ Future phases for advanced features:
 2. MQTT client is passed to `createStateApi` from start-api script
 3. Health check at /health returns status for: imports, database, MQTT
 
-**Plans:** TBD
+**Plans:** 1 plan complete
+
+- [x] 19-01-PLAN.md — Wire extended health check into API server
 
 ## v1.2 Dependency Graph
 
