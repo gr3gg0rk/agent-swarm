@@ -72,7 +72,7 @@ async function main() {
   const { connectToBroker } = await import(
     '@openclaw-swarm/coordination/dist/communication/mqtt'
   );
-  const { BasicAgent } = await import('../examples/basic-agent.js');
+  const { BasicAgent } = await import('../examples/basic-agent.ts');
 
   // Connect to broker
   let mqttClient;

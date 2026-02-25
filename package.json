@@ -9,7 +9,7 @@
   "scripts": {
     "prepare": "husky",
     "setup": "node scripts/setup.mjs",
-    "agent": "node scripts/start-agent.mjs",
+    "agent": "tsx scripts/start-agent.mjs",
     "api": "node scripts/start-api.mjs",
     "dashboard": "node scripts/start-dashboard.mjs",
     "build": "npm run build --workspaces",
@@ -40,6 +40,7 @@
     "ora": "^9.3.0",
     "prettier": "^3.0.0",
     "terser": "^5.46.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.0.0",
     "zx": "^8.8.5"
