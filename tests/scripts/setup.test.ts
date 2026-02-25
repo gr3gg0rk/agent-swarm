@@ -1,4 +1,4 @@
-import { beforeAll, afterEach, vi } from 'vitest';
+import { beforeAll, afterEach, vi, describe, it, expect } from 'vitest';
 
 /**
  * Global test setup for script testing
@@ -63,3 +63,19 @@ export function createMockConfig(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
 }
+
+describe('Test Framework Setup', () => {
+  it('should provide mock utilities for script testing', () => {
+    expect(mockBroker.connect).toBeDefined();
+    expect(mockDatabase.close).toBeDefined();
+    expect(mockServer.close).toBeDefined();
+    expect(createMockConfig).toBeDefined();
+  });
+
+  it('should create valid mock config', () => {
+    const config = createMockConfig();
+    expect(config).toHaveProperty('agentId');
+    expect(config).toHaveProperty('brokerUrl');
+    expect(config).toHaveProperty('capabilities');
+  });
+});
