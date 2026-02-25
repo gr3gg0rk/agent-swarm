@@ -1,0 +1,7 @@
+{
+  "agentId": "worker-dev",
+  "role": "worker",
+  "brokerUrl": "mqtt://localhost:1883",
+  "capabilities": ["code", "test", "debug"],
+  "heartbeatInterval": 30000
+}
