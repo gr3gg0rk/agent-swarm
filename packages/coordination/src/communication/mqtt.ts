@@ -6,27 +6,14 @@
 import mqtt, { type IClientOptions } from 'mqtt';
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
-import { pack, unpack } from 'msgpackr';
+// @ts-ignore - msgpackr types exist but package.json exports are misconfigured
+import { unpack, pack } from 'msgpackr';
 import type { MessageEnvelope, MessageType } from './message.js';
 import type { MessageBatcher } from '../optimization/batcher.js';
 import type { ConnectionPoolManager } from '../optimization/connection-pool.js';
 
 // Type for MQTT Client instance
 type MqttClientInstance = ReturnType<typeof mqtt.connect>;
-
-/**
- * Type guard to check if a payload is a MessageEnvelope.
- */
-function isMessageEnvelope(payload: unknown): payload is MessageEnvelope {
-  return (
-    typeof payload === 'object' &&
-    payload !== null &&
-    'messageId' in payload &&
-    'idempotencyKey' in payload &&
-    'from' in payload &&
-    'type' in payload
-  );
-}
 
 /**
  * Configuration for connecting to the MQTT broker.
@@ -118,20 +105,7 @@ export class MqttClient {
       });
 
       client.on('error', (error: Error) => {
-        const message = `MQTT connection failed: ${error.message}
-
-Fix: Start Mosquitto broker:
-  systemctl: sudo systemctl start mosquitto
-  Docker:     docker run -p 1883:1883 eclipse-mosquitto
-
-Verify: mosquitto_sub -h localhost -t '$SYS/#' -v
-
-Common causes:
-  - Broker not running on ${config.brokerUrl}
-  - Wrong hostname or port in brokerUrl
-  - Firewall blocking connection
-`;
-        reject(new Error(message));
+        reject(new Error('MQTT connection failed: ' + error.message));
       });
     });
   }
@@ -227,58 +201,41 @@ Common causes:
    * Uses MessagePack encoding for payloads per HARD-05.
    * When batchPublisher is set, high-frequency messages are batched for throughput (07-01).
    * @param topic - MQTT topic to publish to
-   * @param payload - Message envelope, Buffer, or string to publish
+   * @param envelope - Message envelope to publish
    * @returns Promise that resolves when published
    */
-  async publish(topic: string, payload: MessageEnvelope | Buffer | string): Promise<void> {
+  async publish(topic: string, envelope: MessageEnvelope): Promise<void> {
     // Use batcher if available for high-frequency messages (07-01)
-    // Note: batcher only works with MessageEnvelope, not raw Buffer/string
-    if (this.batchPublisher && isMessageEnvelope(payload)) {
-      return this.batchPublisher.publish(topic, payload);
+    if (this.batchPublisher) {
+      return this.batchPublisher.publish(topic, envelope);
     }
 
     // Direct publish path (original behavior)
     return new Promise((resolve, reject) => {
       try {
-        let dataToSend: Buffer;
-
-        // Handle different payload types
-        if (isMessageEnvelope(payload)) {
-          // Ensure timestamp is set
-          if (!payload.timestamp) {
-            payload.timestamp = Date.now();
-          }
-
-          // Ensure messageId and idempotencyKey are set
-          if (!payload.messageId) {
-            payload.messageId = uuidv4();
-          }
-          if (!payload.idempotencyKey) {
-            payload.idempotencyKey = uuidv4();
-          }
-
-          // Serialize with MessagePack
-          dataToSend = pack(payload);
-        } else if (Buffer.isBuffer(payload)) {
-          dataToSend = payload;
-        } else {
-          // String payload
-          dataToSend = Buffer.from(payload);
+        // Ensure timestamp is set
+        if (!envelope.timestamp) {
+          envelope.timestamp = Date.now();
         }
 
+        // Ensure messageId and idempotencyKey are set
+        if (!envelope.messageId) {
+          envelope.messageId = uuidv4();
+        }
+        if (!envelope.idempotencyKey) {
+          envelope.idempotencyKey = uuidv4();
+        }
+
+        // Serialize with MessagePack
+        const payload = pack(envelope);
+
         // Determine QoS level (default 1, allow 0 for heartbeats per COMM-07)
-        const qos = (isMessageEnvelope(payload) && payload.qos) ? payload.qos : 1;
-        const retain = (isMessageEnvelope(payload) && payload.retain) ? payload.retain : false;
+        const qos = envelope.qos ?? 1;
+        const retain = envelope.retain ?? false;
 
-        this.client.publish(topic, dataToSend, { qos, retain }, (error: Error | undefined) => {
+        this.client.publish(topic, payload, { qos, retain }, (error: Error | undefined) => {
           if (error) {
-            reject(new Error(`MQTT publish failed to ${topic}: ${error.message}
-
-Fix: Check broker connection:
-  1. Verify broker is running: mosquitto_sub -h ${this.config.brokerUrl.split('://')[1]?.split(':')[0] || 'localhost'} -t '$SYS/broker/version' -v
-  2. Check topic permissions: Topic may not allow publish
-  3. Verify QoS level: Some brokers restrict QoS 2
-`));
+            reject(new Error('Publish failed: ' + error.message));
           } else {
             resolve();
           }
@@ -299,13 +256,7 @@ Fix: Check broker connection:
     return new Promise((resolve, reject) => {
       this.client.subscribe(topic, { qos }, (error: Error | null) => {
         if (error) {
-          reject(new Error(`MQTT subscribe failed for ${topic}: ${error.message}
-
-Fix: Check broker connection:
-  1. Verify broker is running: mosquitto_sub -h localhost -t '$SYS/#' -v
-  2. Check topic permissions: Topic may require authentication
-  3. Verify topic name format: Use wildcards like agent/# for multi-level
-`));
+          reject(new Error('Subscription failed: ' + error.message));
         } else {
           resolve();
         }

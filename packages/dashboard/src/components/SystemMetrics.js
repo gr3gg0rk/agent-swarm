@@ -56,8 +56,9 @@ export function systemMetrics() {
           }
 
           // Update system metrics cards on agent updates
-          if (data.type === 'agents' || data.data?.agents) {
-            const agents = data.data?.agents || [];
+          if (data.type === 'agents') {
+            // data.data is the agents array directly
+            const agents = Array.isArray(data.data) ? data.data : (data.data?.agents || []);
             this.metrics.totalAgents = agents.length;
             this.metrics.onlineAgents = agents.filter(a => a.status === 'online').length;
             this.metrics.activeTasks = agents.filter(a => a.status === 'busy').length;

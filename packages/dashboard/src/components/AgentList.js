@@ -27,13 +27,14 @@ export function agentList() {
           const data = JSON.parse(event.data);
 
           // Handle agent status updates
-          if (data.type === 'agents' || (data.data && data.data.agents)) {
-            this.agents = data.data.agents || data.agents || [];
+          if (data.type === 'agents') {
+            // data.data is the agents array directly
+            this.agents = Array.isArray(data.data) ? data.data : (data.data.agents || []);
             this.loading = false;
           }
 
           // Handle load metrics updates (update CPU/memory for specific agent)
-          if (data.data && data.data.load_metrics) {
+          if (data.type === 'metrics' && data.data && data.data.load_metrics) {
             const metrics = data.data.load_metrics;
             const agentIndex = this.agents.findIndex(a => a.agentId === metrics.agentId);
             if (agentIndex !== -1) {
