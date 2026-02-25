@@ -80,7 +80,7 @@ Future phases for advanced features:
 | 14. Run Scripts & Services       | v1.2      | 0/3            | Archived    | -          | -   |
 | 15. Documentation                | 3/3       | Complete       | 2026-02-24  | -          |
 | 16. Quality Gates                | 2/2       | Complete       | 2026-02-25  | -          |
-| 17. NPM Run Scripts              | v1.2      | 0/4            | Gap closure | -          | -   |
+| 17. NPM Run Scripts              | 2/6       | In Progress    |             | -          | -   |
 | 18. Production Deployment        | v1.2      | 0/2            | Gap closure | -          | -   |
 
 **Overall:** 27/50 plans complete (54%)
@@ -210,7 +210,7 @@ Future phases for advanced features:
 3. `npm run dashboard` starts the dashboard dev server on expected port
 4. Example agent code uses relative imports that work correctly with npm workspaces
 
-**Plans:** 4 plans
+**Plans:** 2/6 plans executed
 
 - [ ] 17-01-PLAN.md — Create npm run agent script with config loading and graceful shutdown
 - [ ] 17-02-PLAN.md — Create npm run api script with database initialization
