@@ -232,7 +232,10 @@ Future phases for advanced features:
 1. Systemd service files are provided for: mqtt, api, dashboard, agent@role template
 2. README documents how to install and enable the systemd services
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+- [ ] 18-01-PLAN.md — Create four systemd service files (mqtt, api, dashboard, agent@.service)
+- [ ] 18-02-PLAN.md — Add Production Deployment section to README.md
 
 ## v1.2 Dependency Graph
 
