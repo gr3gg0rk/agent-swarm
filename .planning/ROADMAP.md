@@ -76,7 +76,7 @@ Future phases for advanced features:
 | 13. Setup & Validation | 4/4 | Complete    | 2026-02-24 | - |
 | 14. Run Scripts & Services | v1.2 | 0/3 | Not started | - |
 | 15. Documentation | 3/3 | Complete    | 2026-02-24 | - |
-| 16. Quality Gates | v1.2 | 0/2 | Not started | - |
+| 16. Quality Gates | 1/2 | In Progress|  | - |
 
 **Overall:** 27/44 plans complete (61%)
 
@@ -175,7 +175,7 @@ Future phases for advanced features:
 2. Pre-commit hooks run three checks: lint, typecheck, import verification
 3. Integration tests verify database operations: INSERT works, schema initialization succeeds, pragma calls return expected values
 
-**Plans:** 2/2 plans
+**Plans:** 1/2 plans executed
 - [ ] 16-01-PLAN.md — Create GitHub Actions CI workflow with export verification (QA-01)
 - [ ] 16-02-PLAN.md — Implement pre-commit hooks and integration tests (QA-02, QA-03)
 
