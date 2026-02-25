@@ -89,7 +89,7 @@ async function loadConfig(configPath: string): Promise<AgentConfig> {
 /**
  * Basic agent implementation demonstrating Phase 1 features.
  */
-class BasicAgent {
+export class BasicAgent {
   private config: AgentConfig;
   private mqttClient: Awaited<ReturnType<typeof connectToBroker>>;
   private discovery: AgentDiscovery;
