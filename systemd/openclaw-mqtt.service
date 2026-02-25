@@ -1,0 +1,20 @@
+[Unit]
+Description=OpenClaw Swarm MQTT Broker
+Documentation=https://github.com/your-repo/openclaw-swarm
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStart=/usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5s
+StartLimitInterval=10s
+StartLimitBurst=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
