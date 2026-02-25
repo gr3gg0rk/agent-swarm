@@ -175,7 +175,9 @@ Future phases for advanced features:
 2. Pre-commit hooks run three checks: lint, typecheck, import verification
 3. Integration tests verify database operations: INSERT works, schema initialization succeeds, pragma calls return expected values
 
-**Plans:** TBD
+**Plans:** 2/2 plans
+- [ ] 16-01-PLAN.md — Create GitHub Actions CI workflow with export verification (QA-01)
+- [ ] 16-02-PLAN.md — Implement pre-commit hooks and integration tests (QA-02, QA-03)
 
 ## v1.2 Dependency Graph
 
