@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build all packages
+        run: npm run build
+      - name: Verify dist exports
+        run: npm run verify-exports
+      - name: Lint
+        run: npm run lint || echo "Lint not configured yet"
+      - name: Typecheck
+        run: npm run typecheck || echo "Typecheck not configured yet"
+      - name: Run tests
+        run: npm test
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build all packages
+        run: npm run build
+      - name: Test coordination package
+        run: npm test --workspace @openclaw-swarm/coordination
