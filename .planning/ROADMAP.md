@@ -46,7 +46,7 @@
 - [x] Phase 16: Quality Gates (0/2 plans) — CI verification, pre-commit hooks (completed 2026-02-25)
 - [x] Phase 17: NPM Run Scripts (0/4 plans) — npm run agent, api, dashboard (gap closure) (completed 2026-02-25)
 - [x] Phase 18: Production Deployment (0/2 plans) — systemd service files (gap closure) (completed 2026-02-25)
-- [ ] Phase 19: Wire Extended Health Check (gap closure) — Wire createExtendedHealthRoute into API server
+- [x] Phase 19: Wire Extended Health Check (gap closure) — Wire createExtendedHealthRoute into API server (completed 2026-02-25)
 
 </details>
 
@@ -76,15 +76,16 @@ Future phases for advanced features:
 | 9. Visualization                 | v1.1      | 3/3            | Complete   | 2026-02-23 |
 | 10. Context Recovery Integration | v1.1      | 1/1            | Complete   | 2026-02-23 |
 | 11. Opt-In Feature Activation    | v1.1      | 1/1            | Complete   | 2026-02-23 |
-| 12. Critical Fixes               | 5/6       | Complete       | 2026-02-24 | -          |
+| 12. Critical Fixes               | 6/6       | Complete       | 2026-02-24 | -          |
 | 13. Setup & Validation           | 4/4       | Complete       | 2026-02-24 | -          |
 | 14. Run Scripts & Services       | v1.2      | 0/3            | Archived   | -          | -   |
 | 15. Documentation                | 3/3       | Complete       | 2026-02-24 | -          |
 | 16. Quality Gates                | 2/2       | Complete       | 2026-02-25 | -          |
 | 17. NPM Run Scripts              | 6/6       | Complete       | 2026-02-25 | -          | -   |
 | 18. Production Deployment        | 2/2       | Complete       | 2026-02-25 | -          | -   |
+| 19. Wire Extended Health Check   | 1/1       | Complete       | 2026-02-25 | -          |
 
-**Overall:** 27/50 plans complete (54%)
+**Overall:** 40/50 plans complete (80%)
 
 ## v1.2 Phase Details
 
@@ -254,7 +255,7 @@ Future phases for advanced features:
 2. MQTT client is passed to `createStateApi` from start-api script
 3. Health check at /health returns status for: imports, database, MQTT
 
-**Plans:** 1 plan complete
+**Plans:** 1/1 plans complete
 
 - [x] 19-01-PLAN.md — Wire extended health check into API server
 

@@ -27,28 +27,25 @@
 ## Current Position
 
 **Milestone:** v1.2 Installation Fixes
-**Phase:** Phase 17 - NPM Run Scripts
-**Plan:** Plan 00 (Test Scaffolding) complete, 5 plans remaining
-**Status:** Plan 00 complete
+**Phase:** Phase 19 - Wire Extended Health Check
+**Plan:** Plan 01 complete
+**Status:** Phase 19 complete
 **Progress:** [██████████] 100%
 
 **Phase Progress:**
 
 - Phase 12 (Critical Fixes): 6/6 plans complete
-- Phase 13 (Setup & Validation): 3/3 plans complete
-- Phase 14 (Run Scripts & Services): 3/3 plans complete
-- Phase 15 (Documentation): 2/2 plans complete
+- Phase 13 (Setup & Validation): 4/4 plans complete
+- Phase 14 (Run Scripts & Services): Archived (replaced by Phase 17)
+- Phase 15 (Documentation): 3/3 plans complete
 - Phase 16 (Quality Gates): 2/2 plans complete
-- Phase 17 (NPM Run Scripts): 1/6 plans complete
+- Phase 17 (NPM Run Scripts): 6/6 plans complete
+- Phase 18 (Production Deployment): 2/2 plans complete
+- Phase 19 (Wire Extended Health Check): 1/1 plans complete
 
-**Phase 17 Plans:**
+**Phase 19 Plans:**
 
-- 17-00: Test Scaffolding - Complete
-- 17-01: npm run agent script - Not started
-- 17-02: npm run api script - Not started
-- 17-03: npm run dashboard script - Not started
-- 17-04: agent-runner.ts example - Not started
-- 17-05: Final verification - Not started
+- 19-01: Wire extended health check into API server - Complete
 
 ## Performance Metrics
 
@@ -204,24 +201,27 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-02-25T05:17:17.310Z
-**Stopped at:** Completed 18-02 Production Deployment documentation
+**Last session:** 2026-02-25T05:50:00Z
+**Stopped at:** Completed Phase 19-01 Wire Extended Health Check
 **Resume file:** None
 
-**What changed (17-01):**
+**What changed (19-01):**
 
-- Created config/agent.json with default agent configuration
-- Created scripts/start-agent.mjs with CLI parsing, graceful shutdown
-- Added npm run agent script to package.json
-- All 3 tasks committed: a6e5282, 1beca6b, dc697a1
+- Wired createExtendedHealthRoute into API server
+- Added optional MQTT client support to start-api script
+- Added MQTT configuration to api.json
+- Fixed type mismatch for MQTT client (raw vs wrapper)
+- All 4 tasks committed: 1f5d787, 858b2d1, 31dd48a, 5eb84d1
+
+**Decisions made:**
+- Use raw MQTT.js client for health check (wrapper lacks connected property)
+- Remove SSE event routes from createStateApi (depend on wrapper)
 
 **What's next:**
 
-- Execute Phase 17-02: npm run api script
-- Execute Phase 17-03: npm run dashboard script
-- Execute Phase 17-04: Documentation updates
-- Execute Phase 17-05: Final verification
+- All v1.2 phases complete (Phases 12-19)
 - Ship v1.2 milestone
+- Consider v2.0 planning (multi-capability logic, adaptive batching)
 
 **Blockers:** None
 
