@@ -1,0 +1,22 @@
+[Unit]
+Description=OpenClaw Swarm Dashboard
+Documentation=https://github.com/your-repo/openclaw-swarm
+After=network-online.target openclaw-mqtt.service
+Wants=network-online.target openclaw-mqtt.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/openclaw/dashboard.env
+ExecStart=/usr/bin/npm run dev
+WorkingDirectory=/opt/openclaw-swarm/packages/dashboard
+Restart=always
+RestartSec=5s
+StartLimitInterval=10s
+StartLimitBurst=5
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
