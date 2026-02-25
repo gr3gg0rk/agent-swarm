@@ -29,18 +29,15 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 - ✓ Corruption-resilient checkpointing — v1.1 (CRC32 checksums, atomic writes, 3-checkpoint fallback)
 - ✓ Vector clock ordering for cross-machine state — v1.1 (happened-before detection, reconciliation merge)
 - ✓ Real-time web dashboard — v1.1 (Vite + Alpine.js + Chart.js, SSE throttled to 10/second)
+- ✓ Developer can install and run system — v1.2 (npm install && npm run build works, npm run agent/api/dashboard scripts, systemd deployment)
+- ✓ Setup automation and validation — v1.2 (npm run setup with environment checks, Mosquitto persistence validation)
+- ✓ Quick start documentation — v1.2 (3-command Quick Start, role-specific config examples, Fix suggestions in errors)
+- ✓ Quality gates — v1.2 (GitHub Actions CI, pre-commit hooks, integration tests)
 
 ### Active
 
-**Milestone v1.2 Installation Fixes (Current):**
-- Fix critical msgpackr import errors (pack/unpack vs MessagePack)
-- Fix database schema initialization and exports
-- Fix column count mismatch in task queue INSERT
-- Add proper npm workspaces configuration
-- Add setup scripts and run scripts for easier deployment
-- Document Mosquitto persistence requirements
-
 **Milestone v2.0 Goals (Deferred):**
+
 - Multi-capability AND logic for task routing
 - Dynamic capability declaration at runtime
 - Adaptive batching with dynamic window scaling
@@ -59,15 +56,18 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 
 ### Current State
 
-**Shipped v1.1 (2026-02-23):**
-- 13,469 lines TypeScript in coordination package (plus dashboard package)
-- 6 phases (6-11), 14 plans, 23 requirements validated
+**Shipped v1.2 (2026-02-25):**
+
+- 14,463 lines TypeScript in coordination package (plus dashboard package)
+- 7 phases (12-19), 24 plans, 23 requirements validated
 - Tech stack: Node.js 22+, MQTT.js 5.0, Better-SQLite3 11.9, Mosquitto 2.0, Vite 5.x, Alpine.js, Chart.js 4.x
 - Coordination layer: <100MB RAM per machine (Pi 2B validated)
 - Dashboard: <50MB RAM (griak-brain only)
-- Optimization: 10x throughput improvement via batching + connection pooling
+- Developer experience: npm install && npm run build works, npm run agent/api/dashboard scripts, systemd deployment
+- Quality gates: GitHub Actions CI, pre-commit hooks (lint, typecheck, verify-exports)
 
 **Hardware validated:**
+
 - griak-brain (Beelink T4, 4GB) — Minerva orchestrator + dashboard
 - griak-server (Pi 5, 8GB) — Vulcan builder
 - griak-worker-1 (Pi 3B, 1GB) — Multi-role worker
@@ -75,12 +75,12 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 
 ### Machine Inventory
 
-| Machine | Hardware | RAM | Primary Agent | Role | Subagents |
-|---------|----------|-----|---------------|------|-----------|
-| griak-brain | Beelink T4 (Intel Atom x5-Z8500) | 4GB | Minerva | Orchestrator, project context, delegation | Planning, Researching |
-| griak-server | Raspberry Pi 5 | 8GB | Vulcan | Builder, executor | Debug, Test |
-| griak-worker-1 | Raspberry Pi 3B | 1GB | Flexible | Multi-role | As assigned |
-| griak-worker-2 | Raspberry Pi 2B | 1GB | Flexible | Multi-role | As assigned |
+| Machine        | Hardware                         | RAM | Primary Agent | Role                                      | Subagents             |
+| -------------- | -------------------------------- | --- | ------------- | ----------------------------------------- | --------------------- |
+| griak-brain    | Beelink T4 (Intel Atom x5-Z8500) | 4GB | Minerva       | Orchestrator, project context, delegation | Planning, Researching |
+| griak-server   | Raspberry Pi 5                   | 8GB | Vulcan        | Builder, executor                         | Debug, Test           |
+| griak-worker-1 | Raspberry Pi 3B                  | 1GB | Flexible      | Multi-role                                | As assigned           |
+| griak-worker-2 | Raspberry Pi 2B                  | 1GB | Flexible      | Multi-role                                | As assigned           |
 
 ### Agent Roles
 
@@ -109,28 +109,32 @@ A lightweight agent swarm coordination layer for OpenClaw that enables 4 indepen
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| MQTT for communication | Lightweight (<10MB), retained messages, pub/sub | ✓ Good — scales to 4 agents |
-| SQLite for shared state | <15MB RAM, WAL mode, simple deployment | ✓ Good — concurrent access works |
-| MessagePack for serialization | Binary format, 1KB threshold | ✓ Good — reduces wire size |
-| Hybrid hierarchy (brain + workers) | Balance control with autonomy | ✓ Good — clear delegation flow |
-| Role-based task routing | Capability matching, hierarchical fallback | ✓ Good — senior-builder → builder |
-| DAG-based dependencies | Kahn's algorithm, O(V+E) cycle detection | ✓ Good — prevents circular deps |
-| Exponential backoff (2^n * 1000ms) | Prevents thundering herd | ✓ Good — caps at 30s |
-| Hybrid checkpointing (local + SQLite) | Fast recovery + cross-machine durability | ✓ Good — 60s/5min intervals |
-| Memory-aware throttling (85% threshold) | Prevents OOM on Pi 2B | ✓ Good — priority-based pausing |
-| Fixed roles on brain/server, flexible on workers | Specialization where valuable | ✓ Good — Minerva/Vulcan + flexible workers |
-| Weighted scoring (70% load + 30% performance) | Balances current load with historical success | ✓ Good — intelligent routing |
-| Circuit breaker (3 rejections → open, 60s half-open) | Prevents cascading failures | ✓ Good — fault tolerance |
-| Dual-trigger batching (time OR size) | Prevents unbounded buffer growth | ✓ Good — predictable latency |
-| Hardware-aware connection pools | Respects memory constraints | ✓ Good — Pi 2B validated |
-| Context references for >10KB payloads | Reduces memory/transfer overhead | ✓ Good — SQLite deduplication |
-| CRC32 checksums for checkpoints | Catches corruption, <1ms for 1MB | ✓ Good — corruption recovery |
-| Vector clocks for cross-machine ordering | Tolerates clock skew | ✓ Good — happened-before detection |
-| SSE over WebSocket for dashboard | Lighter (~14KB savings), sufficient for read-only | ✓ Good — 10 updates/second |
-| Vite + Alpine.js + Chart.js for dashboard | <50MB total footprint | ✓ Good — griak-brain only |
-| Feature flags for optimization | Debugging flexibility | ✓ Good — environment variables |
+| Decision                                             | Rationale                                         | Outcome                                    |
+| ---------------------------------------------------- | ------------------------------------------------- | ------------------------------------------ |
+| MQTT for communication                               | Lightweight (<10MB), retained messages, pub/sub   | ✓ Good — scales to 4 agents                |
+| SQLite for shared state                              | <15MB RAM, WAL mode, simple deployment            | ✓ Good — concurrent access works           |
+| MessagePack for serialization                        | Binary format, 1KB threshold                      | ✓ Good — reduces wire size                 |
+| Hybrid hierarchy (brain + workers)                   | Balance control with autonomy                     | ✓ Good — clear delegation flow             |
+| Role-based task routing                              | Capability matching, hierarchical fallback        | ✓ Good — senior-builder → builder          |
+| DAG-based dependencies                               | Kahn's algorithm, O(V+E) cycle detection          | ✓ Good — prevents circular deps            |
+| Exponential backoff (2^n \* 1000ms)                  | Prevents thundering herd                          | ✓ Good — caps at 30s                       |
+| Hybrid checkpointing (local + SQLite)                | Fast recovery + cross-machine durability          | ✓ Good — 60s/5min intervals                |
+| Memory-aware throttling (85% threshold)              | Prevents OOM on Pi 2B                             | ✓ Good — priority-based pausing            |
+| Fixed roles on brain/server, flexible on workers     | Specialization where valuable                     | ✓ Good — Minerva/Vulcan + flexible workers |
+| Weighted scoring (70% load + 30% performance)        | Balances current load with historical success     | ✓ Good — intelligent routing               |
+| Circuit breaker (3 rejections → open, 60s half-open) | Prevents cascading failures                       | ✓ Good — fault tolerance                   |
+| Dual-trigger batching (time OR size)                 | Prevents unbounded buffer growth                  | ✓ Good — predictable latency               |
+| Hardware-aware connection pools                      | Respects memory constraints                       | ✓ Good — Pi 2B validated                   |
+| Context references for >10KB payloads                | Reduces memory/transfer overhead                  | ✓ Good — SQLite deduplication              |
+| CRC32 checksums for checkpoints                      | Catches corruption, <1ms for 1MB                  | ✓ Good — corruption recovery               |
+| Vector clocks for cross-machine ordering             | Tolerates clock skew                              | ✓ Good — happened-before detection         |
+| SSE over WebSocket for dashboard                     | Lighter (~14KB savings), sufficient for read-only | ✓ Good — 10 updates/second                 |
+| Vite + Alpine.js + Chart.js for dashboard            | <50MB total footprint                             | ✓ Good — griak-brain only                  |
+| Feature flags for optimization                       | Debugging flexibility                             | ✓ Good — environment variables             |
+| npm workspaces for monorepo                          | Local development with package linking            | ✓ Good — workspace imports work            |
+| GitHub Actions for CI                                | Free tier for public repos, native integration    | ✓ Good — runs on push/PR                   |
+| Systemd services for production                      | Standard Linux deployment                         | ✓ Good — template services for agents      |
 
 ---
-*Last updated: 2026-02-23 after v1.2 milestone started*
+
+_Last updated: 2026-02-25 after v1.2 milestone completion_

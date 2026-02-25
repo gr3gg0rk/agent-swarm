@@ -7,6 +7,7 @@
 **Stats:** 166,441 lines TypeScript, 94 commits, 1 day development
 
 **Key accomplishments:**
+
 1. MQTT message bus with QoS levels, MessagePack serialization, and Pi 2B-optimized Mosquitto config (<10MB RAM)
 2. SQLite-based shared state with WAL mode, REST API (12 endpoints), task queue, context storage, and automatic archive cleanup
 3. Task delegation system with role-based routing, DAG dependencies, exponential backoff timeouts, progress tracking, and cooperative cancellation
@@ -16,12 +17,12 @@
 **Requirements:** 42/42 satisfied (100%)
 
 **Archived:**
+
 - `.planning/milestones/v1.0-ROADMAP.md` — Full roadmap with phase details
 - `.planning/milestones/v1.0-REQUIREMENTS.md` — Complete requirements with traceability
 - `.planning/milestones/v1.0-MILESTONE-AUDIT.md` — Verification audit (passed)
 
 ---
-
 
 ## v1.1 Enhancements (Shipped: 2026-02-23)
 
@@ -30,6 +31,7 @@
 **Stats:** 13,469 lines TypeScript (coordination package), 30+ commits, 2 days development
 
 **Key accomplishments:**
+
 1. Load-aware routing with weighted scoring (70% load + 30% performance), circuit breaker (3 rejections → open), exponential backoff retry (2^n × 100ms, max 5s)
 2. 10x message throughput via MessageBatcher with dual-trigger flushing, hardware-aware connection pooling (Pi 2B=3, Pi 5=5, Beelink=10)
 3. Corruption-resilient checkpointing with CRC32 checksums, atomic writes, 3-checkpoint fallback, vector clock ordering for cross-machine reconciliation
@@ -40,16 +42,52 @@
 **Requirements:** 23/23 satisfied (100%)
 
 **Gap Closures:**
+
 - CTX-REF-CHECKPOINT (HIGH) → Closed by Phase 10 (Context Recovery Integration)
 - BATCHER-NOT-ACTIVATED (LOW) → Closed by Phase 11 (Opt-In Feature Activation)
 - POOL-NOT-ACTIVATED (LOW) → Closed by Phase 11 (Opt-In Feature Activation)
 
 **Archived:**
+
 - `.planning/milestones/v1.1-ROADMAP.md` — Full roadmap with phase details
 - `.planning/milestones/v1.1-REQUIREMENTS.md` — Complete requirements with traceability
 
 **Tech Debt:**
+
 - Optimization module not exported from main coordination index (LOW severity, workaround exists)
 
 ---
 
+## v1.2 Installation Fixes (Shipped: 2026-02-25)
+
+**Phases completed:** 7 phases, 24 plans
+
+**Stats:** 14,463 lines TypeScript, 28 feature commits, 3 days development
+
+**Key accomplishments:**
+
+1. Fixed msgpackr imports (pack/unpack functions), added optimization module exports, fixed database pragma calls, corrected INSERT statement placeholder count
+2. Added npm workspaces configuration to root package.json for monorepo package linking
+3. Extended health check route with multi-component checks (imports, database, MQTT), added Mosquitto persistence validation
+4. Created npm run agent, npm run api, npm run dashboard scripts for single-command startup
+5. Systemd service files for Mosquitto, API, Dashboard, and Agent template production deployment
+6. README Quick Start with 3-command flow, Mosquitto persistence warning, role-specific config files
+7. GitHub Actions CI workflow with export verification, pre-commit hooks (lint, typecheck, verify-exports), integration tests
+
+**Requirements:** 23/23 satisfied (100%)
+
+**Gap Closures:**
+
+- Phase 13-04: Database initialization bug fixed
+- Phase 15-GAP: Role-specific config links added to README
+- Phase 17: NPM scripts gap from Phase 14 (archived) closed
+- Phase 18: Systemd services gap from Phase 14 (archived) closed
+- Phase 19: SETUP-03 gap closure (extended health check wiring)
+
+**Archived:**
+
+- `.planning/milestones/v1.2-ROADMAP.md` — Full roadmap with phase details
+- `.planning/milestones/v1.2-REQUIREMENTS.md` — Complete requirements with traceability
+- `.planning/milestones/v1.2-MILESTONE-AUDIT.md` — Verification audit (passed)
+
+---

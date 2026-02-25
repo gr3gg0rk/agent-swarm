@@ -1,9 +1,9 @@
 # Project State: OpenClaw Swarm
 
 **Last Updated:** 2026-02-25
-**Current Milestone:** v1.2 Installation Fixes
-**Current Phase:** 19
-**Status:** Milestone complete
+**Current Milestone:** v1.2 Installation Fixes (SHIPPED)
+**Current Phase:** None
+**Status:** Ready for next milestone
 
 ## Project Reference
 
@@ -26,10 +26,8 @@
 
 ## Current Position
 
-**Milestone:** v1.2 Installation Fixes
-**Phase:** Phase 19 - Wire Extended Health Check
-**Plan:** Plan 01 complete
-**Status:** Phase 19 complete
+**Milestone:** v1.2 Installation Fixes — SHIPPED
+**Status:** All phases complete
 **Progress:** [██████████] 100%
 
 **Phase Progress:**
@@ -49,25 +47,18 @@
 
 ## Performance Metrics
 
-**v1.1 Baseline (shipped 2026-02-23):**
+**v1.2 Results (shipped 2026-02-25):**
 
 - Coordination layer: <100MB RAM per machine (Pi 2B validated)
 - Dashboard: <50MB RAM (griak-brain only)
-- Throughput: 10x improvement via batching + connection pooling
-- Connection overhead: 70% reduction via pooling
-- Bandwidth: 70% reduction via MessagePack + batching
-
-**v1.2 Target:**
-
-- Zero runtime memory impact (all additions are build/dev tooling only)
-- Installation success rate: 100% (currently 0% due to import errors)
-- Setup time: <5 minutes for fresh developer (from npm install to running agent)
+- Installation success rate: 100% (npm install && npm run build works)
+- Setup time: <5 minutes for fresh developer
 
 **Velocity:**
 
-- Total plans completed: 27 (v1.0: 13, v1.1: 14)
+- Total plans completed: 50 (v1.0: 13, v1.1: 14, v1.2: 24)
 - Average duration: ~15 min
-- Total execution time: ~7 hours
+- Total execution time: ~12 hours
 
 ## Accumulated Context
 
@@ -123,30 +114,39 @@
 
 - Optimization module not exported from main index (LOW severity, workaround exists)
 
-### v1.2 Context (Current)
+### v1.2 Accomplishments (Shipped 2026-02-25)
 
-**Issues blocking installation:**
+**Phases:** 7 phases (12-19), 24 plans
+**Requirements:** 23/23 satisfied (100%)
+**Tech:** npm workspaces, GitHub Actions CI, systemd services, zx scripts
 
-1. msgpackr import confusion — `@ts-ignore` suggests uncertainty about pack/unpack vs MessagePack
-2. Missing exports — optimization module, schema functions not in index.ts re-exports
-3. Database bugs — pragma calls return Database objects instead of strings, INSERT has column count mismatch
-4. No workspaces config — root package.json missing `workspaces: ["packages/*"]`
-5. No setup tooling — no environment validation, no database initialization script
-6. No run scripts — no npm scripts to start agent/api/dashboard
-7. No documentation — no quick start, no config examples
-8. No quality gates — no CI, no pre-commit hooks
+**Key features:**
 
-**Research confidence:** MEDIUM
+- Fixed msgpackr imports (pack/unpack functions)
+- Added optimization module exports
+- Fixed database pragma calls and INSERT placeholder count
+- npm workspaces configuration for monorepo
+- Extended health check with multi-component verification
+- npm run setup with environment validation
+- npm run agent, npm run api, npm run dashboard scripts
+- systemd service files for production deployment
+- README Quick Start with 3-command flow
+- GitHub Actions CI with export verification
+- Pre-commit hooks (lint, typecheck, verify-exports)
+- Integration tests for database operations
 
-- Stack: HIGH (npm workspaces, zx, husky are well-established)
-- Architecture: MEDIUM (ESM exports are standard, setup script placement is conventional)
-- Pitfalls: HIGH (based on UC Berkeley research on multi-agent failures)
-- Package distribution: MEDIUM (installation issues identified from codebase analysis)
+**Gap closures:**
+
+- Phase 13-04: Database initialization bug fixed
+- Phase 15-GAP: Role-specific config links added
+- Phase 17: NPM scripts gap from Phase 14 closed
+- Phase 18: Systemd services gap from Phase 14 closed
+- Phase 19: SETUP-03 gap closure (extended health check)
 
 ### Key Decisions (v1.0-v1.1)
 
 | Decision                                             | Rationale                                         | Outcome                            |
-| ---------------------------------------------------- | ------------------------------------------------- | ---------------------------------- | ------- |
+| ---------------------------------------------------- | ------------------------------------------------- | ---------------------------------- |
 | MQTT for communication                               | Lightweight (<10MB), retained messages, pub/sub   | ✓ Good — scales to 4 agents        |
 | SQLite for shared state                              | <15MB RAM, WAL mode, simple deployment            | ✓ Good — concurrent access works   |
 | MessagePack for serialization                        | Binary format, 3.5x faster than JSON              | ✓ Good — reduces wire size         |
@@ -166,26 +166,6 @@
 | SSE over WebSocket for dashboard                     | Lighter (~14KB savings), sufficient for read-only | ✓ Good — 10 updates/second         |
 | Vite + Alpine.js + Chart.js for dashboard            | <50MB total footprint                             | ✓ Good — griak-brain only          |
 | Feature flags for optimization                       | Debugging flexibility                             | ✓ Good — environment variables     |
-| Phase 12 P02                                         | 52                                                | 1 tasks                            | 1 files |
-| Phase 12 P05                                         | 110s                                              | 1 tasks                            | 1 files |
-| Phase 12 P04                                         | 118                                               | 1 tasks                            | 1 files |
-| Phase 12 P01                                         | 160                                               | 1 tasks                            | 2 files |
-| Phase 12-critical-fixes P03                          | 2 minutes                                         | 1 tasks                            | 1 files |
-| Phase 13 P01                                         | 1771895652                                        | 1 tasks                            | 1 files |
-| Phase 13 P03                                         | 3min                                              | 2 tasks                            | 5 files |
-| Phase 13 P02                                         | 200                                               | 3 tasks                            | 2 files |
-| Phase 13-04 P04                                      | 2min                                              | 1 tasks                            | 1 files |
-| Phase 15 P01                                         | 5min                                              | 2 tasks                            | 1 files |
-| Phase 15 P02                                         | 612                                               | 3 tasks                            | 5 files |
-| Phase 15 PGAP                                        | 59s                                               | 2 tasks                            | 1 files |
-| Phase 16 P01                                         | 128                                               | 2 tasks                            | 3 files |
-| Phase 16 P02                                         | 4min                                              | 3 tasks                            | 8 files |
-| Phase 17-npm-run-scripts P03                         | 88                                                | 2 tasks                            | 2 files |
-| Phase 17-npm-run-scripts P01                         | 124                                               | 3 tasks                            | 3 files |
-| Phase 17-npm-run-scripts P02                         | 6min                                              | 3 tasks                            | 2 files |
-| Phase 17-npm-run-scripts P05                         | 5min                                              | 2 tasks                            | 2 files |
-| Phase 17-npm-run-scripts P00                         | 4min                                              | 5 tasks                            | 5 files |
-| Phase 18 P01                                         | 89s                                               | 4 tasks                            | 4 files |
 
 ### Pending Todos
 
@@ -197,32 +177,26 @@ None.
 
 ### Tech Debt
 
-- Optimization module not exported from main coordination index (LOW severity, workaround exists) — Addressed in Phase 12
+None — all v1.2 tech debt addressed during milestone.
 
 ## Session Continuity
 
 **Last session:** 2026-02-25T05:50:00Z
-**Stopped at:** Completed Phase 19-01 Wire Extended Health Check
-**Resume file:** None
+**Current session:** Milestone v1.2 completion
 
-**What changed (19-01):**
+**What changed (v1.2 milestone):**
 
-- Wired createExtendedHealthRoute into API server
-- Added optional MQTT client support to start-api script
-- Added MQTT configuration to api.json
-- Fixed type mismatch for MQTT client (raw vs wrapper)
-- All 4 tasks committed: 1f5d787, 858b2d1, 31dd48a, 5eb84d1
-
-**Decisions made:**
-
-- Use raw MQTT.js client for health check (wrapper lacks connected property)
-- Remove SSE event routes from createStateApi (depend on wrapper)
+- Fixed critical import and database bugs
+- Added npm workspaces configuration
+- Created setup and run scripts
+- Added systemd deployment files
+- Updated documentation with Quick Start
+- Added CI and quality gates
 
 **What's next:**
 
-- All v1.2 phases complete (Phases 12-19)
-- Ship v1.2 milestone
 - Consider v2.0 planning (multi-capability logic, adaptive batching)
+- Or start next milestone based on new requirements
 
 **Blockers:** None
 
@@ -230,15 +204,15 @@ None.
 
 ## Notes
 
-- Phase numbering: v1.2 starts at Phase 12 (v1.1 ended at Phase 11)
-- Depth: Comprehensive (from config.json) — detailed phase structure with clear boundaries
-- Coverage: 100% of v1.2 requirements mapped to phases (23/23)
+- Phase numbering: v1.2 covered phases 12-19
+- Depth: Comprehensive — detailed phase structure with clear boundaries
+- Coverage: 100% of v1.2 requirements satisfied (23/23)
 - All v1.2 additions are zero runtime memory impact (build/dev tooling only)
-- v2.0 requirements deferred (multi-capability logic, adaptive batching, etc.)
 
 ---
 
-_State updated: 2026-02-23 — v1.2 roadmap created_
+_State updated: 2026-02-25 — v1.2 milestone shipped_
+_Milestone archive: `.planning/milestones/v1.2-`_
 _Roadmap: .planning/ROADMAP.md_
-_Requirements: .planning/REQUIREMENTS.md_
-_Next: `/gsd:plan-phase 12`_
+_Project: .planning/PROJECT.md_
+_Next: `/gsd:new-milestone` for v2.0 or custom next milestone_
